@@ -38,52 +38,52 @@ def get_user_data(update, language="ES"):
 
   # print("CHECK GET USER DATA")
   if update.callback_query:
-    query = update.callback_query
+    data_update = update.callback_query.message
+  else:
+    data_update = update.message  
   try:
-    user = update.message.from_user
+    user_data = update.message.from_user
   except:
     try:
-      user = update.callback_query.from_user
+      user_data = update.callback_query.from_user
     except:
-      user = update._effective_message.from_user
+      user_data = update._effective_message.from_user
   #print("*******",user)
-  user_data = {
-    '_id': str(user['id']),
-    'telegram_name': str(user['first_name']),
+  user = {
+    '_id': str(user_data['id']),
+    'telegram_name': str(user_data['first_name']),
     'username': "",
     'planet': "",
     'is_teacher': False,
     'language' : language
   }
 
-  if user['last_name']:
-    user_data['telegram_name'] += ' '+str(user['last_name'])
-  if user['username']:
-    user_data['username'] = str(user['username'])
-  user_data ['is_teacher'] =True
+  if user_data['last_name']:
+    user['telegram_name'] += ' '+str(user_data['last_name'])
+  if user_data['username']:
+    user['username'] = str(user_data['username'])
 
- ############################################################### 
-  #if is_teacher(user_id):
-  #  is_user_teacher = True
-  #else:
-  #  is_user_teacher = False
-  #if db.students_full.find_one({'_id':user_id}):
-  #  user_planet = db.students_full.find_one({'_id':user_id})['planet']
+  if db.teachers.find_one({'_id':user['_id']}):
+   user['is_teacher'] = True
+  else:
+   user['is_teacher']  = False
 
-
-  #if not user_planet and chat_id < 0 and not is_user_teacher:
-  #  if update.message.chat['title']:
-  #        user_planet = strip_accents(str(update.message.chat['title']))
-
-  db.telegram_users.save(user_data)
+  if db.students_full.find_one({'_id':user['_id']}):
+   user['planet'] = db.students_full.find_one({'_id':user['_id']})['planet']
+  chat_id = data_update.chat_id
+  if not user['planet'] and chat_id < 0 :
+   if update.message.chat['title']:
+         user_planet = strip_accents(str(update.message.chat['title']))
+  db.telegram_users.save(user)
 
   #  if db.teachers.find_one(user_data['_id']):
   #    user_data['planet'] = "PRUEBAS_BOT"
   # print("~~~~~ USUARIO NUEVO",user_data)
-  return user_data
+  return user
 
 
 def welcome(query, user):
+  print("ISTEACHER", user['is_teacher'])
   if user['is_teacher']:
     msg = tea_lang.welcome_text[user['language']]
   else:
@@ -97,7 +97,7 @@ def is_student_registered(update, context, user):
 
   Regresa True si el estudiante esta registrado de lo contrario intenta registrarlo.
   """
-  print("CHECK   ** ENTRO A IS STUDENT REGISTER **")
+  print("CHECK   ** ENTRO A IS STUDENT REGISTER **\n",user)
   
   if update.callback_query:
     data = update.callback_query.message
@@ -112,7 +112,7 @@ def is_student_registered(update, context, user):
     db.telegram_users.save(user)
     print("CHECK   Se actualizo el usuario en telegram_users")
     
-  if user['is_teacher'] or upm.chat_id <0:
+  if user['is_teacher'] or chat_id <0:
     return True
 
   # Registro del estudiante en las demas colecciones
@@ -231,7 +231,7 @@ def is_student_registered(update, context, user):
         return False
     else:
       context.bot.send_message(
-        chat_id=upm.chat_id,
+        chat_id=chat_id,
         text="Aún no se ha terminado de configurar la asignatura. Espera las indicaciones de tu docente.")
       print("Aún no existe la base de datos de estudiantes.")
       return False
@@ -239,13 +239,7 @@ def is_student_registered(update, context, user):
     if db.students_full.update_one():
       user_db = db.students_full.update_one({'_id': user['_id']})
       if user_db != user:
-        db.students_full.update_one(
-          {'_id': user['_id']},
-          {'$set': {
-            'telegram_name': user['telegram_name'],
-            'username': user['username'],
-            'planet': user['planet']
-          }})
+        db.students_full.save(user)
         print("   Se actualizo el usuario en students_full")
       return True
     else:

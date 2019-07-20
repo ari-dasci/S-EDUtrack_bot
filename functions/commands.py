@@ -14,7 +14,7 @@ from functions import (
   general_functions as g_fun
 )
 
-is_config_files_set = True if (db.students.find_one() and db.activities.find_one()) else False
+is_config_files_set = True #if (db.students.find_one() and db.activities.find_one()) else False
 
 def start(update, context, pass_chat_data=True):
   """ Inicializa el bot y revisa si se encuentra configurado.
