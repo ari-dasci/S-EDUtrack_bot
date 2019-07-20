@@ -8,6 +8,8 @@ verify_ssl = true
 [packages]
 python-telegram-bot = "==12.0.0b1"
 telegram = "*"
+pymongo = "*"
+dnspython = "*"
 
 [requires]
 python_version = "3.7"
