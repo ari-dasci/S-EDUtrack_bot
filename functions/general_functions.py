@@ -1,18 +1,22 @@
-from configuration.config_file import db, client, teacher_data
+import re
+from unicodedata import normalize
+from configuration.config_file import (
+  db, client, 
+  teacher_data,
+  is_config_files_set)
 from dictionaries import (
   general_dict_lang as g_lang,
-  teacher_dict_lang as tea_lang
-)
-from dictionaries import (
+  teacher_dict_lang as tea_lang,
   student_dict_lang as stu_lang
 )
 
-import re
 
 def basic_setup():
   # Inicializa al docente de la asignatura
   if not db.teachers.find_one():
       db.teachers.insert_one(teacher_data)
+  config_file_set = True if (db.students.find_one() and db.activities.find_one()) else False
+
 
 def strip_accents(string):
   """ Elimina los acentos de una cadena de texto y la devuelve en mayúsculas.
@@ -24,7 +28,7 @@ def strip_accents(string):
   return string.upper()
 
 
-def get_user_data(update, language="ES"):
+def get_user_data(update, language=""):
   """Obtiene los datos del usuario.
   Devuelve un diccionario con los datos del Usuario:
     id
@@ -35,19 +39,13 @@ def get_user_data(update, language="ES"):
     language
 
   """
-
   # print("CHECK GET USER DATA")
-  if update.callback_query:
-    data_update = update.callback_query.message
+  chat_id = update._effective_chat.id
+  user_data = update._effective_user
+  if language:
+    user_language = language
   else:
-    data_update = update.message  
-  try:
-    user_data = update.message.from_user
-  except:
-    try:
-      user_data = update.callback_query.from_user
-    except:
-      user_data = update._effective_message.from_user
+    language = db.telegram_users.find_one({'_id':str(user_data['id'])})['language']
   #print("*******",user)
   user = {
     '_id': str(user_data['id']),
@@ -64,47 +62,47 @@ def get_user_data(update, language="ES"):
     user['username'] = str(user_data['username'])
 
   if db.teachers.find_one({'_id':user['_id']}):
-   user['is_teacher'] = True
+    user['is_teacher'] = True
   else:
-   user['is_teacher']  = False
+    user['is_teacher']  = False
 
   if db.students_full.find_one({'_id':user['_id']}):
-   user['planet'] = db.students_full.find_one({'_id':user['_id']})['planet']
-  chat_id = data_update.chat_id
+    user['planet'] = db.students_full.find_one({'_id':user['_id']})['planet']
   if not user['planet'] and chat_id < 0 :
    if update.message.chat['title']:
-         user_planet = strip_accents(str(update.message.chat['title']))
+    user_planet = strip_accents(str(update.message.chat['title']))
   db.telegram_users.save(user)
 
   #  if db.teachers.find_one(user_data['_id']):
   #    user_data['planet'] = "PRUEBAS_BOT"
-  # print("~~~~~ USUARIO NUEVO",user_data)
+  # print("~~~~~ USUARIO NUEVO",user)
   return user
 
 
-def welcome(query, user):
-  print("ISTEACHER", user['is_teacher'])
+def welcome(context,query, user):
   if user['is_teacher']:
-    msg = tea_lang.welcome_text[user['language']]
+    print("ES DOCENTE",user['language'])
+    msg = tea_lang.welcome_text(context,user['language'])
   else:
-    msg = stu_lang.welcome_text[user['language']]
+    msg = stu_lang.welcome_text(context, user['language'])
   query.edit_message_text(
       parse_mode = 'HTML',
       text = msg)
 
-def is_student_registered(update, context, user):
+
+def is_user_registered(update, context, user):
   """ Revisa si el estudiantes esta o no registrado en la base de datos.
 
   Regresa True si el estudiante esta registrado de lo contrario intenta registrarlo.
   """
   print("CHECK   ** ENTRO A IS STUDENT REGISTER **\n",user)
+  chat_id = update._effective_chat.id
   
+  ''' # No se en que momento utilizao esto
   if update.callback_query:
     data = update.callback_query.message
-    chat_id = data.chat_id
   else: 
-    data = update.message
-    chat_id = data.chat_id
+    data = update.message '''
     
   # Registro del usuario en telegram_users
   user_db = db.telegram_users.find_one({'_id': user['_id']})
@@ -245,6 +243,14 @@ def is_student_registered(update, context, user):
     else:
       print("No existe la coleccion students_full")
 
+
+def msg_wrong_command_group(update, context, user):
+  print("CHECK WRONG COMMAND")
+  chat_id = update._effective_chat.id
+  context.bot.send_message(
+        parse_mode = 'HTML',
+        chat_id = chat_id,
+        text = g_lang.wrong_command_group[user['language']])
 
 
 

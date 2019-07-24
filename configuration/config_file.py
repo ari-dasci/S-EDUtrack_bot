@@ -13,3 +13,6 @@ teacher_data = {
   "telegram_name": "Jovas Pruebas",
   "user_name": "user_test_0",
 }
+
+# GLOBAL VARIABLES
+is_config_files_set = False

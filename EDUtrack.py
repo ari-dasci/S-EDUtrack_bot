@@ -9,8 +9,8 @@ from functions import (
     commands as cmd,
     general_functions as g_fun)
 
-# Identificar el bot
-my_bot = telegram.Bot(token = token_bot)
+
+ #if (db.students.find_one() and db.activities.find_one()) else False
 
 def main():
     """ Inicializa el bot.
@@ -24,6 +24,8 @@ def main():
         updater.idle() => Permite finalizar el bot con Ctrl+C.
 
     """
+    # Identificar el bot
+    my_bot = telegram.Bot(token = token_bot)
     # Obtiene las actualizaciones de EDUtrack 
     updater = Updater(my_bot.token, use_context = True)
 
