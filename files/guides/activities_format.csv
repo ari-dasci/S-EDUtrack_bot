@@ -1,9 +1,13 @@
-_id,name,section,type,period,week,weight
-T1_GLOSARIO,Glosario T1,Tema 1,actividad,septiembre,1,0.003333333
-T1_CUESTIONARIO,Cuestionario T1,Tema 1,actividad,septiembre,2,0.003333333
-T1_PROBLEMAS,Relación de problemas: cómputo,Tema 1,actividad,septiembre,2,0.003333333
-T1_EJERCICIOS_CAPSULAS,Valida los ejercicios Capsulas 1 y 2,Tema 1,actividad,octubre,3,0.003333333
-PRUEBA_1,Prueba 1,Tema 1,evaluaci½n,septiembre,5,0.1
-,,,,,,
-El número de semanas no debe ser mayor de 15,,,,,,
-La suma de los pesos de todas las actividades debe ser 1,,,,,,
+_ID,NAME,SECTION,WEEK,WEIGHT
+T1_GLOSARIO,Glosario T1,Tema 1,1,0.003333333
+T1_CUESTIONARIO,Cuestionario T1,Tema 1,2,0.003333333
+T2_PROBLEMAS,Relación de problemas: cómputo,Tema 2,2,0.003333333
+T2_EJERCICIOS_CAPSULAS,Valida los ejercicios Capsulas 1 y 2,Tema 2,3,0.003333333
+PRUEBA_1,Prueba 1,Examenes,4,0.1
+,,,,
+,,,,
+Notas:,,,,
+El separador decimal es el punto ".",,,,
+El número de semanas no debe ser mayor de 15.,,,,
+La suma de los pesos de todas las actividades debe ser 1.,,,,
+Se pueden agregar las columna end_date para marcar el fin de la actividad (OPCIONAL),,,,

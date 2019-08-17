@@ -1,4 +1,11 @@
-_id,dni,name
-jesusguejar@correo.ugr.es,77769229,"ALVAREZ FERNANDEZ, JESUS"
-ignacioalla@correo.ugr.es,77558097,"ALVAREZ LAMOLDA, IGNACIO ANTONIO"
-jaimealvarez@correo.ugr.es,75931955,"ALVAREZ ORGAZ, JAIME ARTURO"
+_id,first_name,last_name
+jesusguejar@correo.ugr.es,JESUS,ALVAREZ FERNANDEZ
+ignacioalla@correo.ugr.es,IGNACIO ANTONIO,MENDEZ LAMOLDA
+jaimealvarez@correo.ugr.es,JAIME ARTURO,SANCHEZ ORGAZ
+,,
+,,
+Notas:,,
+El _id debe ser el email del estudiante,,
+"Cada campo debe ser separado por una coma "",""",,
+Se puede agregar una columna con el username de Telegram de los estudiantes (OPCIONAL).,,
+Borrar las todas las filas de notas.,,

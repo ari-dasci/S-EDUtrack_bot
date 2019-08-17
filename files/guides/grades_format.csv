@@ -3,6 +3,7 @@ estudiante_1@correo.com,10,9.6,...,10
 estudiante_2@correo.com,8.9,,...,7.2
 ...,...,...,..,...
 estudiante_n@correo.com,10,9.5,...,8.3
-,,,,
-Borrar esto:,,,,
+
+Notas:,,,,
 Se puede subir una o varias actividades y uno o varios estudiantes.,,,,
+El separador decimal es el punto "."

@@ -2,15 +2,19 @@ import telegram
 from telegram.ext import (
     Updater,
     CommandHandler as CmdHandler,
-    CallbackQueryHandler as CQHandler)
+    CallbackQueryHandler as CQHandler,
+    MessageHandler as MsgHandler,
+    Filters)
 import logging
-from configuration.config_file import token_bot
+import configuration.config_file as cfg
+from configuration.config_file import (
+    token_bot)
 from functions import (
     commands as cmd,
     general_functions as g_fun)
 
 
- #if (db.students.find_one() and db.activities.find_one()) else False
+# if (db.students_file.find_one() and db.activities.find_one()) else False
 
 def main():
     """ Inicializa el bot.
@@ -35,6 +39,11 @@ def main():
     # Comandos
     dp.add_handler(CmdHandler("start", cmd.start))
     dp.add_handler(CQHandler(cmd.press_button))
+    dp.add_handler(MsgHandler(
+        (~Filters.command) & (~Filters.status_update),
+        g_fun.received_message))
+    dp.add_handler(CmdHandler('check_email',cmd.check_email))
+    dp.add_handler(CmdHandler("change_language", cmd.change_language))
 
     # Carga la configuración inicial
     g_fun.basic_setup()
@@ -45,7 +54,6 @@ def main():
         format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level = logging.INFO)
     print("Bot Cargado")
-    # Bloquear para que se ejecute hasta que pulse Ctrl-C o error
     updater.idle()
 
 if __name__ == '__main__':

@@ -1,0 +1,6 @@
+_id;name;section;type;period;week;weight
+T1_GLOSARIO;Glosario T1;Tema 1;actividad;septiembre;1.0;0.003333333
+T1_CUESTIONARIO;Cuestionario T1;Tema 1;actividad;septiembre;2.0;0.003333333
+T1_PROBLEMAS;Relación de problemas: cómputo;Tema 1;actividad;septiembre;2.0;0.003333333
+T1_EJERCICIOS_CAPSULAS;Valida los ejercicios Capsulas 1 y 2;Tema 1;actividad;octubre;3.0;0.003333333
+PRUEBA_1;Prueba 1;Tema 1;evaluaci½n;septiembre;5.0;0.1

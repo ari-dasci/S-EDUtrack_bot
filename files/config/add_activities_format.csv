@@ -1,0 +1,15 @@
+_id,name,section,week,weight
+T1_GLOSARIO,Glosario T1,TEMA 1,3,0.00384615384615385
+T1_CAPSULA_2,Capsula 2 - Relación hardware y software,TEMA 1,3,0.0
+PRA_GUION_P2,Guiones de prácticas: Practica 2,PRACTICAS,4,0.0
+T1_PROBLEMAS_COMPUTO,Relación de problemas: cómputo,TEMA 1,4,0.0
+T1_VALIDA_EJERCICIOS_CAPSULA_1_2,Valida los ejercicios Capsulas 1 y 2,TEMA 1,4,0.00384615384615385
+T1_CAPSULA_3,Capsula 3 - Software libre y licencias CC,TEMA 1,4,0.0
+PRA_GUION_P3,Guiones de prácticas: Practica 3,PRACTICAS,5,0.0
+T1_CUESTIONARIO,Cuestionario T1,TEMA 1,5,0.00384615384615385
+T2_LECTURAS_INTRO_SO,Lecturas Introducción a los SO,TEMA 2,5,0.0
+T2_TRANSPARENCIAS_SO,Transparencias Introducción a los SO,TEMA 2,5,0.0
+T2_CAPSULA_4,Capsula 4 - Funciones del SO ,TEMA 2,5,0.0
+PRA_GUION_P4,Guiones de prácticas: Practica 4,PRACTICAS,6,0.0
+T2_PROYECTO,Proyecto: clasificando SO existentes,TEMA 2,6,0.00384615384615385
+T2_DEBATE,Debate: seguridad en los SO,TEMA 2,6,0.00384615384615385
