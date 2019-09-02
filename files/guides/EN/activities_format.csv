@@ -1,0 +1,13 @@
+_id,name,section,week,weight
+T1_GLOSARIO,Glosario T1,Tema 1,1,0.003333333
+T1_CUESTIONARIO,Cuestionario T1,Tema 1,2,0.003333333
+T2_PROBLEMAS,Relación de problemas: cómputo,Tema 2,2,0.003333333
+T2_EJERCICIOS_CAPSULAS,Valida los ejercicios Capsulas 1 y 2,Tema 2,3,0.003333333
+PRUEBA_1,Prueba 1,Examenes,4,0.1
+
+
+Notes:
+The decimal separator is the dot '.'
+The number of weeks must not exceed 15.
+At the end the sum of the weights of all activities should be 1.
+Delete all note lines.

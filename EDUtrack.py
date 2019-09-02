@@ -1,9 +1,10 @@
 import telegram
 from telegram.ext import (
     Updater,
-    CommandHandler as CmdHandler,
-    CallbackQueryHandler as CQHandler,
-    MessageHandler as MsgHandler,
+    CommandHandler as Cmd_Hdl,
+    CallbackQueryHandler as CQ_Hdl,
+    MessageHandler as Msg_Hdl,
+    ConversationHandler as Conv_Hdl,
     Filters)
 import logging
 import configuration.config_file as cfg
@@ -37,16 +38,42 @@ def main():
     dp = updater.dispatcher
 
     # Comandos
-    dp.add_handler(CmdHandler("start", cmd.start))
-    dp.add_handler(CQHandler(cmd.press_button))
-    dp.add_handler(MsgHandler(
+    dp.add_handler(Cmd_Hdl("start", cmd.start))
+    dp.add_handler(CQ_Hdl(cmd.press_button))
+    dp.add_handler(Msg_Hdl(
         (~Filters.command) & (~Filters.status_update),
         g_fun.received_message))
-    dp.add_handler(CmdHandler('check_email',cmd.check_email))
-    dp.add_handler(CmdHandler("change_language", cmd.change_language))
+    dp.add_handler(Cmd_Hdl('check_email',cmd.check_email))
+    dp.add_handler(Cmd_Hdl("change_language", cmd.change_language))
+    dp.add_handler(Cmd_Hdl("menu",cmd.menu))
+    dp.add_handler(Cmd_Hdl("grade_students",cmd.grade_students,pass_args=True))
+    dp.add_handler(Conv_Hdl(
+      entry_points = [Cmd_Hdl('add_activity',add_activity,pass_user_data=True),
+                      Cmd_Hdl('add_student', add_student, pass_user_data=True)],
+
+      states={
+        NAME: [
+          Msg_Hdl(Filters.text, add_activity_name, pass_user_data=True)],
+        SECTION: [
+          Msg_Hdl(Filters.text, add_activity_section, pass_user_data=True)],
+        WEEK: [
+          Msg_Hdl(Filters.text, add_activity_week, pass_user_data=True)],
+        WEIGHT: [
+          Msg_Hdl(Filters.text ,add_activity_weight, pass_user_data=True)],
+        SAVE: [
+          Msg_Hdl(Filters.text, add_activity_save, pass_user_data=True)],
+        
+        
+        
+        STUDENT_NAME: [
+          Msg_Hdl(Filters.text, add_student_name, pass_user_data=True)]
+      },
+      fallbacks=[
+        Cmd_Hdl('cancel',cancel)]
+    ))
 
     # Carga la configuración inicial
-    g_fun.basic_setup()
+    g_fun.basic_setup(my_bot)
 
     updater.start_polling()
 

@@ -1,12 +1,13 @@
 _id,first_name,last_name,username,planet
-escribeleaqui@correo.ugr.es,Burrito,Tierno,Jeovani_Morales,
+escribeleaqui@correo.ugr.es,Burrito,Tierno,Jeovani_Morales,Mercurio
 ,,,,
 ,,,,
 jeovani@correo.ugr.es,Jeovani Marcos,Morales Nieto,,
 ,,,,
 ,,,,
 ,,,,
-fake@correo.ugr.es,Nombre,Falso Apellido,creasick_fake,Tierra
+fake@correo.ugr.es,Nombre,Falso Apellido,,
+,,,,
 ,,,,
 email@a.com1,nombre1,apellido apellido 1,,
 email@a.com10,nombre10,apellido apellido 10,,

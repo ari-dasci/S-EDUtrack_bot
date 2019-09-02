@@ -13,6 +13,7 @@ pymongo = "*"
 dnspython = "*"
 pandas = "*"
 sys = "*"
+arrow = "*"
 
 [requires]
 python_version = "3.7"
