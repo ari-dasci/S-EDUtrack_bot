@@ -1,0 +1,10 @@
+_id,first_name,last_name,username,planet
+jesusguejar@correo.ugr.es,JESUS,ALVAREZ FERNANDEZ,,
+ignacioalla@correo.ugr.es,IGNACIO ANTONIO,MENDEZ LAMOLDA,,
+jaimealvarez@correo.ugr.es,JAIME ARTURO,SANCHEZ ORGAZ,,
+
+Notas:
+El _id debe ser el email del estudiante.
+Las columnas username y planet pueden estar vacías pero deben estar.
+Si la columna username esta vacía. Se le pedirá al estudiante su correo para el registro (debe conincidir con el de esta lista).
+Borrar las todas las filas de notas.,,,,
