@@ -6,11 +6,11 @@ def welcome_text(context, language, start_cmd=False):
   if language == "ES":
     if not start_cmd:
       text = "Hemos terminado de configurar la asignatura.\n\n"
-    return f"{text}Bienvenido al asistente EDUtrack <b>{bot_username}</b>. Te ayudaré en esta asignatura manteniendote informado de los estudiantes que están en riesgo de fracaso escolar de forma semanal.\nAdemás de llevar un control sobre los mensajes de los estudiantes, te proporcionaré reportes sobre las evaluaciones que los estudiantes pueden realizar con EDUtrack en la asignatura. Escribe el comando /menu para ver las opciones con las que podemos trabajar juntos."
+    return f"{text}Bienvenido al asistente EDUtrack <b>{bot_username}</b>. Te ayudaré en esta asignatura manteniendote informado de los estudiantes que están en riesgo de fracaso escolar de forma semanal.\n\nAdemás de llevar un control sobre los mensajes de los estudiantes, te proporcionaré reportes sobre las evaluaciones que los estudiantes pueden realizar con EDUtrack en la asignatura.\nEstos son los comandos básicos:\n\n/menu\n Te mostraré las opciones con las que podemos trabajar juntos.\n\n/change_language\nTe ayudaré a cambiar el idioma en que te muestro los contenidos. Las opciones actuales son Inglés y Español.\n\n/help\nTe mostraré los comandos que puedes utilizar y la descripción de cada apartado del menú. También podrás acceder al manual de usuario."
   else:
     if not start_cmd:
       text = "We've finished configuring the subject.\n\n"
-    return f"{text}Welcome to the assistant EDUtrack <b>{bot_username}</b>. I will help you in this subject by keeping you informed of students who are at risk of school failure on a weekly basis.\nIn addition to keeping track of student messages, I will provide you with reports on the assessments that students can make with EDUtrack in the subject. Type the /menu command to see the options we can work with together."
+    return f"{text}Welcome to the assistant EDUtrack <b>{bot_username}</b>. I will help you in this subject by keeping you informed of students who are at risk of school failure on a weekly basis.\n\nIn addition to keeping track of student messages, I will provide you with reports on the assessments that students can make with EDUtrack in the subject. These are the basic commands\n\n/menu\nI'll show you the options we can work with together.\n\n/change_language\nI'll help you to change the language in which I show you the contents. The current options are English and Spanish.\n\n/help\nI'll show you the commands you can use and the description of each menu item. You can also access the user manual."
 
 welcome_short_text ={
   "ES" : "Escribe el comando /menu para ver las opciones con las que podemos trabajar.",
@@ -125,275 +125,277 @@ def teacher_message_registration_error_text(context, language, user):
     return f"A user has tried to use the bot {bot_username} but his username is not in the database or is not registered among the students.\nID: {user['_id']}\nTelegram_name: {user['telegram_name']}\nNickname: @{user['username']}\n\nThe user was asked to enter his/her email for registration or to contact the teacher."
 
 
+def meeting(language, action, meeting_num="",active =""):
+  if language == "ES":
+    if action == "active":
+      return f"No se puede iniciar otro meeting, actualmente está activo el meeting {meeting_num} en este planeta. Para iniciar otro primero debes finalizar el actual con el texto:\n == fin de meeting {meeting_num}."
+    elif action == "no_number":
+      if meeting_num:
+        return f"<b>Meeting {meeting_num} activo.</b>\nPara iniciar o finalizar un meeting se debe escribir el número de meeting."
+      else:
+        return f"Para iniciar o finalizar un meeting se debe escribir el número de meeting."
+    elif action == "finish_no_active":
+      return f"El meeting actualmente activo es el meeting {meeting_num}. Meeting no finalizado."
+    elif action == "none_active":
+      return f"No hay ningún meeting activo."
+  else:
+    if action == "active":
+      return f"Cannot start another meeting, currently meeting {meeting_num} is active on this planet. To start another first you must end the current one with the text:\n == end of meeting {meeting_num}."
+    elif action == "no_number":
+      if meeting_num:
+        return f"<b>Meeting {meeting_num} active.</b>\nTo start or finish a meeting you must write the meeting number."
+      else:
+        return f"To start or finish a meeting you must write the meeting number."
+    elif action == "no_active":
+      return f"The currently active meeting is the meeting {meeting_num}. Meeting not finished."
+    elif action == "none_active":
+      return f"There is no active meeting."
+
 ### Menu ###
-menu_opt ={
-  "ES" : [
-        [IKButton("Opciones academicas",
-            callback_data='t_menu-academic')],
-        [IKButton("Comunicación virtual",
-            callback_data='t_menu-vc')],
-        [IKButton("Configurar asignatura",
-            callback_data="t_menu-config")],
-        [IKButton("Mensajes",
-            callback_data='t_menu-msg')]#,
-        #[IKButton("Cambiar Docente/Estudiante",
-        #callback_data='t_menu-change')]
-    ],
+menu = {
+  "ES" : {
+    "opt" : [
+          [IKButton("Opciones academicas",
+              callback_data='t_menu-academic')],
+          [IKButton("Comunicación virtual",
+              callback_data='t_menu-vc')],
+          [IKButton("Configurar asignatura",
+              callback_data="t_menu-config")],
+          [IKButton("Mensajes",
+              callback_data='t_menu-msg')]#,
+          #[IKButton("Cambiar Docente/Estudiante",
+          #callback_data='t_menu-change')]
+      ],
+    "text" : '<b>MENU DOCENTE</b>\nSelecciona una opción:'
+    },
   
-  "EN" : [
-        [IKButton("Academic Options",
-            callback_data='t_menu-academic')],
-        [IKButton("Virtual Communication",
-            callback_data='t_menu-vc')],
-        [IKButton("Configure Subject",
-            callback_data="t_menu-config")],
-        [IKButton("Messages",
-            callback_data='t_menu-msg')]#,
-        #[IKButton("Cambiar Docente/Estudiante",
-        #callback_data='t_menu-change')]
-    ]
+  "EN" : {
+    "opt" :[
+          [IKButton("Academic Options",
+              callback_data='t_menu-academic')],
+          [IKButton("Virtual Communication",
+              callback_data='t_menu-vc')],
+          [IKButton("Configure Subject",
+              callback_data="t_menu-config")],
+          [IKButton("Messages",
+              callback_data='t_menu-msg')]#,
+          #[IKButton("Cambiar Docente/Estudiante",
+          #callback_data='t_menu-change')]
+      ],
+    "text" : '<b>TEACHER MENU</b>\nSelect an option:'}
 }
 
-menu_text = {
-  "ES" : '<b>MENU DOCENTE</b>\nSelecciona una opción:',
-  
-  "EN" : '<b>TEACHER MENU</b>\nSelect an option:'
-}
 
 ### Menu: Academic ###
-menu_academic_opt = {
-  "ES" : [
-    [IKButton("Actividades",
-        callback_data='t_menu-academic-act')],
-    [IKButton("Calificaciones y FRA",
-        callback_data='t_menu-academic-grades')],
-    [IKButton("Estudiantes",
-        callback_data='t_menu-academic-stu')],
-    [IKButton("Regresar",
-        callback_data='t_menu-tea_back')]
-  ],
+menu_academic = {
+  "ES" : {
+    "opt" : [
+      [IKButton("Actividades",
+          callback_data='t_menu-academic-act')],
+      [IKButton("Calificaciones y FRA",
+          callback_data='t_menu-academic-grades')],
+      [IKButton("Estudiantes",
+          callback_data='t_menu-academic-stu')],
+      [IKButton("Regresar",
+          callback_data='t_menu-back')]
+    ],
+    "text" : '<b>OPCIONES ACADEMICAS</b>\nSelecciona una opción:'
+    },
   
-  "EN" : [
-    [IKButton("Activities",
-        callback_data='t_menu-academic-act')],
-    [IKButton("Grades and ARF",
-        callback_data='t_menu-academic-grades')],
-    [IKButton("Students",
-        callback_data='t_menu-academic-stu')],
-    [IKButton("Back",
-        callback_data='t_menu-tea_back')]
-  ]
+  "EN" : {
+    "opt" : [
+      [IKButton("Activities",
+          callback_data='t_menu-academic-act')],
+      [IKButton("Grades and ARF",
+          callback_data='t_menu-academic-grades')],
+      [IKButton("Students",
+          callback_data='t_menu-academic-stu')],
+      [IKButton("Back",
+          callback_data='t_menu-back')]
+    ],
+    "text" : '<b>ACADEMIC OPTIONS</b>\nSelect an option:'}
 }
 
-menu_academic_text ={
-  "ES" : '<b>OPCIONES ACADEMICAS</b>\nSelecciona una opción:',
-  
-  "EN" : '<b>ACADEMIC OPTIONS</b>\nSelect an option:'
-}
 
 ### Menu: Academic - Activities ###
-menu_academic_act_opt = {
-  "ES" : [
-    [IKButton("Ver Lista",
-        callback_data='t_menu-academic-act-view'),
-    IKButton("Calificar",
-        callback_data='t_menu-academic-act-grade')],
-    [IKButton("Agregar ",
-        callback_data='t_menu-academic-act-add'),
-    IKButton("Modificar",
-        callback_data='t_menu-academic-act-modify')],
-    [IKButton("Eliminar",
-        callback_data='t_menu-academic-act-delete'),
-    IKButton("Regresar",
-        callback_data='t_menu-academic')]
-
-  ],
+menu_academic_act = {
+  "ES" : {
+  "opt" : [
+      [IKButton("Ver Lista",
+          callback_data='t_menu-academic-act-view'),
+      IKButton("Calificar",
+          callback_data='t_menu-academic-act-grade')],
+      [IKButton("Agregar ",
+          callback_data='t_menu-academic-act-add'),
+      IKButton("Modificar",
+          callback_data='t_menu-academic-act-modify')],
+      [IKButton("Eliminar",
+          callback_data='t_menu-academic-act-delete'),
+      IKButton("Regresar",
+          callback_data='t_menu-academic')]
+      ],
+  "text" : '<b>ACTIVIDADES</b>\nSelecciona una opción:'
+  },
   
-  "EN" : [
-    [IKButton("View List",
-        callback_data='t_menu-academic-act-view')],
-    [IKButton("Grade",
-        callback_data='t_menu-academic-act-grade'),
-    IKButton("Add",
-        callback_data='t_menu-academic-act-add')],
-    [IKButton("Modify",
-        callback_data='t_menu-academic-act-modify'),
-    IKButton("Delete",
-        callback_data='t_menu-academic-act-delete')],
-    [IKButton("Back",
-        callback_data='t_menu-academic')]
-  ]
+  "EN" : {
+    "opt" : [
+      [IKButton("View List",
+          callback_data='t_menu-academic-act-view')],
+      [IKButton("Grade",
+          callback_data='t_menu-academic-act-grade'),
+      IKButton("Add",
+          callback_data='t_menu-academic-act-add')],
+      [IKButton("Modify",
+          callback_data='t_menu-academic-act-modify'),
+      IKButton("Delete",
+          callback_data='t_menu-academic-act-delete')],
+      [IKButton("Back",
+          callback_data='t_menu-academic')]
+      ],
+    "text" : '<b>ACTIVITIES</b>\nSelect an option:'}
 }
 
-menu_academic_act_text = {
-  "ES" : '<b>ACTIVIDADES</b>\nSelecciona una opción:',
-  
-  "EN" : '<b>ACTIVITIES</b>\nSelect an option:' 
-}
 
 
 ### Menu: Academic - Activities - List###
 
-menu_academic_act_view_opt = {
-  "ES" : [
-    [IKButton("Todas las Actividades",
-        callback_data='t_menu-academic-act-view-all')],
-    [IKButton("Actividades Calificables",
-        callback_data='t_menu-academic-act-view-qualifying')],
-    [IKButton("Regresar",
-        callback_data='t_menu-academic-act')]
-  ],
+menu_academic_act_view = {
+  "ES" : {
+    "opt" : [
+        [IKButton("Todas las Actividades",
+            callback_data='t_menu-academic-act-view-all')],
+        [IKButton("Actividades Calificables",
+            callback_data='t_menu-academic-act-view-qualifying')],
+        [IKButton("Regresar",
+            callback_data='t_menu-academic-act')]
+      ],
+    "text" : "<b>VER LISTA DE ACTIVIDADES</b>\nSelecciona una opción:",
+    "not_file" : "<b>VER LISTA DE ACTIVIDADES</b>\nNo se pudo crear el archivo de actividades."
+    },
   
-  "EN" : [
-    [IKButton("All Activities",
-        callback_data='t_menu-academic-act-view-all')],
-    [IKButton("Qualifying Activities",
-        callback_data='t_menu-academic-act-view-qualifying')],
-    [IKButton("Back",
-        callback_data='t_menu-academic-act')]
-  ]
-}
-
-menu_academic_act_view_text = {
-  "ES" : "<b>VER LISTA DE ACTIVIDADES</b>\nSelecciona una opción:",
-  
-  "EN" : "<b>VIEW ACTIVITIES LIST</b>\nSelect an option:"
-}
-
-menu_academic_act_view_not_file = {
- "ES" : "<b>VER LISTA DE ACTIVIDADES</b>\nNo se pudo crear el archivo de actividades.",
-  
-  "EN" : "<b>VIEW ACTIVITIES LIST</b>\nThe activities file couldn't be created."
-}
+  "EN" : {
+    "opt" : [
+        [IKButton("All Activities",
+            callback_data='t_menu-academic-act-view-all')],
+        [IKButton("Qualifying Activities",
+            callback_data='t_menu-academic-act-view-qualifying')],
+        [IKButton("Back",
+            callback_data='t_menu-academic-act')]
+      ],
+    "text" : "<b>VIEW ACTIVITIES LIST</b>\nSelect an option:",
+    "not_file" : "<b>VIEW ACTIVITIES LIST</b>\nThe activities file couldn't be created."
+    }
+  }
 
 
 ### Menu: Academic - Activities - Grade ###
-menu_academic_act_grade_opt = {
-  "ES" : [
-    [IKButton("Subir archivo",
-        callback_data='t_menu-academic-act-grade-upload')],
-    [IKButton("Utilizar comando",
-        callback_data='t_menu-academic-act-grade-cmd')],
-    [IKButton("Regresar",
-        callback_data='t_menu-academic-act')]
-  ],
+menu_academic_act_grade = {
+  "ES" : {
+    "opt" : [
+      [IKButton("Subir archivo",
+          callback_data='t_menu-academic-act-grade-upload')],
+      [IKButton("Utilizar comando",
+          callback_data='t_menu-academic-act-grade-cmd')],
+      [IKButton("Regresar",
+          callback_data='t_menu-academic-act')]
+      ],
+    "text": "<b>CALIFICAR</b>\nSelecciona una opción:",
+    "upload" :  "Descarga este archivo como base para crear el archivo de calificaciones. Subelo con el mismo nombre para cargar las calificaciones.",
+    "cmd" : "*CALIFICAR ACTIVIDAD*\nEscribe el comando\n/grade`_`activity <id actividad> <email estudiante> <calificación>;\n\nCada estudiante debe separarse con el signo punto y coma ';'\n\nEjemplo:\n/grade`_`activity Prueba`_`1\nejemplo@correo.ugr.es 8.5;\nejemplo2@gmail.es 9.6;\nejemplo3@hotmail.es 9"
+    },
   
-  "EN" : [
-    [IKButton("Upload File",
-        callback_data='t_menu-academic-act-grade-upload')],
-    [IKButton("Use Command",
-        callback_data='t_menu-academic-act-grade-cmd')],
-    [IKButton("Regresar",
-        callback_data='t_menu-academic-act')]
-  ]
+  "EN" : {
+    "opt" : [
+      [IKButton("Upload File",
+          callback_data='t_menu-academic-act-grade-upload')],
+      [IKButton("Use Command",
+          callback_data='t_menu-academic-act-grade-cmd')],
+      [IKButton("Regresar",
+          callback_data='t_menu-academic-act')]
+      ],
+    "text" : "<b>GRADE</b>\nSelect an option:",
+    "upload" : "Download this file as a basis for creating the grade file. Upload it with the same name to load the grades.",
+    "cmd" : "*GRADE ACTIVITY:*\nType the command\n/grade`_`activity <activity> <student email> <grade>;\n\nEach student must separate with the semicolon sign ';'\n\nExample:\n/grade`_`activity Test`_`1\nexample@correo.ugr.es 8.5;\nexample2@gmail.es 9.6;\nexample3@hotmail.es 9"
+    }
 }
 
-menu_academic_act_grade_text = {
-  "ES" : "<b>CALIFICAR</b>\nSelecciona una opción:",
-  
-  "EN" : "<b>EVALUATE</b>\nSelect an option:"
-}
 
-### Menu: Academic - Activities - Grade - Upload ###
-menu_academic_act_grade_upload_text = {
-  "ES" : "Descarga este archivo como base para crear el archivo de calificaciones. Subelo con el mismo nombre para cargar las calificaciones.",
-  
-  "EN" : "Download this file as a basis for creating the grade file. Upload it with the same name to load the grades."
-}
 
-### Menu: Academic - Activities - Grade - Cmd ###
-menu_academic_act_grade_cmd_text = {
-  "ES" : f"*CALIFICAR ACTIVIDAD*\nEscribe el comando\n/grade`_`students <id actividad> <email estudiante> <calificación>;\n\nCada estudiante debe separarse con el signo punto y coma ';'\n\nEjemplo:\n/grade`_`students Prueba`_`1 \nejemplo@correo.ugr.es 8.5;\nejemplo2@gmail.es 9.6;\nejemplo3@hotmail.es 9",
-  
-  "EN" : f"*EVALUATE ACTIVITY:*\nType the command\n/grade`_`students <activity> <student email> <grade>;\n\nEach student must separate with the semicolon sign ';'\n\nExample:\n/grade`_`students Test_1 \nexample@correo.ugr.es 8.5;\nexample2@gmail.es 9.6;\nexample3@hotmail.es 9"
-}
 
-grade_students_no_arguments = {
-  "ES" : f"El comando no tiene los argumentos necesarios.",
-  
-  "EN" : f"The command doesn't have the necessary arguments."
-}
-
-grade_students_no_activities_qualifying = {
- "ES" : f"Aún no hay actividades calificables en la base de datos.",
-  
-  "EN" : f"There are still no qualifying activities in the database." 
-}
-
-def grade_students_unregistered_email(language, students):
+def grade_activity (language, action, students="", activity = "" ):
   if language == "ES":
-    if len(students.split("\n")) > 2:
-      return f"Los email de los estudiantes: {students}\n\nno se encuentran registrados."
-    else:
-      return f"El email del estudiante: {students}\n\nno se encuentra registrado."
-  else:
-    if len(students.split("\n")) > 2:
-      return f"The email of the students: {students}\n\nare not registered."
-    else:
-      return f"The student with the email: {students}\n\nis not registered"
-
-def grade_students_grading_error(language, students):
-  if language == "ES":
-    if len(students.split("\n")) > 2:
-      return f"La calificación de los estudiantes con el email: {students}\n\ndebe ser un numero entre 0 y 10. Su calificación no ha sido modificada."
-    else:  
-      return f"La calificación del estudiante con el email: {students}\n\ndebe ser un numero entre 0 y 10. Su calificación no ha sido modificada."
-  else:
-    if len(students.split("\n")) > 2:
-      return f"The grade of the students with the email: {students}\n\nmust be a number between 0 and 10. The grade has not been modified."
-    else:
-      return f"The grade of the student with the email {students}\n\nmust be a number between 0 and 10. The grade has not been modified."
-
-def grade_students_no_grade(language, students):
-  if language == "ES":
-    if len(students.split("\n")) > 2:
-      return f"Falta la calificación en los estudiantes con el email: {students}\n\nSu calificación no ha sido modificada."
-    else:
-      return f"Falta la calificación en el estudiante con el email: {students}\n\nSu calificación no ha sido modificada."
-  else:
-    if len(students.split("\n")) > 2:
-      return f"The grade is missing in the students with the email: {students}\n\nThe grade has not been modified."
-    else:  
-      return f"Student's grade is missing with email: {students}\n\nYour grade has not been modified."
-
-grade_student_no_students ={
-  'ES' : "Debes agregar por lo menos un estudiante para calificar.",
-  'EN' : "You must add at least one student to qualify."
-}
-
-def grade_students_unregistered_activity(language, activity):
-  if language == "ES":
+    if action == "no_arguments":
+      return f"El comando no tiene los argumentos necesarios."
+    elif action == "no_activities_qualifying":
+      return f"Aún no hay actividades calificables en la base de datos."
+    elif action == "unregistered_email":
+      if len(students.split("\n")) > 2:
+        return  f"Los email de los estudiantes: {students}\n\nno se encuentran registrados."
+      else:
+        return f"El email del estudiante: {students}\n\nno se encuentra registrado."
+    elif action == "grading_error":
+      if len(students.split("\n")) > 2:
+        return  f"La calificación de los estudiantes con el email: {students}\n\ndebe ser un numero entre 0 y 10. Su calificación no ha sido modificada."
+      else:
+        return f"La calificación del estudiante con el email: {students}\n\ndebe ser un numero entre 0 y 10. Su calificación no ha sido modificada."
+    elif action == "no_grade":
+      if len(students.split("\n")) > 2:
+        return f"Falta la calificación en los estudiantes con el email: {students}\n\nSu calificación no ha sido modificada."
+      else:
+        return f"Falta la calificación en el estudiante con el email: {students}\n\nSu calificación no ha sido modificada."
+    elif action == "no_students":
+      return f"Debes agregar por lo menos un estudiante para calificar."
+    elif action == "unregistered_activity":
       return f"La actividad con el id <b>{activity}</b> no se encuentra registrada."
-  else:
+    elif action == "no_semicolon":
+      return f"Falto el signo punto y coma ';' despues del estudiante {students} por lo que no se registraron los estudiantes a partir de este."
+    elif action == "email_syntax_error":
+      if len(students.split("\n")) > 2:
+        return f"Hay un error de sintaxis en el email de los estudiantes: {students}\n\nSu calificación no ha sido modificada."
+      else:
+        return f"Hay un error de sintaxis en el email del estudiante: {students}\n\nSu calificación no ha sido modificada."
+    elif action == "successful_students":
+      if len(students.split("\n")) > 2:
+        return f"Se registraron correctamente las calificaciones de la actividad {activity} a los estudiantes:{students}"
+      else:
+        return f"Se registró correctamente la calificación de la actividad {activity} al estudiante: {students}"
+
+  elif language == "EN":
+    if action == "no_arguments":
+      return f"The command doesn't have the necessary arguments."
+    elif action == "no_activities_qualifying":
+      return f"There are still no qualifying activities in the database."
+    elif action == "unregistered_email":
+      if len(students.split("\n")) > 2:
+        return f"The email of the students: {students}\n\nare not registered."
+      else:
+        return f"The student with the email: {students}\n\nis not registered"
+    elif action == "grading_error":
+      if len(students.split("\n")) > 2:
+        return  f"The grade of the students with the email: {students}\n\nmust be a number between 0 and 10. The grade has not been modified."
+      else:
+        return f"The grade of the student with the email {students}\n\nmust be a number between 0 and 10. The grade has not been modified."
+    elif action == "no_grade":
+      if len(students.split("\n")) > 2:
+        return f"The grade is missing in the students with the email: {students}\n\nThe grade has not been modified."
+      else:  
+        return f"Student's grade is missing with email: {students}\n\nYour grade has not been modified."
+    elif action == "no_students":
+      return f"You must add at least one student to qualify."
+    elif action == "unregistered_activity":
       return f"The activity with id <b>{activity}</b> is not registered."
-
-def grade_students_no_semicolon(language, email):
-  if language == "ES":
-    return f"Falto el signo punto y coma ';' despues del estudiante {email} por lo que no se registraron los estudiantes a partir de este."
-  else:
-    return f"The semicolon sign ';' was missing after the student {email} so we did not register students starting from this."
-
-
-def grade_students_email_syntaxis_error(language, students):
-  if language == "ES":
-    if len(students.split("\n")) > 2:
-      return f"Hay un error de sintaxis en el email de los estudiantes: {students}\n\nSu calificación no ha sido modificada."
-    else:
-      return f"Hay un error de sintaxis en el email del estudiante: {students}\n\nSu calificación no ha sido modificada."
-  else:
-    if len(students.split("\n")) > 2:
-      return f"There is a syntax error in the students' email: {students}\n\nThe grade has not been modified."
-    else:  
-      return f"There is a syntax error in the student's email: {students}\n\nThe grade has not been modified."
-
-
-def grade_students_successful_students(language, activity, students):
-  if language == "ES":
-    return f"Se registraron correctamente las calificaciones de la actividad {activity} a los estudiantes:{students}"
-  else:
-    return f"{activity} activity grades were correctly registered for students:{students}."
-
-
+    elif action == "no_semicolon":
+      return f"The semicolon sign ';' was missing after the student {students} so we did not register students starting from this."
+    elif action == "email_syntax_error":
+      if len(students.split("\n")) > 2:
+        return f"There is a syntax error in the students' email: {students}\n\nThe grade has not been modified."
+      else:  
+        return f"There is a syntax error in the student's email: {students}\n\nThe grade has not been modified."
+    elif action == "successful_students":
+      if len(students.split("\n")) > 2:
+        return f"{activity} activity grades were correctly registered for students:{students}."
+      else:
+        return f"The grade of the activity {activity} was correctly registered to the student:{students}."
 
 
 ### Menu: Academic - Activities - Add ###
@@ -562,7 +564,7 @@ menu_academic_vc_opt = {
     #[IKButton("C.V. Por Meeting",
     #callback_data = 'vc-t_menu-meeting')],
     [IKButton("Regresar",
-        callback_data='tea_back-t_menu')]
+        callback_data='t_menu-back')]
   ],
   
   "EN" : [
@@ -575,7 +577,7 @@ menu_academic_vc_opt = {
     #[IKButton("Meeting Analytics",
     #callback_data = 'vc-t_menu-meeting')],
     [IKButton("Regresar",
-        callback_data='tea_back-t_menu')]
+        callback_data='t_menu-back')]
   ]
 }
 
@@ -630,3 +632,32 @@ menu_messages_text ={
 }
 
 
+add_activity ={
+  'ES' : {
+    "_id" : "AGREGAR ACTIVIDAD:\n\nA continuación deberás escribir la siguiente información de la actividad:\n\nID\nNombre\nSección\nSemana\nPeso\n\nPuedes cancelar este proceso escribiendo el comando /cancel en cualquier momento.\n\nIniciemos escribiendo el Id de la actividad:",
+    
+    "name": "Escribe el nombre de la actividad:",
+
+    "section" : "Muy bien, ahora escribe la sección:",
+
+    "week" : "¿A que semana pertenece la actividad?\n(Debe ser un número entero)",
+
+    "weight" : "¿Cuál es el peso de esta actividad?",
+
+    "save" : "Se agregó la actividad con éxito."
+  },
+
+  'EN' : {
+    '_id' : "ADD ACTIVITY:\n\nNext, you must write the following information about the activity:\n\nID\nName\nSection\nWeek\nWeight\n\nYou can cancel this process by typing the /cancel command at any time.\n\nLet's start by typing the activity ID :",
+
+    "name": "Enter the activity name:",
+
+    "section" : "All right, now write the section:",
+
+    "week" : "What week does the activity belong to? (Must be a whole number)",
+
+    "weight" : "What is the weight of this activity?",
+
+    "save" : "Successful activity was added."
+  }
+}

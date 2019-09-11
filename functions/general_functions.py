@@ -11,8 +11,7 @@ from telegram import (
   InlineKeyboardMarkup as IKMarkup)
 import configuration.config_file as cfg
 from configuration.config_file import (
-  db, client,
-  meeting)
+  db, client)
 from dictionaries import (
   general_dict_lang as g_lang,
   teacher_dict_lang as tea_lang,
@@ -29,7 +28,6 @@ def basic_setup(bot):
   - Crea la colección de docente.
   - Crea los directorios necesarios.
   """
-  print(bot)
   try:
     if not db.teachers.find_one():
       db.teachers.insert_one(cfg.teacher_data)
@@ -49,7 +47,7 @@ def basic_setup(bot):
       
 
     if db.activities.find_one():
-      cfg.activities_sections = set(db.activities.find().distinct('section'))
+      #cfg.activities_sections = set(db.activities.find().distinct('section'))
       cfg.uploaded_activities = set(db.activities.find().distinct('_id'))
       cfg.qualifying_activities = set(db.activities.find({'weight':{'$gt':0}}).distinct('_id'))
       cfg.active_activities = set(db.activities.find({'active':True}).distinct('_id'))
@@ -57,15 +55,28 @@ def basic_setup(bot):
       max_week = max(db.activities.find().distinct('week'))
       for i in range(1,max_week+1):
         if i < 10:
-          cfg.weeks_array.append("w_0"+str(i))
+          cfg.weeks_array.append("week_0"+str(i))
         else:
-          cfg.weeks_array.append("w_"+str(i))
-      print(cfg.weeks_array)
-      
+          cfg.weeks_array.append("week_"+str(i))
 
+      cfg.created_planets = set(db.eva_collaboration.find().distinct('_id'))
+      
+      planet_meetings = db.eva_vc_meetings.find()
+    
+      for planet in planet_meetings:
+        members = set(planet['members'])
+        cfg.active_meetings.update({planet['_id']:{'users':members,'meeting':""}})
+    
+    start_date = arrow.get(cfg.start_date, 'DD-MM-YYYY')
+    day = start_date.format('dddd')
+    if day == 'Monday':
+      cfg.monday_start_week = start_date
+    else:
+      for i in range(7):
+        cfg.monday_start_week = start_date.shift(days=-i)
+        day = start_date.shift(days=-i).format('dddd') 
+        if day =='Monday': break
 
-      
-      
     """
     if not db.data_arrays.find_one({'_id':bot.username}):
         db.data_arrays.insert_one({
@@ -87,13 +98,10 @@ def basic_setup(bot):
       cfg.weeks_array = db.data_arrays.find_one({'_id':bot.username})['weeks_array']
       cfg.meetings_array = db.data_arrays.find_one({'_id':bot.username})['meetings_array']
       cfg.teacher_criteria = db.data_arrays.find_one({'_id':bot.username})['teacher_criteria']
-    # print("Se termino de crear los arreglos")
+    #print("Se termino de crear los arreglos")
       """
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
 
 
 def send_Msg(context, chat_id, text, mode='HTML', query=""):
@@ -116,10 +124,7 @@ def send_Msg(context, chat_id, text, mode='HTML', query=""):
         text = text,
         reply_markup = reply_markup)
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
 
 
 def show_menu(query, menu_opt, menu_text):
@@ -131,32 +136,26 @@ def show_menu(query, menu_opt, menu_text):
           text = menu_text,
           reply_markup = reply_markup)
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
 
 
 def strip_accents(string):
   """Recibe un string y elimina los acentos y lo devuelve en mayúsculas."""
-  # print("CHECK GFUN ENTRO A STRIP ACCENTS")
+  #print("CHECK GFUN *** ENTRO A STRIP ACCENTS ***")
   try:
     string = re.sub(r"([^n\u0300-\u036f]|n(?!\u0303(?![\u0300-\u036f])))[\u0300-\u036f]+",
             r"\1", normalize("NFD", string), 0, re.I)
     string = normalize('NFC', string)
     return string.upper()
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
 
 
 def get_user_data(update, language=""):
   """Obtiene los datos de un usuario y verifica si hay cambios en sus datos de Telegram. Devuelve un diccionario con los datos del Usuario: {id, telegram_name, username, planet, is_teacher, language}.
 
   """
-  # print("CHECK GFUN GET USER DATA")
+  #print("CHECK GFUN *** GET USER DATA ***")
   try:
     chat_id = update._effective_chat.id
     user_data = update._effective_user
@@ -197,20 +196,21 @@ def get_user_data(update, language=""):
             text = g_lang.choice_language_text(user_first_name),
             reply_markup = reply_markup)
         return False
+      elif chat_id < 0:
+        user_id = update._effective_user.id
+        
+        return False
     if user != db.telegram_users.find_one({'_id': user['_id']}):
       db.telegram_users.save(user)
-    # print("~~~~~ USUARIO NUEVO",user)
+    #print("~~~~~ USUARIO NUEVO",user)
     return user
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
 
 
 def welcome(context, query, user):
   """EDUtrack da la bienvenida al usuario dependiendo de su perfil."""
-  # print("CHECK GFUN WELCOME")
+  #print("CHECK GFUN *** WELCOME ***")
   try:
     if user['is_teacher']:
       msg = tea_lang.welcome_text(context, user['language'],start_cmd=True)
@@ -220,10 +220,7 @@ def welcome(context, query, user):
       parse_mode='HTML',
       text=msg)
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
 
 
 def is_user_registered(update, context, user):
@@ -233,7 +230,7 @@ def is_user_registered(update, context, user):
   Retorna True si el usuario esta registrado de lo contrario intenta registrarlo.
 
   """
-  #  print("CHECK GFUN   ** ENTRO A IS USER REGISTER **\n")
+  #print("CHECK GFUN   ** ENTRO A IS USER REGISTER **\n")
   try:
     chat_id = update._effective_chat.id
 
@@ -285,7 +282,7 @@ def is_user_registered(update, context, user):
               return False
           else:
             send_Msg(context, user['_id'], 
-              stu_lang.check_email_registration_text[user['language']],
+              stu_lang.check_email(user['language'], "registration"),
               mode = "Markdown")
             for teacher in cfg.teacher_list:
               language = db.telegram_users.find_one(
@@ -296,18 +293,11 @@ def is_user_registered(update, context, user):
       else:
         send_Msg(context, chat_id,
         stu_lang.no_username_text[user['language']])
-
-
-        print(
-          "El usuario", user['_id'], "no tiene un username asociado a su cuenta de Telegram.")
         return False
 
       ###################################################
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
 
 
 def received_message(update, context):
@@ -316,7 +306,7 @@ def received_message(update, context):
 
   """
   try:
-    print("CHECK GFUN ** ENTRO A RECEIVED_MESSAGE **")
+    #print("CHECK GFUN ** ENTRO A RECEIVED_MESSAGE **")
     upm = update.message
     user = get_user_data(update)
     if not user:
@@ -326,19 +316,10 @@ def received_message(update, context):
       if cfg.is_config_files_set and not upm.document:
         if upm.chat_id < 0 and upm.text:
           if "== inicio de meeting" in upm.text:
-            meeting['active'] = True
-            meeting['planet'] = strip_accents(
-              upm.chat['title'])
-            meeting['number'] = "meeting_" + \
-              (upm.text).split(' ')[4]
-            meetings_array.append(meeting['number'])
-            print("______________________ ", upm.text,
-                                "del planeta", upm.chat['title'], "\n\n")
+            edu_fun.meetings(upm, context, user)
+            
           elif "== fin de meeting" in upm.text:
-            meeting['active'] = False
-            meeting['planet'] = ""
-            print("______________________SE FINALIZO EL MEETING ",
-                                upm.text, "del planeta", upm.chat['title'], "\n\n")
+            edu_fun.meetings(upm, context, user, "end")
         else:
           send_Msg(context, user['_id'],
           tea_lang.welcome_short_text[user['language']])
@@ -365,11 +346,8 @@ def received_message(update, context):
               user['language']))
             else:
               tea_fun.config_files_upload(update, context, user)
-              print("SALIO")
           else:
             tea_fun.config_files_upload(update, context, user)
-            print("SALIO")
-        # REVISAR DONDE VA
       else:
         if upm.chat_id > 0:
           send_Msg(
@@ -380,9 +358,7 @@ def received_message(update, context):
       if cfg.is_config_files_set:
         if is_user_registered(update, context, user):
           if upm.chat_id < 0:
-            edu_fun.reg_messages(upm, context, user)
-            if meeting['active']:
-              add_student_vc_meetings(user)
+            edu_fun.reg_messages(upm, user)
           else:
             send_Msg(context, user['_id'],
             stu_lang.welcome_short_text[user['language']])
@@ -390,19 +366,14 @@ def received_message(update, context):
         if update._effective_chat.id > 0:
           send_Msg(context, upm.chat_id,
           stu_lang.not_config_files_set_text(context, user['language']))
-    
-
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
 
 
 def csv_to_mongodb(update, context, user, collection, file,add_elements=False):
   """Recibe el path de un archivo ".csv" y almacena su contenido en la base de datos.    """
   try:
-    print("CHECK GFUN ** CSV TO MONGODB **")
+    #print("CHECK GFUN ** CSV TO MONGODB **")
     chat_id = update._effective_chat.id
     delete_blank_lines(file)
     df = pd.read_csv(file, sep=",")
@@ -442,25 +413,19 @@ def csv_to_mongodb(update, context, user, collection, file,add_elements=False):
       cfg.qualifying_activities = set(db.activities.find({'weight':{'$gt':0}}).distinct('_id'))
     return True
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
     return False
 
 
 def delete_blank_lines(file):
   """Recibe el path de un archivo ".csv" y elimina las líneas en blanco."""
-  print("CHECK GFUN DELETE BLANK LINES")
+  #print("CHECK GFUN *** DELETE BLANK LINES ***")
   try:
     df = pd.read_csv(file, sep=",")
     df.dropna(subset=['_id'], inplace=True)
     df.to_csv(file, sep=',', index=False)
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
 
 
 def remove_file(file):
@@ -468,34 +433,32 @@ def remove_file(file):
 
   """
   try:
-    print("CHECK GFUN REMOVE FILES")
     if os.path.isfile(file):
       os.remove(file)
     file = file[:-4] + ".html"
     if os.path.isfile(file):
       os.remove(file)
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
 
 
-def get_week():
-  today = arrow.utcnow()
-  start_date = arrow.get(cfg.start_date, 'DD-MM-YYYY')
-  day = start_date.format('dddd')
-  if day != 'Monday':
-    for i in range(7):
-      monday_week = start_date.shift(days=-i)
-      day = start_date.shift(days=-i).format('dddd') 
-      if day =='Monday':
-        break
-  diferencia = (today - monday_week)
-  actual_num_week = int(diferencia.days / 7)+1
-  if actual_num_week > 15:
-    actual_num_week = 15
-  return actual_num_week
+def get_week(action = "num"):
+  try:
+    today = arrow.utcnow()
+    difference = (today - cfg.monday_start_week)
+    actual_num_week = int(difference.days / 7)+1
+    if actual_num_week > 15:
+      actual_num_week = 15
+    
+    if action == "num":
+      return actual_num_week
+    elif action == "text":
+      if actual_num_week < 10:
+        return "week_0"+str(actual_num_week)
+      else:
+        return "week_"+str(actual_num_week)
+  except:
+    print_except(inspect.stack()[0][3])
 
 
 def mongo_to_csv_html(elements, file):
@@ -511,10 +474,7 @@ def mongo_to_csv_html(elements, file):
       html_file.write(df.to_html(justify='center'))
     return True
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    print_except(inspect.stack()[0][3])
     return False
 
 
@@ -525,119 +485,58 @@ def print_except(funcion):
       {sys.exc_info()[1]}\n**********\n")
 
 
-def risk_factor_one(email):
-  print("   ** ENTRO A RISK FACTOR ONE **", email)
+def get_risk_factor (user, email):
   try:
-    student_id = db.registered_students.find_one({'email':email})
-    print(student_id)
-    actual_num_week = get_week()
+    student = db.registered_students.find_one({'email':email})
 
-    if actual_num_week < 10:
-      actual_week = "week_0"+str(actual_num_week)
+    total_real_score_earned = db.grades.find_one({'_id':student['email']})['total_score']
+    max_actual_score = db.grades.find_one({'_id':student['email']})['max_actual_score']
+    remaining_score = cfg.max_final_score-max_actual_score
+    potencial_recovery_score = remaining_score + total_real_score_earned
+    normalized_prs = potencial_recovery_score/cfg.max_final_score
+    academic_risk_factor = (total_real_score_earned + (normalized_prs*remaining_score))/cfg.max_final_score
+
+    increment = (cfg.ideal_grading-cfg.min_score_to_pass)/5
+    lower_limit = cfg.min_score_to_pass/cfg.max_final_score
+    
+
+    if academic_risk_factor < lower_limit:
+        linguistic_arf = stu_lang.linguistic_arf[user['language']][ "irrecoverable"]
+    elif academic_risk_factor < lower_limit + increment:
+      linguistic_arf = stu_lang.linguistic_arf[user['language']]["very_critical"]
+    elif academic_risk_factor < lower_limit + (increment * 2):
+      linguistic_arf = stu_lang.linguistic_arf[user['language']]["critical"]
+    elif academic_risk_factor < lower_limit + (increment * 3):
+      linguistic_arf =stu_lang.linguistic_arf[user['language']]["moderate"]
+    elif academic_risk_factor < lower_limit + (increment * 4):
+      linguistic_arf = stu_lang.linguistic_arf[user['language']]["low"]
     else:
-      actual_week = "week_"+str(actual_num_week)
-    obtained_weight = 0
-    max_actual_score = 0
-    active_activities = db.activities.find({'active':True})
-    for activity in active_activities:
-      obtained_grade = float(db.grades.find_one({'_id':student_id})[activity['_id']])
-      weight = float(db.activities.find_one({'_id': activity['_id']})['weight'])
-      max_actual_score += weight
-      obtained_weight += (obtained_grade/10*weight)
-    #print("   CONTROL MAX SCORE",max_actual_score,"-- STUDENT SCORE",obtained_weight)
-    IC = 1-(obtained_weight/max_actual_score) if max_actual_score != 0 else 0
-    recovery_factor = (1-max_actual_score)+obtained_weight
-    #print("   CONTROL IC =",IC,"RECOVERY FACTOR",recovery_factor)
+      linguistic_arf = stu_lang.linguistic_arf[user['language']]["none"]
 
-    db.grades.update_one({'_id':student_id},{
-      '$set' : {
-        'total_score' : obtained_weight*10,
-        'max_actual_score' : max_actual_score*10
+    
+    actual_week = get_week(action = "text")
+    
+    student_arf_weekly = db.arf.find_one({'_id':student['_id']},{'_id':0,'weeks':1})['weeks']
+    student_arf_weekly[actual_week] = {
+      'total_real_score_earned': total_real_score_earned,
+      'max_actual_score ': max_actual_score,
+      'academic_risk_factor': academic_risk_factor,
+      'linguistic_arf': linguistic_arf,
+      'pot_recovery_score': potencial_recovery_score
       }
-    })
-
-    #print("\nObtained_grade:",obtained_weight,"Max_actual_score:",max_actual_score,"\nIC:",IC,"recovery_factor:",recovery_factor,"Semana actual:",actual_num_week)
-    #print("   CONTROL Semana Actual",actual_num_week)
-
-
-    gamma_IC = actual_num_week/15*recovery_factor
-    gamma_FR = 1-gamma_IC
-    #print("gamma_IC",gamma_IC,"gamm_FR",gamma_FR)
-    IC2 = (1-IC) * gamma_IC
-    FR2 = recovery_factor * gamma_FR
-    #print("\n\nIC",IC,"IC_real",IC2,"\nFR",recovery_factor,"FR_real",FR2)
-
-
-    risk_factor = IC2+FR2
-    #risk_factor = recovery_factor
-    #print("\nRISK_FACTOR", risk_factor)
-    if risk_factor < 0.5:
-      risk_factor_linguistic = "irrecuperable"
-    elif risk_factor < 0.6:
-      risk_factor_linguistic = "muy crítico"
-    elif risk_factor < 0.7:
-      risk_factor_linguistic = "crítico"
-    elif risk_factor < 0.8:
-      risk_factor_linguistic = "moderado"
-    elif risk_factor < 0.9:
-      risk_factor_linguistic = "bajo"
-    else:
-      risk_factor_linguistic = "ninguno"
-    #print("RISK_FACTOR", risk_factor_linguistic)
-    #print("_______________________________________________________________________________\n")
-    # Calificación Potencial de Recuperación
-    recovery_factor = round(recovery_factor*10, 1)
-    if not db.risk_factor.find_one({'_id': student_id}):
-      db.risk_factor.insert_one(
-        {'_id': student_id,
-        'risk_factor': round(risk_factor, 4),
-        'risk_factor_linguistic': risk_factor_linguistic,
-        'recovery_factor': recovery_factor
+    db.arf.update_one(
+      {'_id': student['_id']}, {
+        '$set' : {'weeks' : student_arf_weekly}
       })
-      # print("   Se registro el risk_factor del estudiante:",email)
-      db.weekly_srf.insert_one({
-        '_id':student_id,
-        actual_week:{
-          'risk_factor': round(risk_factor, 4),
-          'risk_factor_linguistic': risk_factor_linguistic,
-          'recovery_factor': recovery_factor
-      }})
-    else:
-      db.risk_factor.update_one(
-        {'_id': student_id},{
-          '$set':{
-            'risk_factor': round(risk_factor, 4),
-            'risk_factor_linguistic': risk_factor_linguistic,
-            'recovery_factor': recovery_factor
-      }})
-      db.weekly_srf.update_one({'_id':student_id},{
-        '$set':{
-          actual_week:{
-            'risk_factor': round(risk_factor, 4),
-            'risk_factor_linguistic': risk_factor_linguistic,
-            'recovery_factor': recovery_factor
-          }}},True)
-    #print("~~~~ RISK FACTOR: ",round(risk_factor, 4),"\n~~~~ LINGUISTIC: ",risk_factor_linguistic,"\n~~~~ RECOVERY FACTOR",recovery_factor)
-    #print("CONTROL FINALIZO RISK FACTOR ONE")
-    return True
-
-
   except:
-    print("****\n*** ERROR RISK FACTOR ONE\n****")
-    return False
+    print_except(inspect.stack()[0][3])
 
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__ == "__main__":
-  pass
-
+def get_resources():
+  num_week = get_week()
+  resources_data = db.activities.find({'week':{'$lte':num_week}})        
+  for resource in resources_data:
+    if not resource['section'] in cfg.resources:
+      cfg.resources[resource['section']] = {resource['_id']}
+    else:
+      cfg.resources[resource['section']].add(resource['_id'])
+  cfg.resources['week'] = num_week

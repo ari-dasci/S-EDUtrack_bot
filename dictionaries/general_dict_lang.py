@@ -62,5 +62,52 @@ files_ready_for_download ={
 }
 
 
+def scale_7(language, callback_data):
+  back_menu = '-'.join(callback_data.split('-')[:-1])
+  if language == "ES":
+    return [
+      [IKButton("Pésimo(a)",
+          callback_data = callback_data+'-s_0'),
+      IKButton("Muy malo(a)",
+          callback_data = callback_data+'-s_1'),
+      IKButton("Malo(a)",
+          callback_data = callback_data+'-s_2')],
+      [IKButton("Regular",
+          callback_data = callback_data+'-s_3')],
+      [IKButton("Bueno(a)",
+          callback_data = callback_data+'-s_4'),
+      IKButton("Muy bueno(a)",
+          callback_data = callback_data+'-s_5'),
+      IKButton("Excelente",
+          callback_data = callback_data+'-s_6')],
+      [IKButton("Regresar",
+          callback_data = back_menu)]
+      ]
+  else:
+
+    return [
+      [IKButton("Lousy",
+          callback_data = callback_data+'-s_0'),
+      IKButton("Very Bad",
+          callback_data = callback_data+'-s_1'),
+      IKButton("Bad",
+          callback_data = callback_data+'-s_2')],
+      [IKButton("Regular",
+          callback_data = callback_data+'-s_3')],
+      [IKButton("Good",
+          callback_data = callback_data+'-s_4'),
+      IKButton("Very Good",
+          callback_data = callback_data+'-s_5'),
+      IKButton("Excellent",
+          callback_data = callback_data+'-s_6')],
+      [IKButton("Back",
+          callback_data = back_menu)]
+      ]
+
+back_text ={
+  'ES' : "Regresar",
+  'EN' : "Back"
+}
+
 if __name__ == '__main__':
     pass

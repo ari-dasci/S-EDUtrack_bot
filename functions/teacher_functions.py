@@ -20,16 +20,15 @@ from dictionaries import (
   general_dict_lang as g_lang
 )
 
-def check_teacher(update, context):
+def check_teacher(update, context, user):
   try:
-    user = g_fun.get_user_data(update)
     chat_id = update._effective_chat.id
     if chat_id > 0:
       if user['is_teacher']:
         if cfg.is_config_files_set:
           return True
         else:
-          g.fun.send_Msg(context, chat_id,
+          g_fun.send_Msg(context, chat_id,
           tea_lang.not_config_files_set_text[user['language']])
           tea_fun.config_files_set(context, user)  
           return False
@@ -47,7 +46,7 @@ def config_files_set(context, user):
   """
   try:
 
-    print("CHECK TEA FUN *** CONFIG FILES SET ***")
+    #print("CHECK TEA FUN *** CONFIG FILES SET ***")
     if not db.students_file.find_one() and not db.activities.find_one():
       g_fun.send_Msg(context, user['_id'], 
       tea_lang.download_config_files_text[user['language']] )
@@ -63,10 +62,7 @@ def config_files_set(context, user):
         tea_lang.config_file_set_text ('activities', user['language']))
         config_files_send_document(context, user,'activities')
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    g_fun.print_except(inspect.stack()[0][3])
 
 
 def config_files_upload(update, context, user):
@@ -75,7 +71,7 @@ def config_files_upload(update, context, user):
 
   """
   try:
-    print("CHECK TEA FUN ** UPLOAD CONFIG FILES **")
+    #print("CHECK TEA FUN ** UPLOAD CONFIG FILES **")
     chat_id = update._effective_chat.id
     doc = update.message.document
     # print("CHECK   Se recibió el archivo:", doc)
@@ -104,15 +100,14 @@ def config_files_upload(update, context, user):
       if file_headers != set(cfg.students_headers_file):
         g_fun.send_Msg(context, user['_id'],
         tea_lang.error_file_headers_text(user['language'], cfg.students_headers_file))
-        students_format(context, user)
+        config_files_send_document(context, user, 'students')
         return False
       
     elif 'activities' in doc.file_name:
-      print(file_headers, set(cfg.activities_headers_file))
       if file_headers != set(cfg.activities_headers_file):
         g_fun.send_Msg(context, user['_id'],
         tea_lang.error_file_headers_text(user['language'], cfg.activities_headers_file))
-        activities_format(context, user)
+        config_files_send_document(context, user, 'activities')
         return False
     
     with open(f_save_name, "wb") as file: 
@@ -140,25 +135,24 @@ def config_files_upload(update, context, user):
         g_fun.send_Msg(context, user['_id'], tea_lang.config_files_ready_one_text[user['language']])
         config_files_set(context, user)
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    g_fun.print_except(inspect.stack()[0][3])
 
 
 def config_files_send_document(context, user, elements):
-  context.bot.sendDocument(
+  try:
+    context.bot.sendDocument(
     chat_id=user['_id'],
     document=open(
       tea_lang.config_files_send_document(user['language'], elements) , 'rb'))
+  except:
+    g_fun.print_except(inspect.stack()[0][3])
 
 
 def create_grades(update, context, user, add_elements=False):
   """Crea el apartado de calificaciones en la base de datos a partir deel archivo de estudiantes y actividades subidos por el docente.
   
-
   """
-  print("CHECK TEA FUN\n** CREATE GRADES **")
+  #print("CHECK TEA FUN\n** CREATE GRADES **")
   try:
     students = list(db.students_file.find({},{'_id':1}))
     activities = list(db.activities.find({'weight':{'$gt':0}}).distinct('_id'))
@@ -196,10 +190,7 @@ def create_grades(update, context, user, add_elements=False):
     return True
 
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    g_fun.print_except(inspect.stack()[0][3])
     return False
 
 
@@ -209,130 +200,160 @@ def menu(update, context, user):
   try:
     chat_id = update._effective_chat.id
     if cfg.is_config_files_set:
-        keyboard = tea_lang.menu_opt[user['language']]
+        keyboard = tea_lang.menu[user['language']]["opt"]
         reply_markup = IKMarkup(keyboard)
         update.message.reply_text(
               parse_mode = 'HTML',
-              text = tea_lang.menu_text[user['language']],
+              text = tea_lang.menu[user['language']]["text"],
               reply_markup = reply_markup)  
     else:
       g_fun.send_Msg(context, chat_id,
       stu_lang.not_config_files_set_text (context, user['language']))
   except:
-    print(f"\n**********\n\
-      ERROR IN FUNCTION {inspect.stack()[0][3]}\n\
-      {sys.exc_info()[0]}\n\
-      {sys.exc_info()[1]}\n**********\n")
+    g_fun.print_except(inspect.stack()[0][3])
 
 
 def view_activities(update, context, user, option, query=""):
-  if option == 'all':
-    file = 'files/download/all_activities.csv'
-    activities = db.activities.find()
-  else:
-    file = 'files/download/qualifying_activities.csv'
-    activities = db.activities.find({'weight':{'$gt':0}})
+  try:  
+    if option == 'all':
+      file = 'files/download/all_activities.csv'
+      activities = db.activities.find()
+    else:
+      file = 'files/download/qualifying_activities.csv'
+      activities = db.activities.find({'weight':{'$gt':0}})
 
-  if g_fun.mongo_to_csv_html('activities',file):
-    g_fun.send_Msg(context, user['_id'], 
-    g_lang.files_ready_for_download[user['language']],query=query)
-  else:
-    g_fun.send_Msg(context, user['_id'], tea_lang.menu_academic_act_view_not_file[user['language']])
+    if g_fun.mongo_to_csv_html('activities',file):
+      g_fun.send_Msg(context, user['_id'], 
+      g_lang.files_ready_for_download[user['language']],query=query)
+    else:
+      g_fun.send_Msg(context, user['_id'],
+      tea_lang.menu_academic_act_view[user['language']]["not_file"])
 
-  context.bot.sendDocument(chat_id=user['_id'], document=open(file, 'rb'))
-  context.bot.sendDocument(chat_id=user['_id'], document=open(file[:-4]+'.html', 'rb'))
+    context.bot.sendDocument(chat_id=user['_id'], document=open(file, 'rb'))
+    context.bot.sendDocument(chat_id=user['_id'], document=open(file[:-4]+'.html', 'rb'))
+  except:
+    g_fun.print_except(inspect.stack()[0][3])
 
 
-def grade_students(update, context, user, args):
+def grade_activity(update, context):
   """ Califica la actividad indicada a los estudiantes indicados """
-  print("\n** ENTRO A GRADE STUDENTS **",args)
+  #print("CHECK TEAFUN** ENTRO A GRADE STUDENTS **")
+  try:
+    user = g_fun.get_user_data(update)
+    if check_teacher(update, context, user):
+      args = context.args
+      if len(args) == 0:
+        g_fun.send_Msg(context, user['_id'],
+          tea_lang.grade_activity(user['language'], "no_arguments"))
+        g_fun.send_Msg(context, user['_id'],
+        
+        tea_lang.menu_academic_act_grade[user['language']]['cmd'],mode='Markdown')
+      else:
+          if cfg.qualifying_activities:
+            activity_id = args[0].upper()
+            #print("   ID_ACTIVIDAD", activity_id)
+            if activity_id in cfg.qualifying_activities:
+              students = " ".join(args[1:]).split(';')
+              if students[-1] == '':
+                students.remove('')
 
-  if len(args) == 0:
-    g_fun.send_Msg(context, user['_id'],
-    tea_lang.grade_students_no_arguments[user['language']])
-    g_fun.send_Msg(context, user['_id'],
-    tea_lang.menu_academic_act_eval_cmd_text[user['language']],mode='Markdown')
-  else:
-      if cfg.qualifying_activities:
-        activity_id = args[0].upper()
-        print("   ID_ACTIVIDAD", activity_id)
-        if activity_id in cfg.qualifying_activities:
-        #db.grades.find_one({'activities.'+activity_id: {"$exists":"true"}}):
-          students = " ".join(args[1:]).split(';')
-          if students[-1] == '':
-            students.remove('')
+              if students and students != ['']:
+                modified_students = ""
+                unregistered_students = ""
+                grade_error_students = ""
+                ungraded_students = ""
+                email_syntax_error_students = ""
 
-          if students and students != ['']:
-            modified_students = ""
-            unregistered_students = ""
-            grade_error = ""
-            ungraded_students = ""
-            email_syntax_error = ""
+                for student in students:
+                  datos = (student.strip(' ')).split(' ')
+                  email = datos[0]
+                  
+                  if re.match('^[(a-z0-9\_\-\.)]+@[(a-z0-9\_\-\.)]+\.[(a-z)]{2,15}$', email.lower()):
 
-            for student in students:
-              datos = (student.strip(' ')).split(' ')
-              email = datos[0]
-              
-              if re.match('^[(a-z0-9\_\-\.)]+@[(a-z0-9\_\-\.)]+\.[(a-z)]{2,15}$', email.lower()):
-                print("   CORREO", email)
-                if email in cfg.uploaded_students:
-                  #if db.grades.find_one({'_id': email }):
-              
-                  if len(datos) == 2:
-                    grade = float(datos[1])
-                    print("   GRADE", grade)
-                    if grade >= 0 and grade <= 10:
-                        db.grades.update_one(
-                          {'_id': email},
-                          {"$set": {
-                            'activities.'+activity_id: float(grade)
-                          }})
-                        if not activity_id in cfg.active_activities:
-                          db.activities.update_one({'_id':activity_id},{
-                            '$set':{
-                              'active':True}})
-                          cfg.active_activities.add(activity_id)
-                        
-                        #NO BORRARAR ESTE
-                        #risk_factor_one(email)
-                        modified_students += "\n"+email
+                    if email in cfg.uploaded_students:
+                      #if db.grades.find_one({'_id': email }):
+                      actual_grade = 0
+                      previously_modified = False
+                      if len(datos) == 2:
+                        new_grade = float(datos[1])
+                        if db.grades.find_one({'_id':email, f'activities.{activity_id}':{'$gt':0} }):
+                          previously_modified= True
+                          actual_grade = db.grades.find_one({'_id':email})['activities'][activity_id]
 
+                        if new_grade >= 0 and new_grade <= 10:
+                          db.grades.update_one(
+                            {'_id': email},
+                            {"$set": {
+                              f"activities.{activity_id}": float(new_grade)
+                            }})
+                          activity_weight = db.activities.find_one({'_id':activity_id})['weight']
+                          
+                          real_score_earned = activity_weight * new_grade
+                          old_score_earned = activity_weight * actual_grade
+                          
+                          if previously_modified:
+                            activity_weight = 0
+                            real_score_earned =  real_score_earned - old_score_earned
+
+                          db.grades.update_one({'_id':email},{
+                            '$inc':{
+                              'total_score': + real_score_earned,
+                              'max_actual_score': + (activity_weight*10)
+                            }
+                          })
+                            
+                            
+                          if not activity_id in cfg.active_activities:
+                            db.activities.update_one({'_id':activity_id},{
+                              '$set':{
+                                'active':True}})
+                            cfg.active_activities.add(activity_id)
+                            
+                            
+                          g_fun.get_risk_factor(user, email)
+                          modified_students += "\n"+email
+
+                        else:
+                          grade_error_students += "\n"+email
+                          
+                      elif len(datos) == 1:
+                        ungraded_students += "\n"+email
+
+                      else:
+                        g_fun.send_Msg(context, user['_id'], tea_lang.grade_activity(user['language'], "no_semicolon", students = email))
+                        break
                     else:
-                      grade_error += "\n"+email
-                      #g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_grading_error(user['language'], grade, email))
-                  elif len(datos) == 1:
-                    ungraded_students += "\n"+email
-                    #g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_no_grade(user['language'],email))
+                      unregistered_students += "\n"+email 
                   else:
-                    g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_no_semicolon(user['language'], email))
-                    break
-                else:
-                  unregistered_students += "\n"+email 
-                  #g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_unregistered_email(user['language'], email))
-              else:
-                email_syntax_error += "\n"+email
-                #g_fun.send_Msg(context, user['_id'], g_lang.email_syntax_error_text(user['language'], email))
-              
-            if modified_students:
-              g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_successful_students(user['language'], activity_id, modified_students) )
-            if unregistered_students:
-              g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_unregistered_email(user['language'], unregistered_students))
-            if grade_error:
-              g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_grading_error(user['language'], grade_error))
-            if ungraded_students:
-              g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_no_grade(user['language'], ungraded_students))
-            if email_syntax_error:
-              g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_email_syntaxis_error(user['language'], email_syntax_error ))
+                    email_syntax_error_students += "\n"+email
+                  
+                if modified_students:
+                  g_fun.send_Msg(context, user['_id'], 
+                  tea_lang.grade_activity(user['language'], "successful_students", modified_students, activity_id)) 
+                if unregistered_students:
+                  g_fun.send_Msg(context, user['_id'],
+                  tea_lang.grade_activity(user['language'], "unregistered_email", students=unregistered_students))
+                if grade_error_students:
+                  g_fun.send_Msg(context, user['_id'],
+                  tea_lang.grade_activity(user['language'], "grading_error", students = grade_error_students))
+                if ungraded_students:
+                  g_fun.send_Msg(context, user['_id'],
+                  tea_lang.grade_activity(user['language'], "no_grade", students=ungraded_students))
+                if email_syntax_error_students:
+                  g_fun.send_Msg(context, user['_id'],
+                  tea_lang.grade_activity(user['language'], "email_syntax_error", students=email_syntax_error_students ))
 
+
+              else:
+                g_fun.send_Msg(context, user['_id'], tea_lang.grade_activity(user['language'], "no_students"))
+            else:
+              g_fun.send_Msg(context, user['_id'], tea_lang.grade_activity(user['language'], "unregistered_activity", activity=activity_id))
 
           else:
-            g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_no_students[user['language']])
-        else:
-          g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_unregistered_activity(user['language'], activity_id))
-
-      else:
-        g_fun.send_Msg(context, user['_id'], tea_lang.grade_students_no_activities_qualifying[user['language']])
-
+            g_fun.send_Msg(context, user['_id'], tea_lang.grade_activity(user['language'], "no_activities_qualifying"))
+    
+  except:
+    g_fun.print_except(inspect.stack()[0][3])
 
 
 
