@@ -10,7 +10,6 @@ class User:
     self.username = user_data["username"]
     self.is_teacher = 0
     self.language = user_data["language_code"]
-    self.planet = 0
 
   def change_language(self, update):
     reply_keyboard = [["EN", "ES"]]
@@ -20,16 +19,19 @@ class User:
       reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True),
     )
 
-  def add_telegram_user(self, user):
-    self.is_teacher = self.user_is_teacher(self.id)
-    sql = f"""INSERT INTO telegram_users VALUES ("{self.id}", "{self.telegram_name}","{self.username}","{self.is_teacher}", "{self.language}");"""
-    try:
-      sqlite.execute_statement(sql)
-      print(f"Se ha agregado el usuario {user.full_name}, en telegram_users")
-      return self
-    except Exception as e:
-      print(e)
-      print()
+  def add_telegram_user(self):
+    if not self.is_in_DB():
+      # self.is_teacher = self.user_is_teacher(self.id)
+      sql = f"""INSERT INTO telegram_users VALUES ("{self.id}", "{self.telegram_name}","{self.username}","{self.is_teacher}", "{self.language}");"""
+      try:
+        sqlite.execute_statement(sql)
+        print(
+          f"Se ha agregado el usuario {self.id} {self.telegram_name}, en telegram_users"
+        )
+      except Exception as e:
+        print(e)
+        print()
+    return self
 
   def is_in_DB(self):
     # TODO: dos funciones una para telegram_users y otra para registered_users
@@ -38,24 +40,28 @@ class User:
     sql = f"SELECT * FROM telegram_users WHERE id={self.id}"
     try:
       if sqlite.execute_statement(sql, fetch="fetchone"):
-        return self
-
-      else:
-        print("SE DEBE REGISTRAR")
-        return False
+        return True
+      return False
 
     except Exception as e:
       print(e)
       print()
 
-  def user_is_teacher(self, user_id):
-    sql = f"SELECT * FROM teachers WHERE id_telegram={user_id}"
-    try:
-      user = sqlite.execute_statement(sql, fetch="fetchone")
-      return 1 if user else 0
-    except Exception as e:
-      print(e)
-      print(e)
+  def __str__(self):
+    return f"""
+    ===============================
+      ID: {self.id}
+      Telegram_name: {self.telegram_name}
+      Username: {self.username}
+      Is_teacher : {self.is_teacher}
+      Language: {self.language}
+    ==============================="""
+
+
+class Student(User):
+  def __init__(self, user_data):
+    super().__init__(user_data)
+    self.planet = 0
 
   def __str__(self):
     return f"""
@@ -69,9 +75,7 @@ class User:
     ==============================="""
 
 
-class Student(User):
-  pass
-
-
 class Teacher(User):
-  pass
+  def __init__(self, user_data):
+    super().__init__(user_data)
+    self.is_teacher = 1

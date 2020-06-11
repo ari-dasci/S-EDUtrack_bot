@@ -9,20 +9,21 @@ from telegram.ext import (
   MessageHandler,
   Filters,
   CallbackContext,
+  CallbackQueryHandler,
 )
 from classes import User
 import config.config_file as cfg
 import config.db_sqlite_connection as sqlite
 from text_language import general_lang as g_lang
-import general_funtions as g_fun
+from functions import general_functions as g_fun, commands as cmd
+import functions.general_functions as g_fun
 import jobs_queue.jobs_queue as jobs_queue
+
 
 # Configurar logging
 logging.basicConfig(
-  level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+  format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
 )
-logger = logging.getLogger(__name__)
-
 
 # Obtener el Token y el Modo de trabajo
 TOKEN = os.getenv("TOKEN")
@@ -30,13 +31,13 @@ mode = os.getenv("MODE")
 
 if not TOKEN or not mode:
   env_var = "TOKEN" if not TOKEN else "MODE"
-  sys.exit(logger.info(g_lang.not_env_variable(env_var)))
+  sys.exit(logging.info(g_lang.not_env_variable(env_var)))
 
 if mode == "dev":
 
   def run(updater):
     updater.start_polling()
-    logger.info("Bot cargado")
+    logging.info("Bot cargado")
     updater.idle()  # Permite finalizar el bot con Ctrl + C
 
 
@@ -47,19 +48,7 @@ elif mode == "prod":
     HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
     updater.start_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
     updater.bot.set_webhook(f"https://{HEROKU_APP_NAME}.herokuapp.com/{TOKEN}")
-    logger.info("Bot cargado")
-
-
-def start(update, context):
-  user_data = update.effective_user
-  current_user = User(user_data)
-  print(current_user)
-  logger.info(f"User {user_data['id']}, start a conversation.")
-  if user_data.id > 0:
-    user = current_user.is_in_DB()
-    if not user:
-      user = current_user.add_telegram_user(user_data)
-    update.message.reply_text(g_lang.welcome(user))
+    logging.info("Bot cargado")
 
 
 def main():
@@ -87,8 +76,11 @@ def main():
     dp = updater.dispatcher
 
     # Handlers bot creation
-    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("start", cmd.start))
+    dp.add_handler(CallbackQueryHandler(cmd.pressed_button))
+
     run(updater)
+
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
