@@ -55,6 +55,14 @@ def main():
   try:
     # Bot's conecction
     my_bot = telegram.Bot(token=TOKEN)
+    if not my_bot.getMyCommands():
+      my_bot.setMyCommands(
+        [
+          ("start", "Iniciar"),
+          ("help", "ayuda"),
+          ("change_language", "Cambio de Idioma"),
+        ]
+      )
 
     # Connection to the DB
     sqlite.connection()
