@@ -30,7 +30,7 @@ def start(update, context):
           update.message.reply_text(s_lang.welcome_text(user.language), context, True)
       else:
         if user.is_teacher:
-          b_fun.config_files_set(context, user)
+          b_fun.config_files_set(update, context, user)
         else:
           update.message.reply_text(
             s_lang.not_config_files_set(user.language), context, True

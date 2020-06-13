@@ -1,8 +1,26 @@
 import inspect
+from telegram import ChatAction
+from functools import wraps
 import config.config_file as cfg
 import config.db_sqlite_connection as sqlite
 from functions import general_functions as g_fun
 from text_language import teacher_lang as t_lang, bot_lang as b_lang
+
+
+def send_action(action):
+  """Sends 'action' while processing func command."""
+
+  def decorator(func):
+    @wraps(func)
+    def command_func(update, context, *args, **kwargs):
+      context.bot.send_chat_action(
+        chat_id=update.effective_message.chat_id, action=action
+      )
+      return func(update, context, *args, **kwargs)
+
+    return command_func
+
+  return decorator
 
 
 def received_message(update, context):
@@ -16,8 +34,8 @@ def received_message(update, context):
       text = b_lang.no_username(user_data.language_code)
       update.message.reply_text(text)
       return False
-    # Se revisa si se esta subiendo archivos de configuración
-    if user["is_teacher"]:
+
+    if user.is_teacher:
       if cfg.is_config_files_set and not upm.document:
         if upm.chat_id < 0:
           planet = strip_accents(upm.chat.title)
@@ -36,13 +54,13 @@ def received_message(update, context):
               edu_fun.reg_messages(upm, user)
         else:
           send_Msg(context, user["_id"], tea_lang.welcome_short_text[user["language"]])
+      # Check if the document is a configuration document.
       elif upm.document:
-
         doc = upm.document
         if doc.file_name == "grades_format.csv":
-          tea_fun.activities_grade_file(update, context, user)
+          b_fun.activities_grade_file(update, context, user)
         elif doc.file_name == "categories_grades_format.csv":
-          tea_fun.categories_grade_file(update, context, user)
+          b_fun.categories_grade_file(update, context, user)
         elif (
           doc.file_name == "students_format.csv"
           or doc.file_name == "activities_format.csv"
@@ -88,7 +106,8 @@ def received_message(update, context):
     g_fun.print_except(error_path)
 
 
-def config_files_set(context, user):
+@send_action(ChatAction.TYPING)
+def config_files_set(update, context, user):
   """Sends the student and activity configuration files for the teacher to configure the course.
 
     Args:
@@ -153,3 +172,7 @@ def config_files_send_document(context, user, elements):
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
+
+
+def activities_grade_files():
+  pass
