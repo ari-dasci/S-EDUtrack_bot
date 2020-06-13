@@ -5,18 +5,20 @@ import sys
 import telegram
 from telegram.ext import (
   Updater,
-  CommandHandler,
-  MessageHandler,
-  Filters,
+  CommandHandler as Cmd_Hdl,
+  MessageHandler as Msg_Hdl,
+  CallbackQueryHandler as CQ_Hdl,
   CallbackContext,
-  CallbackQueryHandler,
+  Filters,
 )
-from classes import User
 import config.config_file as cfg
 import config.db_sqlite_connection as sqlite
 from text_language import general_lang as g_lang
-from functions import general_functions as g_fun, commands as cmd
-import functions.general_functions as g_fun
+from functions import (
+  general_functions as g_fun,
+  commands as cmd,
+  bot_functions as b_fun,
+)
 import jobs_queue.jobs_queue as jobs_queue
 
 
@@ -67,26 +69,25 @@ def main():
     # Connection to the DB
     sqlite.connection()
 
-    # If they do not exist, the tables are created
-    sql = 'SELECT count(*) FROM sqlite_master WHERE type = "table"'
-    if not sqlite.execute_statement(sql, fetch="fetchone")[0]:
-      sqlite.create_db()
+    # Prepare the configuration of the course
+    g_fun.config_subject()
 
     # Link the updater to the bot's Token
     updater = Updater(my_bot.token, use_context=True)
 
     # JobQueue creation
     bot_jobs = updater.job_queue
-
     jobs_queue.start_job(bot_jobs)
 
     # Dispatcher creation
     dp = updater.dispatcher
 
     # Handlers bot creation
-    dp.add_handler(CommandHandler("start", cmd.start))
-    dp.add_handler(CallbackQueryHandler(cmd.pressed_button))
-
+    dp.add_handler(Cmd_Hdl("start", cmd.start))
+    dp.add_handler(CQ_Hdl(cmd.pressed_button))
+    dp.add_handler(
+      Msg_Hdl((~Filters.command) & (~Filters.status_update), b_fun.received_message)
+    )
     run(updater)
 
   except:

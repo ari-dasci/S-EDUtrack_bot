@@ -1,6 +1,9 @@
+import inspect
 import config.db_sqlite_connection as sqlite
 import config.config_file as cfg
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from functions import general_functions as g_fun
+from text_language import teacher_lang as t_lang
 
 
 class User:
@@ -10,6 +13,7 @@ class User:
     self.username = user_data["username"]
     self.is_teacher = 0
     self.language = user_data["language_code"]
+    self.email = ""
 
   def change_language(self, update):
     reply_keyboard = [["EN", "ES"]]
@@ -79,3 +83,5 @@ class Teacher(User):
   def __init__(self, user_data):
     super().__init__(user_data)
     self.is_teacher = 1
+
+  

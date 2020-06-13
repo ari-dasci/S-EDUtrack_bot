@@ -152,14 +152,15 @@ dmypy.json
 
 ### TEST FILES ###
 # Ignore all test files
-*.BORRAR/*
-*.Borrar/*
-*.borrar/*
-*/BORRAR/*
-*/Borrar/*
-*/borrar/*
 *Borrar.*
 *borrar.*
+*/Borrar/*
+*/*/Borrar/*
+*/*/*/Borrar/*
+*/borrar/*
+*/*/borrar/*
+*/*/*/borrar/*
+
 
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,python

@@ -1,3 +1,5 @@
+config_files_set = False
+
 subject_data = {
   "name": "Fundamentos del Software.",
   "id": "FS1920",
@@ -16,8 +18,6 @@ teacher_data = {
   "language": "es",
 }
 
-
-# db = ""
 
 tables = [
   {
