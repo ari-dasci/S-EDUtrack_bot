@@ -3,6 +3,7 @@ import inspect
 import os
 import sys
 import telegram
+from time import time
 from telegram.ext import (
   Updater,
   CommandHandler as Cmd_Hdl,
@@ -18,8 +19,8 @@ from functions import (
   general_functions as g_fun,
   commands as cmd,
   bot_functions as b_fun,
+  jobs_queue,
 )
-import jobs_queue.jobs_queue as jobs_queue
 
 
 # Configurar logging
@@ -84,7 +85,9 @@ def main():
 
     # Handlers bot creation
     dp.add_handler(Cmd_Hdl("start", cmd.start))
-    dp.add_handler(CQ_Hdl(cmd.pressed_button))
+    dp.add_handler(Cmd_Hdl("change_language", cmd.change_language))
+    dp.add_handler(Cmd_Hdl("check_email", cmd.check_email))
+    dp.add_handler(CQ_Hdl(b_fun.menu))
     dp.add_handler(
       Msg_Hdl((~Filters.command) & (~Filters.status_update), b_fun.received_message)
     )
@@ -95,5 +98,49 @@ def main():
     g_fun.print_except(error_path)
 
 
+def test():
+  logging.error("ESTO ES UN ERROR")
+  import pandas as pd
+
+  start = time()
+  sql_stu = "SELECT email FROM students_file"
+  students = [stu[0] for stu in sqlite.execute_statement(sql_stu, "fetchall")]
+  print("\n\n========================\n", students)
+  sql_time_1 = time() - start
+
+  start = time()
+  sql_stu = "SELECT DISTINCT email FROM students_file"
+  students = [stu[0] for stu in sqlite.execute_statement(sql_stu, "fetchall")]
+  print("\n\n========================\n", students)
+  sql_time = time() - start
+
+  start = time()
+  sql = "SELECT email FROM grades"
+  students = sqlite.execute_statement(sql, df=True)
+  print(list(students["email"]))
+  pandas_time = time() - start
+  print(sql_time_1)
+  print(sql_time)
+  print(pandas_time)
+  if sql_time > pandas_time:
+    print("PANDAS ES MEJOR")
+  else:
+    print("SQL ES MEJOR")
+
+  sql_act = "SELECT DISTINCT _id FROM activities WHERE weight>0"
+  activities = [act[0] for act in sqlite.execute_statement(sql_act, "fetchall")]
+
+  df_colums = ["email"]
+  df_colums.extend(activities)
+  print(df_colums)
+
+  df = pd.DataFrame(students, columns=df_colums)
+  print(df)
+
+  print()
+
+
 if __name__ == "__main__":
+  # test()
+  #  input("")
   main()

@@ -22,8 +22,7 @@ def callback_afternoon(context):
 
 # def send_mesage(context: Cb_context):
 def start_job(bot_jobs):
-  job_hour = bot_jobs.run_repeating(callback_hour, interval=3600, first=0)
-  job_2_hour = bot_jobs.run_repeating(callback_2_hour, interval=7200, first=0)
+  # Set the time zone
   target_tzinfo = datetime.timezone(datetime.timedelta(hours=-5))
   target_time = datetime.time(hour=10).replace(tzinfo=target_tzinfo)
   job_morning = bot_jobs.run_daily(
@@ -33,8 +32,5 @@ def start_job(bot_jobs):
   job_afternoon = bot_jobs.run_daily(
     callback_afternoon, target_time, days=(0, 1, 2, 3, 4, 5, 6)
   )
-
-  print("HORA", job_hour.next_t)
-  print("HORA_2", job_2_hour.next_t)
   print("MAÑANA", job_morning.next_t)
   print("TARDE", job_afternoon.next_t)

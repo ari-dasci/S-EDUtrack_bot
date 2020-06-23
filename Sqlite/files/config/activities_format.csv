@@ -1,0 +1,24 @@
+_id,name,section,week,weight,visible,category
+G_TABLON,Tablón de avisos,GENERAL,1.0,,,
+G_PRESENTACION_CURSO,Presentación de la asignatura,GENERAL,1.0,,,
+G_CONFIRMA_PRACT,Confirma tu grupo de prácticas,GENERAL,1.0,,,
+G_DOCUMENTACION,Documentación para descargar,GENERAL,1.0,,,
+G_E_RECURSOS,Recursos Electrónicos,GENERAL,1.0,,,
+G_SEMINARIO_PRADO,Seminario-PRADO y encuesta de opinión,GENERAL,2.0,,,
+T1_TRANSPARENCIAS,Transparencias del Tema 1,TEMA 1,2.0,,,
+FC_CUESTIONARIO_CCV_1,1ra Respuesta al Cuest. de Com. Virtual,FC_ML,2.0,,,
+FC_CAPSULA_0,Recursos Completos Capsula 0,FC_ML,2.0,,,
+FC_CUESTIONARIO_CCV_1_CAL,,,2.0,0.1,,FC_ML_ACT
+FC_CAPSULA_1,Recursos Completos Capsula 1,FC_ML,3.0,,,
+T1_GLOSARIO,Glosario del Tema 1,TEMA 1,3.0,0.14285714285714302,True,PORTFOLIO_1
+T1_VALIDA_EJERCICIOS_CAPSULA_1_2,Cuest. de validación Capsulas 1 y 2,TEMA 1,4.0,0.14285714285714302,True,PORTFOLIO_1
+FC_CAPSULA_2,Recursos Completos Capsula 2,FC_ML,4.0,,,
+T1_PROYECTO,Proyecto del Tema 1,TEMA 1,4.0,0.14285714285714302,True,PORTFOLIO_1
+FC_CAPSULA_3,Recursos Completos Capsula 3,FC_ML,5.0,,,
+T2_TRANSPARENCIAS,Transparencias del Tema 2,TEMA 2,5.0,,,
+T1_CUESTIONARIO,Cuest. del Tema 1,TEMA 1,5.0,0.14285714285714302,True,PORTFOLIO_1
+FC_ML_ACT,,,,0.5,,FC_ML_TELEGRAM
+FC_ML_TELEGRAM,Experiencia FC_ML,CALIFICACIÓN,10.0,0.3,True,TEORIA
+TEORIA,,,,0.5,True,SUBJECT
+PORTFOLIO_1,,,,0.538461538461539,,PORTFOLIO
+PORTFOLIO,,,,0.1,True,TEORIA
