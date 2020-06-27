@@ -1,4 +1,5 @@
-import collections
+standby_teachers = False
+config_files_set = False
 
 subject_data = {
   "name": "Fundamentos del Software",
@@ -10,15 +11,13 @@ subject_data = {
 }
 
 teacher_data = {
-  "id_telegram": "970331050",
+  "_id": "970331050",
   "telegram_name": "Profesor Edutrack",
   "username": "Profesor_Edutrack",
   "email": "escribeleaqui@gmail.com",
   "is_teacher": 1,
   "language": "es",
 }
-
-config_files_set = False
 
 activities_headers_file = [
   "_id",
@@ -53,29 +52,38 @@ tables = [
               """,
   },
   {
+    "name": "teachers",
+    "fields": """
+              _id	INTEGER NOT NULL PRIMARY KEY,
+              telegram_name	TEXT NOT NULL,
+              username TEXT NOT NULL UNIQUE,
+              email	TEXT,
+              FOREIGN KEY(_id) REFERENCES telegram_users(_id)
+              """,
+  },
+  {
     "name": "planets",
     "fields": """
-              _id	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-              name	TEXT NOT NULL,
+              _id TEXT NOT NULL PRIMARY KEY,
               num_members	INTEGER NOT NULL DEFAULT 0
               """,
   },
   {
     "name": "planet_admins",
     "fields": """
-              id_telegram	INTEGER NOT NULL PRIMARY KEY,
-              id_planet	INTEGER NOT NULL,
-              FOREIGN KEY(id_telegram) REFERENCES telegram_users(_id)
+              _id	INTEGER NOT NULL PRIMARY KEY,
+              planet	TEXT NOT NULL,
+              FOREIGN KEY(_id) REFERENCES telegram_users(_id),
+              FOREIGN KEY(planet) REFERENCES planets(_id)
               """,
   },
   {
-    "name": "teachers",
+    "name": "planet_users",
     "fields": """
-              id_telegram	INTEGER NOT NULL PRIMARY KEY,
-              telegram_name	TEXT NOT NULL,
-              username TEXT NOT NULL UNIQUE,
-              email	TEXT,
-              FOREIGN KEY(id_telegram) REFERENCES telegram_users(_id)
+              _id	INTEGER NOT NULL PRIMARY KEY,
+              planet	TEXT,
+              FOREIGN KEY(_id) REFERENCES telegram_users(_id),
+              FOREIGN KEY(planet) REFERENCES planets(_id)
               """,
   },
   {
@@ -87,23 +95,28 @@ tables = [
               username	TEXT,
               planet	TEXT,
               FOREIGN KEY(username) REFERENCES telegram_users(username)
-              FOREIGN KEY("planet") REFERENCES "planets"("name")
+              FOREIGN KEY("planet") REFERENCES "planets"("_id")
               """,
   },
   {
     "name": "registered_students",
     "fields": """
-              id_telegram	INTEGER NOT NULL PRIMARY KEY,
+              _id	INTEGER NOT NULL PRIMARY KEY,
               full_name	TEXT NOT NULL,
-              email_students_file	TEXT NOT NULL UNIQUE,
-              FOREIGN KEY(id_telegram) REFERENCES telegram_users(_id),
-              FOREIGN KEY(email_students_file) REFERENCES students_file(email)
+              email	TEXT NOT NULL UNIQUE,
+              username TEXT NOT NULL UNIQUE,
+              planet TEXT,
+              FOREIGN KEY(_id) REFERENCES telegram_users(_id),
+              FOREIGN KEY(email) REFERENCES students_file(email)
+              FOREIGN KEY(username) REFERENCES telegram_users(username)
+              FOREIGN KEY("planet") REFERENCES "planets"("_id")
               """,
   },
   {
     "name": "academic_risk_factor",
     "fields": """
-              id_telegram INTEGER NOT NULL PRIMARY KEY
+              _id INTEGER NOT NULL PRIMARY KEY,
+              FOREIGN KEY(_id) REFERENCES telegram_users(_id)
               """,
   },
   {
@@ -126,19 +139,13 @@ tables = [
               _id TEXT NOT NULL PRIMARY KEY,
               name TEXT,
               section TEXT,
-              week INTEGER,
-              weight REAL,
-              visible INTEGER,
-              category TEXT
+              week INTEGER DEFAULT 0,
+              weight REAL DEFAULT 0,
+              visible INTEGER DEFAULT 0,
+              category TEXT,
+              active INTEGER DEFAULT 0
               """
     "",
   },
 ]
 
-# {
-#     "name": "grades",
-#     "fields": """
-#               student_email	TEXT NOT NULL UNIQUE PRIMARY KEY,
-#               FOREIGN KEY(student_email) REFERENCES students_file(email)
-#               """,
-#   },

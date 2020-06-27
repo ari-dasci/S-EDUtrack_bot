@@ -17,7 +17,7 @@ PRACTICA,,,,0.5,1,SUBJECT
 Notas:,,,,,,
 El separador decimal es el punto ´.´,,,,,,
 "Todas las actividades deben tener una sección, menos las que son categorias.",,,,,,
-La columna 'visible' indica si la calificación se mostrara al alumno al generar el reporte de calificaciones. (Podría solo mostrar la información de cada categoría o de todas las actividades  junto con su categoría)  ,,,,,,
+"La columna 'visible' 1 ó 0, indica si la calificación se mostrara al alumno al generar el reporte de calificaciones. (Podría solo mostrar la información de cada categoría o de todas las actividades  junto con su categoría)  ",,,,,,
 Solo las actividades que se evaluan para la calificación final deben tener categoria (así mismo las categorias para saber a que categoria padre pertenecen),,,,,,
 "Cada categoría debe estar tambien en la columna ID, expeto SUBJECT que es la categoría Superior.",,,,,,
 La suma final del peso de las actividades internas de cada categoria debe ser 1.,,,,,,

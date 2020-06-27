@@ -1,5 +1,5 @@
-def config_files_send_document(language, elements):
-  if language == "es":
+def config_files_send_document(lang, elements):
+  if lang == "es":
     return f"files/guides/ES/{elements}_format.csv"
 
   else:

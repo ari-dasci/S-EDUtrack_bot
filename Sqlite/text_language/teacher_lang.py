@@ -1,3 +1,9 @@
+from telegram import InlineKeyboardButton as IKBtn
+
+lt = "&lt;"
+gt = "&gt;"
+
+
 def welcome_text(lang, context, action):
   bot_username = context.bot.username
   text = ""
@@ -82,8 +88,8 @@ def config_files(lang, action, file_name="", elements="", context=""):
       return f"\n\nThe other elements were added correctly."
 
 
-def config_files_activities(language, action, elements=""):
-  if language == "es":
+def config_files_activities(lang, action, elements=""):
+  if lang == "es":
     print(len(elements.split("\n")))
     if action == "no_main_category":
       return "<b>FALTA LA CATEGORÍA SUBJECT</b>\n\nTodos los <b>'_id' calificables</b> deben tener una categoría. Si el <b>'_id'</b> es una categoría superior (no tiene categoría padre), su categoría debe ser <b>'SUBJECT'</b>."
@@ -123,3 +129,318 @@ def config_files_activities(language, action, elements=""):
         return f"<b>NO PARENT CATEGORY</b>\n\nThe <b>{elements}</b> category has not defined its parent category."
       elif len(elements.split("\n")) > 1:
         return f"<b>NO PARENT CATEGORY</b>\n\nThe following categories don't have the parent category defined:\n\n<b>{elements}</b>"
+
+
+##### MENUS ###################
+def main_menu(lang):
+  if lang == "es":
+    text = "<b>MENU DOCENTE</b>\nSelecciona una opción:"
+    opt = [
+      [
+        IKBtn("Actividades", callback_data="t_menu-act"),
+        IKBtn("Estudiantes", callback_data="t_menu-stu"),
+      ],
+      [IKBtn("Generar Reportes", callback_data="t_menu-reports")],
+      [IKBtn("Enviar mensaje a los planetas", callback_data="t_menu-msg")],
+      # [IKBtn("ON/OFF registro en planetas", callback_data="t_menu-reg_planet")],
+    ]
+    return (text, opt)
+  else:
+    text = "<b>TEACHER MENU</b>\nSelect an option:"
+    opt = [
+      [
+        IKBtn("ACtivities", callback_data="t_menu-act"),
+        IKBtn("Students", callback_data="t_menu-stu"),
+      ],
+      [IKBtn("Generate Reports", callback_data="t_menu-reports")],
+      [IKBtn("Send message to the planets", callback_data="t_menu-msg")],
+      # [IKBtn("ON/OFF planet registry", callback_data="t_menu-reg_planet")],
+    ]
+    return (text, opt)
+
+
+def title_file(lang, title):
+  if lang == "es":
+    if title == "STUDENTS_FORMAT":
+      return "FORMATO DE ESTUDIANTES"
+    elif title == "STUDENTS REGISTERED":
+      return "ESTUDIANTES REGISTRADOS"
+    elif title == "ALL ACTIVITIES":
+      return "TODAS LAS ACTIVIDADES"
+    elif title == "QUALIFYING ACTIVITIES":
+      return "ACTIVIDADES CALIFICABLES"
+    elif title == "RESOURCES ACTIVITIES":
+      return "RECURSOS"
+    elif title == "GRADE REPORT":
+      return "REPORTE DE CALIFICACIONES"
+    elif title == "ACADEMIC RISK FACTOR REPORT":
+      return "REPORTE DEL FACATOR DE RIESGO ACADEMICO"
+    elif title == "MEETINGS PARTICIPATION REPORT":
+      return "REPORTE DE LA PARTICIPACION EN LOS MEETINGS"
+    elif title == "TEACHER EVALUATION REPORT":
+      return "REPORTE DE LA EVALUACION DOCENTE"
+    elif title == "RESOURCES EVALUATION REPORT":
+      return "REPORTE DE LA EVALUACION DE RECURSOS"
+    elif title == "CLASSMATES EVALUATION\nREPORT IN MEETINGS":
+      return "REPORTE DE LA EVALUACION\nENTRE COMPAÑEROS EN LOS MEETINGS"
+    elif title == "CLASSMATES EVALUATION\nREPORT OUT MEETINGS":
+      return "REPORTE DE LA EVALUACION\nENTRE COMPAÑEROS FUERA DE LOS MEETINGS"
+
+  else:
+    return title
+
+
+### MENU ACADEMIC ACTIVITIES  ####################
+def menu_act(lang):
+  if lang == "es":
+    text = "<b>ACTIVIDADES</b>\nSelecciona una opción:"
+    opt = [
+      [
+        IKBtn("Ver Lista", callback_data="t_menu-act-view"),
+        IKBtn("Calificar", callback_data="t_menu-act-grade"),
+      ],
+      [
+        IKBtn("Reemplazar", callback_data="t_menu-act-replace"),
+        IKBtn("Modificar", callback_data="t_menu-act-modify"),
+      ],
+      [IKBtn("Activar Actividad", callback_data="t_menu-act-active")],
+      [IKBtn("Atrás", callback_data="t_menu-back"),],
+    ]
+  else:
+    text = "<b>ACTIVITIES</b>\nSelect an option:"
+    opt = [
+      [
+        IKBtn("View List", callback_data="t_menu-act-view"),
+        IKBtn("Grade", callback_data="t_menu-act-grade"),
+      ],
+      [
+        # IKBtn("Add", callback_data="t_menu-act-add"),
+        IKBtn("Delete", callback_data="t_menu-act-delete"),
+        IKBtn("Modify", callback_data="t_menu-act-modify"),
+      ],
+      [IKBtn("Back", callback_data="t_menu-back")],
+    ]
+  return (text, opt)
+
+
+def menu_act_view(lang, action):
+  if lang == "es":
+    if action == "menu":
+      text = "<b>VER LISTA DE ACTIVIDADES</b>\nSelecciona una opción:"
+      opt = [
+        [IKBtn("Todas las Actividades", callback_data="t_menu-act-view-all")],
+        [
+          IKBtn("Actividades Calificables", callback_data="t_menu-act-view-qualifying",)
+        ],
+        [IKBtn("Recursos", callback_data="t_menu-act-view-resources")],
+        [IKBtn("Atrás", callback_data="t_menu-act")],
+      ]
+      return (text, opt)
+    elif action == "not_file":
+      return (
+        "<b>VER LISTA DE ACTIVIDADES</b>\nNo se pudo crear el archivo de actividades."
+      )
+  else:
+    if action == "menu":
+      text = "<b>VIEW ACTIVITIES LIST</b>\nSelect an option:"
+      opt = [
+        [IKBtn("All Activities", callback_data="t_menu-act-view-all")],
+        [IKBtn("Qualifying Activities", callback_data="t_menu-act-view-qualifying")],
+        [IKBtn("Back", callback_data="t_menu-act")],
+      ]
+      return (text, opt)
+    elif action == "not_file":
+      return "<b>SEE LIST OF ACTIVITIES</b>\nThe activity file could not be created."
+
+
+def menu_act_grade(lang, action):
+  if lang == "es":
+    if action == "menu":
+      text = "<b>CALIFICAR</b>\nSelecciona una opción:"
+      opt = [
+        [IKBtn("Subir archivo", callback_data="t_menu-act-grade-upload")],
+        [IKBtn("Utilizar comando", callback_data="t_menu-act-grade-cmd")],
+        [IKBtn("Atrás", callback_data="t_menu-act")],
+      ]
+      return (text, opt)
+    elif action == "upload":
+      return "Descarga este archivo como base para crear el archivo de calificaciones. Envialo con el mismo nombre para cargar las calificaciones."
+    elif action == "cmd":
+      return f"<b>CALIFICAR ACTIVIDAD</b>\nEscribe el comando\n<code>/grade_activity {lt}id_actividad{gt} {lt}email_estudiante{gt} {lt}calificación{gt}</code>;\n\nCada estudiante debe separarse con el signo punto y coma ';' salvo el último\n\nEjemplo:\n<code>/grade_activity Prueba_1\nejemplo@correo.ugr.es 8.5;\nejemplo2@gmail.com 9.6;\nejemplo3@hotmail.com 9</code>"
+  else:
+    if action == "menu":
+      text = "<b>GRADE</b>\nSelect an option:"
+      opt = [
+        [IKBtn("Upload File", callback_data="t_menu-act-grade-upload")],
+        [IKBtn("Use Command", callback_data="t_menu-act-grade-cmd")],
+        [IKBtn("Atrás", callback_data="t_menu-act")],
+      ]
+      return (text, opt)
+    elif action == "upload":
+      return "Download this file as a basis for creating the grade file. Send it with the same name to load the grades."
+    elif action == "cmd":
+      return f"<b>GRADE ACTIVITY:</b>\nType the command\n<code>/grade_activity {lt}id_activity{gt} {lt}student email{gt} {lt}grade{gt}</code>;\n\nEach student is separated with the semicolon char ';' except the last one\n\nExample:\n<code>/grade_activity Test_1\nexample@correo.ugr.es 8.5;\nexample2@gmail.es 9.6;\nexample3@hotmail.es 9</code>"
+
+
+def menu_act_replace(lang):
+  if lang == "es":
+    return "<b>REEMPLAZAR ACTIVIDADES:</b>\nPara reemplazar el archivo de configuración de actividades, sube un archivo con el nombre <b>replace_activities_format.csv</b> con el formato <b>activities_format</b>.\n\n<b>Nota: Ten en cuenta que hacer esto reemplazara la base de datos de calificaciones también</b>."
+  else:
+    return "<b>REPLACE ACTIVITIES:</b>\nTo replace the activity configuration file, upload a file named <b>replace_activities_format.csv</b> with format <b>activities_format</b>.\n\n<b>Note: Please note that doing this will replace the grades database as well</b>."
+
+
+def menu_act_modify(lang, headers=""):
+  if lang == "es":
+    return f"<b>MODIFICAR ACTIVIDAD:</b>\nPara modificar una actividad escribe el comando\n<code>/modify_activity {lt}id actividad{gt} {lt}campo a modificar{gt} {lt}nuevo contenido{gt}</code>\n\nLos campos que puedes modificar son:\n{headers}\n\n<b>Ejemplos:</b>\n<code>/modify_activity GLOSARIO week 4</code> (Modifica la semana de la actividad)\n\n<code>/modify_activity GLOSARIO name Glosario del tema 2</code> (Modifica el nombre de la actividad)"
+  else:
+    return f"<b>MODIFY ACTIVITY:</b>\nTo modify an activity, type command\n<code>/modify_activity {lt}id activity{gt} {lt}field to modify{gt} {lt}new content{gt}</code>\n\nThe fields you can modify are:\n{headers}\n\n<b>Example:</b>\n<code>/modify_activity GLOSSARY week 4</code> (modify the activity week).\n\n<code>/modify_activity GLOSSARY name Topic 2 Glossary</code> (modifies the activity name)"
+
+
+def menu_act_delete(lang):
+  if lang == "es":
+    return f"<b>ELIMINAR ACTIVIDAD:</b>\nPara eliminar una actividad, escribe el comando <code>/delete_activity {lt}id actividad{gt}</code>\n\n<b>Ejemplo:</b>\n<code>/delete_activity GLOSARIO</code>"
+  else:
+    return f"<b>DELETE ACTIVITY:</b>\nTo delete an activity, type command <code>/delete_activity {ly}id activity{gt}</code>\n\n<b>Example:</b>\n<code>/delete_activity GLOSSARY</code>"
+
+
+def menu_act_active(lang, action, activities=""):
+  if lang == "es":
+    if action == "text":
+      return f"<b>ACTIVAR ACTIVIDAD:</b>\nPara activar una actividad escribe el comando\n<code>/active_activity {lt}id actividad{gt}</code>\n\n<b>Ejemplo:</b>\n\n<code>/active_activity GLOSARIO</code>"
+    elif action == "activities":
+      return f"Los id de las actividades inactivas son:\n\n{activities}"
+    elif action == "no_arguments":
+      return f"Después del comando debes escribir el id de una actividad no activa."
+    elif action == "processing":
+      return f"Estoy activando <b>{activities}</b> y recalculando la evaluación de los estudiantes. Te enviare un mensaje cuando termine."
+    elif action == "end":
+      return f"He terminado de activar la actividad <b>{activities}</b>"
+  else:
+    if action == "text":
+      return f"<b>ACTIVE ACTIVITY:</b>\nTo activate an activity type the command:\n<code>/active_activity {lt}id activity{gt}</code>\n\n<b>Example:</b>\n<code>/active_activity GLOSSARY</code>"
+    elif action == "activities":
+      return f"The id's of inactive activities are:\n\n{activities}"
+    elif action == "no_arguments":
+      return f"After the command you must type the id of a non active activity."
+    elif action == "processing":
+      return f"I'm activating <b>{activities}</b> and recalculating the students evaluation. I'll send you a message when I'm done."
+    elif action == "end":
+      return f"I've finished activating the <b>{activities}</b> activity."
+
+
+### MENU ACADEMIC STUDENTS  ####################
+def menu_stu(lang):
+  if lang == "es":
+    text = "<b>ESTUDIANTES:</b>\nSelecciona una opción:"
+    opt = [
+      [
+        IKBtn("Ver lista", callback_data="t_menu-stu-view"),
+        IKBtn("Agregar", callback_data="t_menu-stu-add"),
+      ],
+      [
+        IKBtn("Modificar", callback_data="t_menu-stu-modify"),
+        IKBtn("Eliminar", callback_data="t_menu-stu-delete"),
+      ],
+      [IKBtn("Atrás", callback_data="t_menu-back")],
+    ]
+  else:
+    text = "<b>STUDENTS:</b>\nSelect an option:"
+    opt = [
+      [
+        IKBtn("View List", callback_data="t_menu-stu-view"),
+        IKBtn("Add", callback_data="t_menu-stu-add"),
+      ],
+      [
+        IKBtn("Modify", callback_data="t_menu-stu-modify"),
+        IKBtn("Delete", callback_data="t_menu-stu-delete"),
+      ],
+      [IKBtn("Back", callback_data="t_menu-back")],
+    ]
+  return (text, opt)
+
+
+def menu_stu_view(lang, action):
+  if lang == "es":
+    if action == "menu":
+      text = "<b>VER LISTA DE ESTUDIANTES:</b>\nSelecciona una opción:"
+      opt = [
+        [IKBtn("Archivo students_format", callback_data="t_menu-stu-view-file")],
+        [IKBtn("Estudiantes registrados", callback_data="t_menu-stu-view-reg")],
+        [IKBtn("Atrás", callback_data="t_menu-stu")],
+      ]
+    elif action == "not_file":
+      return (
+        "<b>VER LISTA DE ESTUDIANTES</b>\nNo se pudo crear el archivo de estudiantes."
+      )
+  else:
+    if action == "menu":
+      text = "<b>VIEW STUDENTS LIST:</b>\nSelect an option:"
+      opt = [
+        [IKBtn("students_format file", callback_data="t_menu-stu-view-file")],
+        [IKBtn("Registered students", callback_data="t_menu-stu-view-reg")],
+        [IKBtn("Back", callback_data="t_menu-stu")],
+      ]
+    elif action == "not_file":
+      return "<b>SEE LIST OF STUDENTS</b>\nThe students file could not be created."
+  return (text, opt)
+
+
+def menu_stu_add(lang):
+  if lang == "es":
+    return "<b>AGREGAR ESTUDIANTE:</b>\nPara agregar más estudiantes sube un archivo con el nombre <b>add_students_format.csv</b> con el formato de <b>students_format</b>."
+  else:
+    return "<b>ADD STUDENT:</b>To add more students upload a file with the name <b>add_students_format.csv</b> with the format of <b>students_format</b>."
+
+
+def menu_stu_modify(lang, headers):
+  if lang == "es":
+    return f"<b>MODIFICAR ESTUDIANTE:</b>\nPara modificar un estudiante escribe el comando\n<code>/modify_student {lt}email{gt} {lt}campo a modificar{gt} {lt}nuevo contenido{gt}</code>\n\nLos campos que puedes modificar son:\n{headers}\n\n<b>Ejemplo:</b>\n<code>/modify_student ejemplo@correo.ugr.es first_name David</code> (Modifica el nombre del estudiante por David)."
+  else:
+    return f"<b>MODIFY STUDENT:</b>\nTo modify a student, type command\n<code>/modify_student {lt}email{gt} {lt}field to modify{gt} {lt}new content{gt}</code>\n\nThe fields you can modify are:\n{headers}\n\n<b>Example:</b>\n<code>/delete_student example@correo.ugr.es first_name David</code> (modify  the student's first name to David).\n\n<code>/modify_activity GLOSSARY name Topic 2 Glossary</code> (modifies the activity name)"
+
+
+def menu_stu_delete(lang):
+  if lang == "es":
+    return f"<b>ELIMINAR ESTUDIANTE:</b>\nPara eliminar un estudiante escribe el comando\n<code>/delete_student {lt}email{gt}</code>\n\n<b>Ejemplo:</b>\n<code>/delete_student ejemplo@correo.ugr.es</code>"
+  else:
+    return f"<b>DELETE STUDENT:</b>\nTo delete a student, type command\n<code>/delete_student {lt}email{gt}</code>\n\n<b>Example:</b>\n<code>/delete_student example@correo.ugr.es</code>"
+
+
+### MENU ACADEMIC REPORTS  ####################
+def menu_reports(lang):
+  if lang == "es":
+    text = "<b>REPORTES:</b>\nSelecciona una opción:"
+    opt = [
+      [IKBtn("Calificaciones", callback_data="t_menu-reports-grades")],
+      [IKBtn("Factor de Riesgo Académico", callback_data="t_menu-reports-ARF")],
+      [IKBtn("Participación en meetings", callback_data="t_menu-reports-meetings")],
+      [IKBtn("EValuación docente", callback_data="t_menu-reports-eva_teacher")],
+      [IKBtn("Evaluación de recursos", callback_data="t_menu-reports-eva_resources")],
+      [
+        IKBtn(
+          "Eva. de compañeros en los meetings",
+          callback_data="t_menu-reports-eva_p2p_in_meet",
+        )
+      ],
+      [
+        IKBtn(
+          "Eva. de compañeros fuera de meetings",
+          callback_data="t_menu-reports-eva_p2p_out_meet",
+        )
+      ],
+      [IKBtn("Atrás", callback_data="t_menu-back")],
+    ]
+  else:
+    text = "<b>STUDENTS:</b>\nSelect an option:"
+    opt = [
+      [
+        IKBtn("View List", callback_data="t_menu-stu-view"),
+        IKBtn("Add", callback_data="t_menu-stu-add"),
+      ],
+      [
+        IKBtn("Modify", callback_data="t_menu-stu-modify"),
+        IKBtn("Delete", callback_data="t_menu-stu-delete"),
+      ],
+      [IKBtn("Back", callback_data="t_menu-back")],
+    ]
+  return (text, opt)

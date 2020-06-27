@@ -64,6 +64,7 @@ def main():
           ("start", "Iniciar"),
           ("help", "ayuda"),
           ("change_language", "Cambio de Idioma"),
+          ("menu", "Menu de usuario"),
         ]
       )
 
@@ -87,7 +88,8 @@ def main():
     dp.add_handler(Cmd_Hdl("start", cmd.start))
     dp.add_handler(Cmd_Hdl("change_language", cmd.change_language))
     dp.add_handler(Cmd_Hdl("check_email", cmd.check_email))
-    dp.add_handler(CQ_Hdl(b_fun.menu))
+    dp.add_handler(Cmd_Hdl("menu", cmd.menu))
+    dp.add_handler(CQ_Hdl(b_fun.options_menu))
     dp.add_handler(
       Msg_Hdl((~Filters.command) & (~Filters.status_update), b_fun.received_message)
     )
@@ -99,45 +101,12 @@ def main():
 
 
 def test():
-  logging.error("ESTO ES UN ERROR")
-  import pandas as pd
 
-  start = time()
+  """ start = time()
   sql_stu = "SELECT email FROM students_file"
   students = [stu[0] for stu in sqlite.execute_statement(sql_stu, "fetchall")]
   print("\n\n========================\n", students)
-  sql_time_1 = time() - start
-
-  start = time()
-  sql_stu = "SELECT DISTINCT email FROM students_file"
-  students = [stu[0] for stu in sqlite.execute_statement(sql_stu, "fetchall")]
-  print("\n\n========================\n", students)
-  sql_time = time() - start
-
-  start = time()
-  sql = "SELECT email FROM grades"
-  students = sqlite.execute_statement(sql, df=True)
-  print(list(students["email"]))
-  pandas_time = time() - start
-  print(sql_time_1)
-  print(sql_time)
-  print(pandas_time)
-  if sql_time > pandas_time:
-    print("PANDAS ES MEJOR")
-  else:
-    print("SQL ES MEJOR")
-
-  sql_act = "SELECT DISTINCT _id FROM activities WHERE weight>0"
-  activities = [act[0] for act in sqlite.execute_statement(sql_act, "fetchall")]
-
-  df_colums = ["email"]
-  df_colums.extend(activities)
-  print(df_colums)
-
-  df = pd.DataFrame(students, columns=df_colums)
-  print(df)
-
-  print()
+  sql_time_1 = time() - start """
 
 
 if __name__ == "__main__":

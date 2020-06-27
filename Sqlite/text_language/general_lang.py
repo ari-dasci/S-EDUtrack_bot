@@ -24,15 +24,40 @@ def welcome(user):
     return f"Hello {user.telegram_name}, I am your bot."
 
 
-def error_upload_file(language, file=""):
-  if language == "es":
+def file_ready_for_download(lang):
+  if lang == "es":
+    return "Archivo listo para su descarga."
+  else:
+    return "File ready for download."
+
+
+def error_upload_file(lang, file=""):
+  if lang == "es":
     return f"Hubo un error al subir el archivo {file}. Por favor inténtalo de nuevo."
   else:
     return f"There was an error uploading the file {file}. Please try again."
 
 
-def email_syntax_error(language, email):
-  if language == "es":
+def email_syntax_error(lang, email):
+  if lang == "es":
     return f'El email "{email}" no tiene la sintaxis correcta, asegurate de haberlo escrito correctamente.'
   else:
     return f'The email "{email}" does not have the correct syntax, make sure you typed it correctly.'
+
+
+def wrong_command_group(lang, context):
+  bot_username = context.bot.username
+  if lang == "es":
+    return f"Lo siento este comando no tiene ninguna función en el Grupo. Hablame en chat privado. @{bot_username}"
+
+  else:
+    return (
+      f"Sorry this command has no function in the Group. Talk to me on a private chat. @{bot_username}",
+    )
+
+
+def wrong_num_arguments(lang, context):
+  if lang == "es":
+    return "La cantidad de argumentos para el comando es incorrecta.\n"
+  else:
+    return "The number of arguments for the command is incorrect.\n"

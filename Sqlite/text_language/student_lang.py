@@ -22,16 +22,16 @@ def welcome(lang, context, action="short"):
     # I'll show you the commands you can use and the description of each menu item. You will also be able to access the user manual."
 
 
-def not_config_files_set(language, context):
+def not_config_files_set(lang, context):
   bot_name = context.bot.first_name
-  if language == "es":
+  if lang == "es":
     return f"<b>EDUtrack {bot_name}</b> está en modo configuración y por ello aún no está activo. Espera instrucciones de tu profesor/a."
   else:
     return f"<b>EDUtrack {bot_name}</b> is in configuration mode and therefore is not active yet. Wait for instructions of your teacher."
 
 
-def check_email(language, action, email=""):
-  if language == "es":
+def check_email(lang, action, email=""):
+  if lang == "es":
     if action == "registration":
       return f"<b>Verificación por email:</b>\nPara verificar que eres estudiante de la asignatura <b>{cfg.subject_data['name']}</b> y registrar tu usario de Telegram en la base de datos escribe el comando:\n\n<code>/check_email {lt}correo UGR{gt}</code>\n\nSi no lo sabes/recuerdas, contacta con tu profesor/a.\n\n<b>Ejemplo</b>:\n<code>/check_email nombre@correo.ugr.es</code>"
     elif action == "no_args":
@@ -62,3 +62,9 @@ def check_email(language, action, email=""):
       return f"Your user is already registered with the email {email}\nIf this is not your email, please contact your teacher."
     elif action == "success":
       return f"<b>Email verification:</b>\nI have successfully registered the email {email} to your Telegram user."
+
+
+def example_commands(lang, command):
+  if lang == "es":
+    if command == "check_email":
+      return "\n\n<b>Ejemplo</b>:\n<code>/check_email nombre@correo.ugr.es</code>"

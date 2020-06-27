@@ -1,12 +1,12 @@
 import inspect
 import os
 import pandas as pd
-from telegram import ChatAction
+from telegram import ChatAction, InlineKeyboardMarkup as IKMarkup
 from functools import wraps
 from urllib.request import urlopen
 import config.config_file as cfg
 import config.db_sqlite_connection as sqlite
-from functions import general_functions as g_fun, teacher_functions as t_fun
+from functions import general_functions as g_fun
 from text_language import (
   bot_lang as b_lang,
   general_lang as g_lang,
@@ -14,9 +14,13 @@ from text_language import (
   student_lang as s_lang,
 )
 
-
+# Function Decorator
 def send_action(action):
-  """Sends 'action' while processing func command."""
+  """Decorator that sends 'action' while processing func command.
+
+  Args:
+      action (str): String with the action displayed by the bot
+  """
 
   def decorator(func):
     @wraps(func)
@@ -32,48 +36,36 @@ def send_action(action):
 
 
 def received_message(update, context):
-  try:
-    # print("CHECK GFUN ** ENTRO A RECEIVED_MESSAGE **")
-    upm = update.message
-    user_data = update._effective_user
-    chat_id = upm.chat_id
-    user = g_fun.get_user_data(user_data)
-    # get_user_data returns False if the user does not have the username set up
-    if not user and chat_id > 0:
-      text = b_lang.no_username(user_data.language_code)
-      update.message.reply_text(text)
-      return False
+  """Receives a message from the user that is not a command. Identifies whether the user is a student or a teacher and redirects to the corresponding function.
 
-    if user.is_teacher:
-      t_fun.teacher_received_message(update, context, user)
-    else:
-      if cfg.config_files_set:
-        if user.register_student():
-          if chat_id < 0:
-            edu_fun.reg_messages(upm, user)
-          else:
-            text = s_lang.welcome_text(user.language, context)
-            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
-        else:
-          text = s_lang.check_email(user.language, "registration")
-          context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
-          print()
+  Args:
+      update (:class:'telegram-Update'): Current request received by the bot
+      context (:class:'telegram.ext-CallbackContext'): Context of the current request
+  """
+  try:
+    chat_id = update.message.chat_id
+    user = g_fun.get_user_data(update._effective_user)
+    # get_user_data returns False if the user does not have the username set up
+    if chat_id > 0:
+      if user:
+        user.received_message(update, context)
       else:
-        if chat_id > 0:
-          text = s_lang.not_config_files_set(user.language, context)
-          context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+        text = b_lang.no_username(update._effective_user.language_code)
+        update.message.reply_text(text)
+        return False
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
 
 
+# Functions for configuring the course
 @send_action(ChatAction.TYPING)
 def config_files_set(update, context, user):
   """Sends the student and activity configuration files for the teacher to configure the course.
 
     Args:
-        context ([type]): [description]
-        user (dict): General user information.
+        context (:class:'telegram.ext-CallbackContext'): Context of the current request.
+        user (:class:'user_types.Teacher'): General teacher information.
     """
   try:
     not_set = []
@@ -100,6 +92,13 @@ def config_files_set(update, context, user):
 
 
 def config_files_send_document(context, user, elements):
+  """Sends the 'user' the requested document in 'elements'.
+
+  Args:
+      context (:class:'telegram.ext-CallbackContext'): Context of the current request.
+      user (:class:'user_types.Teacher'): General teacher information.
+      elements (str): Indicator of the document that will be sent to the user 'students' or 'activities'.
+  """
   try:
     context.bot.sendDocument(
       chat_id=user._id,
@@ -110,41 +109,30 @@ def config_files_send_document(context, user, elements):
     g_fun.print_except(error_path)
 
 
-def activities_grade_files():
-  pass
-
-
-def categories_grade_file():
-  pass
-
-
 @send_action(ChatAction.UPLOAD_DOCUMENT)
 def config_files_upload(update, context, user):
-  """EDUtrack recibe un documento de configuración:
-  students_format, replace_students_format, activities_format o replace_activities_format, lo descarga y lo prepara para subirlo a la base de datos.
+  """EDUtrack receives a configuration document:
+  students_format, add_stundents_format, replace_students_format, activities_format or replace_activities_format. To upload it to the DB.
 
   Args:
-      update ([type]): [description]
-      context ([type]): [description]
-      user ([type]): [description]
+      update (:class:'telegram-Update'): Current request received by the bot.
+      context (:class:'telegram.ext-CallbackContext'): Context of the current request.
+      user (:class:'user_types.Teacher'): General teacher information.
 
   Returns:
       bool: Return True if the set up process was completed correctly and False otherwise.
   """
-  print("CHECK TEA FUN ** CONFIG FILES UPLOAD **")
 
-  def check_students_file(df_file, elements):
+  def check_students_file(df_file):
     """Prepara los datos que se insertaran en la tabla students_file y revisa que los nombres de columnas sean correctos.
 
     Args:
-        df_file (DataFrame): DataFrame con los registros de estudiantes que será subidos a la DB.
-        elements (str): [description]
-
+        df_file (:class:'pandas-DataFrame'): DataFrame with the student records that will be uploaded to the DB.
     Returns:
-        bool: Retorna True si la comprobación es correcto de lo contrario retorna False.
+        bool: Returns True if the check is correct otherwise returns False.
     """
     try:
-      df_file = data_preparation(df_file, elements)
+      df_file = data_preparation(df_file, "students")
       # Elimina los archivos generados al solicitar el reporte de estudiantes.
       g_fun.remove_file("files/download/students_full.csv")
       g_fun.remove_file("files/downlad/students.csv")
@@ -160,13 +148,78 @@ def config_files_upload(update, context, user):
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
       g_fun.print_except(error_path)
 
-  def check_activities_file(df_file, elements):
+  def check_activities_file(df_file):
+    """Check that the activities_format file meets the necessary requirements before it is uploaded to the DB.
+
+    Args:
+        df_file (:class:'pandas-DataFrame'): DataFrame with the activity records that will be uploaded to the DB.
+        elements (str): elements (str): Indicator that you are working with activities.
+    """
+
+    def are_categories_defined(root_category):
+      try:
+        # Check if all categories are defined
+        if root_category != {"SUBJECT"}:
+          if "SUBJECT" not in root_category:
+            text = t_lang.config_files_activities(user.language, "no_main_category")
+            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+          else:
+            root_category.remove("SUBJECT")
+
+          undefined_categories = "\n".join(root_category)
+          if undefined_categories:
+            text = t_lang.config_files_activities(
+              user.language, "undefined_category", elements=undefined_categories
+            )
+            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+          return False
+        return True
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def categories_have_parent(category_data):
+      try:
+        # Check if all categories have parent category
+        no_parent_cat = list(category_data.loc[category_data["category"] == ""]["_id"])
+        if no_parent_cat:
+          no_parent_cat = "\n".join(no_parent_cat)
+          text = t_lang.config_files_activities(
+            user.language, "no_parent_cat", elements=no_parent_cat
+          )
+          context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+          return False
+        return True
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def categories_have_weight(category_data):
+      try:
+        # Check if the defined categories have weight.
+        weightless_cat = list(category_data.loc[category_data["weight"] == ""]["_id"])
+        if weightless_cat:
+          weightless_cat = "\n".join(weightless_cat)
+          text = t_lang.config_files_activities(
+            user.language, "weightless", elements=weightless_cat
+          )
+          context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+          return False
+        return True
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
     try:
-      df_file = data_preparation(df_file, elements)
+      df_file = data_preparation(df_file, "activities")
       # Elimina los archivos generados al solicitar el reporte de actividades.
       g_fun.remove_file("files/download/all_activities.csv")
       g_fun.remove_file("files/download/qualifying_activities.csv")
       # Revisa los encabezados del archivo
+
       if not set(cfg.activities_headers_file).issubset(file_headers):
         headers = ("\n").join(cfg.students_headers_file)
         text = t_lang.config_files(user.language, "header_error", elements=headers)
@@ -178,45 +231,15 @@ def config_files_upload(update, context, user):
       file_error = False
       categories = set(filter(None, df_file["category"].unique()))
       root_category = categories - set(df_file["_id"].dropna())
-
-      # Check if all categories are defined
-      if root_category != {"SUBJECT"}:
-        if "SUBJECT" not in root_category:
-          text = t_lang.config_files_activities(user.language, "no_main_category")
-          context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
-        else:
-          root_category.remove("SUBJECT")
-
-        undefined_categories = "\n".join(root_category)
-        if undefined_categories:
-          text = t_lang.config_files_activities(
-            user.language, "undefined_category", elements=undefined_categories
-          )
-          context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
-        file_error = True
-
       category_data = df_file.loc[df_file["_id"].isin(categories)]
-      print(category_data)
 
-      # Check if all categories have parent category
-      no_parent_cat = list(category_data.loc[category_data["category"] == ""]["_id"])
-      if no_parent_cat:
-        no_parent_cat = "\n".join(no_parent_cat)
-        text = t_lang.config_files_activities(
-          user.language, "no_parent_cat", elements=no_parent_cat
-        )
-        context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
-
+      if not are_categories_defined(root_category):
         file_error = True
 
-      # Check if the defined categories have weight.
-      weightless_cat = list(category_data.loc[category_data["weight"] == ""]["_id"])
-      if weightless_cat:
-        weightless_cat = "\n".join(weightless_cat)
-        text = t_lang.config_files_activities(
-          user.language, "weightless", elements=weightless_cat
-        )
-        context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+      if not categories_have_parent(category_data):
+        file_error = True
+
+      if not categories_have_weight(category_data):
         file_error = True
 
       if file_error:
@@ -229,9 +252,7 @@ def config_files_upload(update, context, user):
   def separate_elements(df_file):
     try:
       sql = "SELECT * FROM students_file"
-      conn = sqlite.connection(True)
-      data_DB = pd.read_sql_query(sql, con=conn)
-      conn.close()
+      data_DB = sqlite.execute_statement(sql, df=True)
 
       all_elements = g_fun.dataframes_comparison(data_DB, df_file).drop(
         ["_merge"], axis=1
@@ -266,11 +287,11 @@ def config_files_upload(update, context, user):
     if "students" in doc.file_name:
       table_name = "students_file"
       elements = "students"
-      if not check_students_file(df_file, elements):
+      if not check_students_file(df_file):
         return False
     elif "activities" in doc.file_name:
       table_name = elements = "activities"
-      if not check_activities_file(df_file, elements):
+      if not check_activities_file(df_file):
         return False
 
     if not os.path.exists("files/config"):
@@ -284,10 +305,10 @@ def config_files_upload(update, context, user):
         context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
         return False
 
-      upload_data = g_fun.save_config_file_DB(new_elements, table_name, "append")
+      upload_data = sqlite.save_config_file_DB(new_elements, table_name, "append")
       all_elements.to_csv(f_save_name, index=False)
     else:
-      upload_data = g_fun.save_config_file_DB(df_file, table_name, "replace")
+      upload_data = sqlite.save_config_file_DB(df_file, table_name, "replace")
       df_file.to_csv(f_save_name, index=False)
 
     # Set the global variables for activities, sections and categories. Creates the evaluation schema.
@@ -302,15 +323,13 @@ def config_files_upload(update, context, user):
         )
         g_fun.create_evaluation_scheme() """
 
-      cfg.config_files_set = g_fun.are_config_files_set()
-
-      if cfg.config_files_set:
+      if g_fun.are_config_files_set():
+        cfg.config_files_set = True
         if add_elements:
           students = list(new_elements["email"])
           if create_grades(update, context, students, add_elements=True):
             if duplicate_elements:
               elements = "\n".join(duplicate_elements)
-              print(elements)
               text = t_lang.config_files(
                 user.language, "add_duplicates", elements=elements
               )
@@ -352,6 +371,14 @@ def config_files_upload(update, context, user):
 
 
 def data_preparation(data, elements):
+  """Clean and prepare the dataframe 'data' to be uploaded to the database.
+
+  Args:
+      data (:class:'pandas.DataFrame'): Records of the file to be uploaded to the DB.
+      elements (str): Indicator of the type of document you want to upload, 'students' or 'activities'.
+  Returns:
+      [pandas-DataFrame]: DataFrame clean.
+  """
   try:
     ID = data.columns[0]
     data.columns = data.columns.str.replace(" ", "_")
@@ -360,9 +387,15 @@ def data_preparation(data, elements):
 
     if elements == "activities":
       data.columns = map(str.lower, data.columns)
+      data.replace({"true": 1, "false": 0}, inplace=True)
+      data["week"].fillna(0, inplace=True)
+      data["visible"].fillna(0, inplace=True)
+      data["weight"].fillna(0.0, inplace=True)
+      data["active"] = 0
       data.fillna("", inplace=True)
       for col in ["_id", "section", "category"]:
         data[col] = data[col].str.upper()
+
     elif elements == "students":
       data.columns = map(str.lower, data.columns)
       data.fillna("", inplace=True)
@@ -377,12 +410,22 @@ def data_preparation(data, elements):
       data[grades_cols] = data[grades_cols].astype(float)
     return data
   except:
-    g_fun.print_except(inspect.stack()[0][3], f"ELEMENTS: {elements}")
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
 
 
-def create_grades(update, context, students="", add_elements=False):
-  """Crea el apartado de calificaciones en la base de datos a partir deel archivo de estudiantes y actividades subidos por el docente.
+def create_grades(update, context, students, add_elements=False):
+  """Creates the table 'grades' in the database from the file of students and activities uploaded by the teacher.
 
+  Args:
+      update (:class:'telegram-Update'): Current request received by the bot.
+      context (:class:'telegram.ext-CallbackContext'): Context of the current request.
+      students (list): List of students to be saved in the 'grades' table
+      add_elements (bool, optional): Indicates if new elements will be added or if the table will be created. Defaults to False.
+
+  Returns:
+      bool: Returns True if the process is correct otherwise returns False
   """
   print("CHECK TEAFUN ** CREATE GRADES **")
   try:
@@ -427,8 +470,132 @@ def create_grades(update, context, students="", add_elements=False):
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
+    return False
 
 
-def menu(update, context):
-  pass
+def options_menu(update, context):
+  try:
+    query = update.callback_query
+    selections = (query.data).split("-")
+    choice = selections[-1]
+    user = g_fun.get_user_data(update._effective_user)
+    if user:
+      if len(selections) > 1:
+        # STUDENT MENU
+        if selections[0] == "s_menu":
+          if selections[1] == "back":
+            pass
+        # TEACHER MENU
+        elif selections[0] == "t_menu":
+          print(selections)
+          if selections[1] == "back":
+            text, options = t_lang.main_menu(user.language)
+            show_menu(query, text, options)
 
+          elif selections[1] == "act":
+            if len(selections) == 2:
+              text, options = t_lang.menu_act(user.language)
+              show_menu(query, text, options)
+            elif selections[2] == "view":
+              if len(selections) == 3:
+                text, options = t_lang.menu_act_view(user.language, "menu")
+                show_menu(query, text, options)
+              else:
+                user.activities_view(update, context, selections[3], query)
+            elif selections[2] == "grade":
+              if len(selections) == 3:
+                text, options = t_lang.menu_act_grade(user.language, "menu")
+                show_menu(query, text, options)
+              elif selections[3] == "upload":
+                text = t_lang.menu_act_grade(user.language, "upload")
+                query.edit_message_text(parse_mode="HTML", text=text)
+                config_files_send_document(context, user, "grades")
+              elif selections[3] == "cmd":
+                text = t_lang.menu_act_grade(user.language, "cmd")
+                query.edit_message_text(parse_mode="HTML", text=text)
+            elif selections[2] == "replace":
+              text = t_lang.menu_act_replace(user.language)
+              query.edit_message_text(parse_mode="HTML", text=text)
+              config_files_send_document(context, user, "activities")
+            elif selections[2] == "modify":
+              headers = "name\nsection\nweek\n"
+              text = t_lang.menu_act_modify(user.language)
+              query.edit_message_text(parse_mode="HTML", text=text)
+            elif selections[2] == "delete":
+              text = t_lang.menu_act_delete(user.language)
+              query.edit_message_text(parse_mode="HTML", text=text)
+            elif selections[2] == "active":
+              sql = "SELECT DISTINCT _id FROM activities WHERE weight>0 AND active <> 1"
+              inactive_act = [
+                act[0] for act in sqlite.execute_statement(sql, "fetchall")
+              ]
+              inactive_act = "\n".join(sorted(inactive_act))
+              text = t_lang.menu_act_active(user.language, "text")
+              query.edit_message_text(parse_mode="HTML", text=text)
+              text = t_lang.menu_act_active(user.language, "activities", inactive_act)
+              context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+          elif selections[1] == "stu":
+            if len(selections) == 2:
+              text, options = t_lang.menu_stu(user.language)
+              show_menu(query, text, options)
+            elif selections[2] == "view":
+              if len(selections) == 3:
+                text, options = t_lang.menu_stu_view(user.language, "menu")
+                show_menu(query, text, options)
+              else:
+                user.students_view(update, context, selections[3], query)
+            elif selections[2] == "add":
+              text = t_lang.menu_stu_add(user.language)
+              query.edit_message_text(parse_mode="HTML", text=text)
+              config_files_send_document(context, user, "students")
+            elif selections[2] == "modify":
+              headers = "email\nfirst_name\nlast_name"
+              text = t_lang.menu_stu_modify(user.language, headers)
+              query.edit_message_text(parse_mode="HTML", text=text)
+            elif selections[2] == "delete":
+              text = t_lang.menu_stu_delete(user.language)
+              query.edit_message_text(parse_mode="HTML", text=text)
+          elif selections[1] == "reports":
+            if len(selections) == 2:
+              text, options = t_lang.menu_reports(user.language)
+              show_menu(query, text, options)
+            elif selections[2] == "grades":
+              user.reports(update, context, selections[2], query)
+            elif selections[2] == "ARF":
+              print("ENTRO A ARF")
+            elif selections[2] == "meetings":
+              print("ENTRO A meetings")
+            elif selections[2] == "eva_teacher":
+              print("ENTRO A eva_teacher")
+            elif selections[2] == "eva_contents":
+              print("ENTRO A eva_contents")
+            elif selections[2] == "eva_classmate":
+              print("ENTRO A eva_classmate")
+
+    else:
+      text = b_lang.no_username(update._effective_user.language_code)
+      update.message.reply_text(text)
+      return False
+
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
+
+
+def show_menu(query, menu_text, menu_opt, context=""):
+  try:
+    keyboard = menu_opt
+    reply_markup = IKMarkup(keyboard)
+    if query:
+      query.edit_message_text(
+        parse_mode="HTML", text=menu_text, reply_markup=reply_markup
+      )
+    else:
+      context.bot.sendMessage(
+        chat_id="443344899", text=menu_text, reply_markup=reply_markup
+      )
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False

@@ -1,12 +1,16 @@
 import logging
 import inspect
+import re
 import sys
 import os
 from colorama import init, Fore, Back
-import config.db_sqlite_connection as sqlite
-import config.config_file as cfg
-
-from classes import Teacher, Student
+from unicodedata import normalize
+from config import (
+  config_file as cfg,
+  db_sqlite_connection as sqlite,
+)
+from config.create_files_format import create_files
+from user_types import Teacher, Student
 
 
 def config_subject():
@@ -58,19 +62,17 @@ def get_user_data(user_data, planet=""):
           planet = sqlite.execute_statement(sql, "fetchone")
           if planet:
             user.planet = planet[0]
-          user.add_telegram_user()
           return user
       # TODO: Saber que se necesita para obtener la información de un estudiante
     return False
   except:
-    pass
-
-    # current_user.add_telegram_user()
-    # print(current_user)
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+    return False
 
 
 def user_is_teacher(user_id):
-  sql = f"SELECT * FROM teachers WHERE id_telegram={user_id}"
+  sql = f"SELECT * FROM teachers WHERE _id={user_id}"
   try:
     return 1 if sqlite.execute_statement(sql, fetch="fetchone") else 0
   except:
@@ -94,6 +96,23 @@ def are_config_files_set(table_name=""):
     print_except(error_path)
 
 
+def strip_accents(string):
+  """Recibe un string y elimina los acentos y lo devuelve en mayúsculas."""
+  # print("CHECK GFUN *** ENTRO A STRIP ACCENTS ***")
+  try:
+    string = re.sub(
+      r"([^n\u0300-\u036f]|n(?!\u0303(?![\u0300-\u036f])))[\u0300-\u036f]+",
+      r"\1",
+      normalize("NFD", string),
+      0,
+      re.I,
+    )
+    string = normalize("NFC", string)
+    return string.upper()
+  except:
+    print_except(inspect.stack()[0][3], string)
+
+
 def remove_file(file):
   """Recibe el path de un archivo y sí existe lo elimina así como su versión html.
 
@@ -107,18 +126,6 @@ def remove_file(file):
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     print_except(error_path)
-
-
-def save_config_file_DB(df, table_name, action="replace"):
-  try:
-    conn = sqlite.connection(True)
-    df.to_sql(table_name, con=conn, index=False, if_exists=action)
-    conn.close()
-    return True
-  except:
-    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-    print_except(error_path)
-    return False
 
 
 def dataframes_comparison(df1, df2, which="all"):
@@ -138,3 +145,49 @@ def dataframes_comparison(df1, df2, which="all"):
   else:
     diff_df = comparison_df[comparison_df["_merge"] == which]
   return diff_df
+
+
+def db_to_csv_html(df, file, headers=[], title="", date=True):
+  """Guarda la información del cursor almacenado en 'elements' de la base de datos en un archivo 'csv' y 'html' en el path almacenado en 'file'.
+
+  Arguments:
+      elements {pymongo.cursor.Cursor} -- Resgistros a guardar en los archivos.
+      file {str} -- Path y nombre del archivo sin extensión donde se almacenan los archivos.
+      headers {list} -- Lista con el orden de los encabezados para un archivo
+      title {str} -- Título que llevara el archivo HTML.
+      date {bool} -- Si es True agregara la fecha al final del archivo.
+
+  Returns:
+      [bool] -- 'True' si se crean correctamente los archivos 'False' si se genera una excepción.
+  """
+  try:
+    # df = pd.DataFrame(list(elements))
+    # TODO: Verificar si no afecta a textos
+    if "activities" in file:
+      df.sort_values(by=["_id"], inplace=True)
+    elif "students" in file:
+      df.sort_values(by=["email"], inplace=True)
+      for element in ["_jeovani@correo.ugr.es", "_burrita@correo.ugr.es"]:
+        df = df.drop(df[df.loc[:, "email"] == element].index)
+    if headers:
+      df = df[headers]
+    if "grades" in file:
+      df2 = df.mean()
+      df2["_id"] = "PROMEDIOS"
+      df = df.append(df2, ignore_index=True)
+    df = df.round(2)
+    create_files(file, df, title, date, mode="w+")
+    return True
+    """
+    ## Esto estaba antes
+    df = pd.DataFrame(list(elements))
+    print(df)
+    df.to_csv(file, index=False)
+    file = file[:-4]
+    df.index = range(1, df.shape[0] + 1)
+    with open(file + ".html", "w") as html_file:
+      html_file.write(df.to_html(justify="center"))
+    return True """
+  except:
+    print_except(inspect.stack()[0][3])
+    return False

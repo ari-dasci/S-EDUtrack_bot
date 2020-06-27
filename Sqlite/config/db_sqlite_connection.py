@@ -36,7 +36,7 @@ def execute_statement(sql_query, fetch=False, df=False):
           elif df:
             return pd.read_sql_query(sql_query, con=conn)
           return True
-  except Exception as e:
+  except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
     return False
@@ -51,7 +51,7 @@ def create_db():
 
     # sql = f"""INSERT INTO telegram_users VALUES (
     sql = f"""INSERT OR IGNORE INTO telegram_users VALUES (
-      {int(cfg.teacher_data['id_telegram'])},
+      {int(cfg.teacher_data['_id'])},
       '{cfg.teacher_data['telegram_name']}',
       '{cfg.teacher_data['username']}',
       {int(cfg.teacher_data['is_teacher'])},
@@ -60,14 +60,29 @@ def create_db():
 
     # sql = f"""INSERT INTO teachers VALUES(
     sql = f"""INSERT OR IGNORE INTO teachers VALUES(
-      {int(cfg.teacher_data['id_telegram'])},
+      {int(cfg.teacher_data['_id'])},
       '{cfg.teacher_data['telegram_name']}',
       '{cfg.teacher_data['username']}',
       '{cfg.teacher_data['email']}'
       )"""
-
     execute_statement(sql)
     print(f"Se agrego correctamente al docente {cfg.teacher_data['telegram_name']}.")
+
+    sql = "SELECT COUNT(name) FROM sqlite_master WHERE type='table' AND name='teachers_temp'"
+    if execute_statement(sql, "fetchone")[0]:
+      sql = f"SELECT COUNT(*) FROM teachers_temp"
+      if execute_statement(sql, "fetchone")[0]:
+        cfg.standby_teachers = True
+
+    # TRIGGER to update username in telegram_users
+    sql = f"""CREATE TRIGGER IF NOT EXISTS telegram_username
+              AFTER UPDATE ON telegram_users
+              WHEN t.username <> r.username
+              BEGIN
+                INSERT INTO registered_students (t_username, r_username, tipo_operacion, fecha_cambio)
+              VALUES
+                (t.username, r.username, 'UPDATE',DATETIME('NOW'));
+              """
 
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -84,11 +99,22 @@ def get_columns_names(table_name):
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
 
-
-def is_user_registered(user):
+def save_config_file_DB(df, table_name, action="replace"):
   try:
-    sql = f"SELECT count(*) FROM registered_students WHERE _id={user.id}"
-    return True if execute_statement(sql, "fetchone") else False
+    conn = connection(True)
+    df.to_sql(table_name, con=conn, index=False, if_exists=action)
+    conn.close()
+    return True
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
+    return False
+
+# REVISAR SI SIRVE
+""" def is_user_registered(user):
+  try:
+    sql = f"SELECT count(*) FROM registered_students WHERE _id={user._id}"
+    return True if execute_statement(sql, "fetchone") else False
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path) """
