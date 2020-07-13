@@ -144,7 +144,6 @@ def main_menu(lang):
       [IKBtn("Enviar mensaje a los planetas", callback_data="t_menu-msg")],
       # [IKBtn("ON/OFF registro en planetas", callback_data="t_menu-reg_planet")],
     ]
-    return (text, opt)
   else:
     text = "<b>TEACHER MENU</b>\nSelect an option:"
     opt = [
@@ -156,7 +155,7 @@ def main_menu(lang):
       [IKBtn("Send message to the planets", callback_data="t_menu-msg")],
       # [IKBtn("ON/OFF planet registry", callback_data="t_menu-reg_planet")],
     ]
-    return (text, opt)
+  return (text, opt)
 
 
 def title_file(lang, title):
@@ -223,37 +222,26 @@ def menu_act(lang):
   return (text, opt)
 
 
-def menu_act_view(lang, action):
+def menu_act_view(lang):
   if lang == "es":
-    if action == "menu":
-      text = "<b>VER LISTA DE ACTIVIDADES</b>\nSelecciona una opción:"
-      opt = [
-        [IKBtn("Todas las Actividades", callback_data="t_menu-act-view-all")],
-        [
-          IKBtn("Actividades Calificables", callback_data="t_menu-act-view-qualifying",)
-        ],
-        [IKBtn("Recursos", callback_data="t_menu-act-view-resources")],
-        [IKBtn("Atrás", callback_data="t_menu-act")],
-      ]
-      return (text, opt)
-    elif action == "not_file":
-      return (
-        "<b>VER LISTA DE ACTIVIDADES</b>\nNo se pudo crear el archivo de actividades."
-      )
+    text = "<b>VER LISTA DE ACTIVIDADES</b>\nSelecciona una opción:"
+    opt = [
+      [IKBtn("Todas las Actividades", callback_data="t_menu-act-view-all")],
+      [IKBtn("Actividades Calificables", callback_data="t_menu-act-view-qualifying",)],
+      [IKBtn("Recursos", callback_data="t_menu-act-view-resources")],
+      [IKBtn("Atrás", callback_data="t_menu-act")],
+    ]
   else:
-    if action == "menu":
-      text = "<b>VIEW ACTIVITIES LIST</b>\nSelect an option:"
-      opt = [
-        [IKBtn("All Activities", callback_data="t_menu-act-view-all")],
-        [IKBtn("Qualifying Activities", callback_data="t_menu-act-view-qualifying")],
-        [IKBtn("Back", callback_data="t_menu-act")],
-      ]
-      return (text, opt)
-    elif action == "not_file":
-      return "<b>SEE LIST OF ACTIVITIES</b>\nThe activity file could not be created."
+    text = "<b>VIEW ACTIVITIES LIST</b>\nSelect an option:"
+    opt = [
+      [IKBtn("All Activities", callback_data="t_menu-act-view-all")],
+      [IKBtn("Qualifying Activities", callback_data="t_menu-act-view-qualifying")],
+      [IKBtn("Back", callback_data="t_menu-act")],
+    ]
+  return (text, opt)
 
 
-def menu_act_grade(lang, action):
+def menu_act_grade(lang, action, elements="", num_elements=""):
   if lang == "es":
     if action == "menu":
       text = "<b>CALIFICAR</b>\nSelecciona una opción:"
@@ -267,6 +255,21 @@ def menu_act_grade(lang, action):
       return "Descarga este archivo como base para crear el archivo de calificaciones. Envialo con el mismo nombre para cargar las calificaciones."
     elif action == "cmd":
       return f"<b>CALIFICAR ACTIVIDAD</b>\nEscribe el comando\n<code>/grade_activity {lt}id_actividad{gt} {lt}email_estudiante{gt} {lt}calificación{gt}</code>;\n\nCada estudiante debe separarse con el signo punto y coma ';' salvo el último\n\nEjemplo:\n<code>/grade_activity Prueba_1\nejemplo@correo.ugr.es 8.5;\nejemplo2@gmail.com 9.6;\nejemplo3@hotmail.com 9</code>"
+    elif action == "unregistered_stu":
+      if len(elements) == 1:
+        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nEl estudiante <b>{elements}</b> no se encuentra registrado."
+      else:
+        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nLos siguientes <b>{num_elements}</b> estudiantes no se encuentran registrados:\n<b>{elements}</b>"
+    elif action == "unregistered_act":
+      if len(elements) == 1:
+        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nLa actividad <b>{elements}</b> no se encuentra registrada."
+      else:
+        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nLas siguientes <b>{num_elements}</b> actividades no se encuentran registradas:\n<b>{elements}</b>"
+    elif action == "all_stu_unregistered":
+      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNingún estudiante en el archivo se encuentra registrado en la base de datos."
+    elif action == "all_act_unregistered":
+      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNinguna actividad en el archivo se encuentra registrada en la base de datos."
+
   else:
     if action == "menu":
       text = "<b>GRADE</b>\nSelect an option:"
@@ -280,6 +283,20 @@ def menu_act_grade(lang, action):
       return "Download this file as a basis for creating the grade file. Send it with the same name to load the grades."
     elif action == "cmd":
       return f"<b>GRADE ACTIVITY:</b>\nType the command\n<code>/grade_activity {lt}id_activity{gt} {lt}student email{gt} {lt}grade{gt}</code>;\n\nEach student is separated with the semicolon char ';' except the last one\n\nExample:\n<code>/grade_activity Test_1\nexample@correo.ugr.es 8.5;\nexample2@gmail.es 9.6;\nexample3@hotmail.es 9</code>"
+    elif action == "unregistered_stu":
+      if len(elements) == 1:
+        return f"<b>GRADING FILE</b>\nThe student <b>{elements}</b> is not registered."
+      else:
+        return f"<b>GRADING FILE</b>\nThe following students are not registered:\n<b>{elements}</b>"
+    elif action == "unregistered_act":
+      if len(elements) == 1:
+        return f"<b>GRADING FILE</b>\nThe activity <b>{elements}</b> is not registered."
+      else:
+        return f"<b>GRADING FILE</b>\nThe following activities are not registered:\n<b>{elements}</b>"
+    elif action == "all_stu_unregistered":
+      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNo student on file is registered in the database."
+    elif action == "all_act_unregistered":
+      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNo activity in the file is registered in the database."
 
 
 def menu_act_replace(lang):
@@ -359,29 +376,21 @@ def menu_stu(lang):
   return (text, opt)
 
 
-def menu_stu_view(lang, action):
+def menu_stu_view(lang):
   if lang == "es":
-    if action == "menu":
-      text = "<b>VER LISTA DE ESTUDIANTES:</b>\nSelecciona una opción:"
-      opt = [
-        [IKBtn("Archivo students_format", callback_data="t_menu-stu-view-file")],
-        [IKBtn("Estudiantes registrados", callback_data="t_menu-stu-view-reg")],
-        [IKBtn("Atrás", callback_data="t_menu-stu")],
-      ]
-    elif action == "not_file":
-      return (
-        "<b>VER LISTA DE ESTUDIANTES</b>\nNo se pudo crear el archivo de estudiantes."
-      )
+    text = "<b>VER LISTA DE ESTUDIANTES:</b>\nSelecciona una opción:"
+    opt = [
+      [IKBtn("Archivo students_format", callback_data="t_menu-stu-view-file")],
+      [IKBtn("Estudiantes registrados", callback_data="t_menu-stu-view-reg")],
+      [IKBtn("Atrás", callback_data="t_menu-stu")],
+    ]
   else:
-    if action == "menu":
-      text = "<b>VIEW STUDENTS LIST:</b>\nSelect an option:"
-      opt = [
-        [IKBtn("students_format file", callback_data="t_menu-stu-view-file")],
-        [IKBtn("Registered students", callback_data="t_menu-stu-view-reg")],
-        [IKBtn("Back", callback_data="t_menu-stu")],
-      ]
-    elif action == "not_file":
-      return "<b>SEE LIST OF STUDENTS</b>\nThe students file could not be created."
+    text = "<b>VIEW STUDENTS LIST:</b>\nSelect an option:"
+    opt = [
+      [IKBtn("students_format file", callback_data="t_menu-stu-view-file")],
+      [IKBtn("Registered students", callback_data="t_menu-stu-view-reg")],
+      [IKBtn("Back", callback_data="t_menu-stu")],
+    ]
   return (text, opt)
 
 

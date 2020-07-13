@@ -484,7 +484,51 @@ def options_menu(update, context):
         # STUDENT MENU
         if selections[0] == "s_menu":
           if selections[1] == "back":
-            pass
+            text, options = s_lang.main_menu(user.language)
+            show_menu(query, text, options)
+
+          elif selections[1] == "grade":
+            s_fun.my_grade(update, context, user, query)
+          elif selections[1] == "opn":
+            if len(selections) == 2:
+              text, options = s_lang.menu_opinion(user.language)
+              show_menu(query, text, options)
+
+            elif selections[2] == "tp":
+              if len(selections) == 3:
+                text, options = s_lang.opn_tea_practice_menu(user.language)
+                show_menu(query, text, options)
+              elif selections[3] == "vc":
+                user.opn_tea_meetings(context, query, selections)
+              else:
+                user.opn_tea_practice(context, query, selections)
+            elif selections[2] == "coll":
+              user.opn_collaboration(context, query, selections)
+            elif selections[2] == "rsrcs":
+              user.opn_rsrcs(context, query, selections)
+            elif selections[2] == "tea_meet":
+              user.opn_teacher_meetings(context, query, selections)
+          elif selections[1] == "eva":
+            today = date.today()
+            start_date = date(2019, 10, 1)
+            end_date = date(2019, 11, 24)
+            if today >= start_date and today <= end_date:
+              if len(selections) == 2:
+                text, options = s_lang.menu_evaluate(user.language)
+                show_menu(query, text, options)
+              elif selections[2] == "auto":
+                user.eva_autoevaluation(context, query, user, selections)
+              elif selections[2] == "coll":
+                user.eva_collaboration(context, query, user, selections)
+              elif selections[2] == "teacher":
+                user.eva_teacher(context, query, user, selections)
+            else:
+              text = s_lang.evaluate(user.language)
+              context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+          elif choice == "suggestion":
+            text = s_lang.suggestion(user.language)
+            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+
         # TEACHER MENU
         elif selections[0] == "t_menu":
           print(selections)
@@ -534,6 +578,7 @@ def options_menu(update, context):
               query.edit_message_text(parse_mode="HTML", text=text)
               text = t_lang.menu_act_active(user.language, "activities", inactive_act)
               context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+
           elif selections[1] == "stu":
             if len(selections) == 2:
               text, options = t_lang.menu_stu(user.language)
@@ -555,22 +600,14 @@ def options_menu(update, context):
             elif selections[2] == "delete":
               text = t_lang.menu_stu_delete(user.language)
               query.edit_message_text(parse_mode="HTML", text=text)
+
           elif selections[1] == "reports":
             if len(selections) == 2:
               text, options = t_lang.menu_reports(user.language)
+              text = "FUNCIONES EN DESARROLLO LO SIENTO.\n\n" + text
               show_menu(query, text, options)
-            elif selections[2] == "grades":
+            else:
               user.reports(update, context, selections[2], query)
-            elif selections[2] == "ARF":
-              print("ENTRO A ARF")
-            elif selections[2] == "meetings":
-              print("ENTRO A meetings")
-            elif selections[2] == "eva_teacher":
-              print("ENTRO A eva_teacher")
-            elif selections[2] == "eva_contents":
-              print("ENTRO A eva_contents")
-            elif selections[2] == "eva_classmate":
-              print("ENTRO A eva_classmate")
 
     else:
       text = b_lang.no_username(update._effective_user.language_code)

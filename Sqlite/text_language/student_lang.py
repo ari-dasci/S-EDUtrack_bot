@@ -68,3 +68,43 @@ def example_commands(lang, command):
   if lang == "es":
     if command == "check_email":
       return "\n\n<b>Ejemplo</b>:\n<code>/check_email nombre@correo.ugr.es</code>"
+
+
+## MENUS ####################
+def main_menu(lang):
+  if lang == "es":
+    text = "<b>MENU ESTUDIANTE</b>\nSelecciona una opción:"
+    opt = [
+      [IKButton("Mi Calificación", callback_data="s_menu-grade")],
+      [
+        IKButton("Opinar", callback_data="s_menu-opn"),
+        IKButton("Evaluar", callback_data="s_menu-eva"),
+      ],
+      [IKButton("Sugerencia", callback_data="s_menu-suggestion")],
+      [IKButton("Cambiar Idioma", callback_data="change_language")],
+    ]
+  else:
+    text = "<b>STUDENT MENU</b>\nSelect an option:"
+    opt = [
+      [IKButton("My grades", callback_data="s_menu-grade")],
+      [
+        IKButton("Opinion", callback_data="s_menu-opn"),
+        IKButton("Evaluate", callback_data="s_menu-eva"),
+      ],
+      [IKButton("Sugerencia", callback_data="s_menu-suggestion")],
+      [IKButton("Change Language", callback_data="change_language")],
+    ]
+  return (text, opt)
+
+
+def my_grade(lang, action, week, *data):
+  if lang == "es":
+    if action == "grades":
+      return f"<b>MI CALIFICACIÓN\nSEMANA {week}</b>:\nTu factor de riesgo académico es: <b>{data[0]}</b>.\nTu calificación actual es: <b>{data[1]}</b>\nTu calificación máxima posible es: <b>{data[2]}</b> \n\nA continuación te muestro cada actividad que se ha evaluado hasta este momento y su calificación:\n{data[3]}\n\n"
+    elif action == "no_active":
+      return f"<b>SEMANA {week}</b>\nActualmente no existen actividades calificadas.\n\nTu factor de riesgo académico es: <b>Ninguno</b>.\nTu máxima calificación posible es: <b>10</b>"
+  else:
+    if action == "grades":
+      return f"<b>MY GRADES\nWEEK {week}</b>:\nYour academic risk factor is <b>{data[0]}</b>.\nYour actual grade is: <b>{data[1]}</b>\nYour highest possible grade is: <b>{data[2]}</b>\n\nBelow I show you each activity that has been evaluated so far and its grade:\n{data[3]}"
+    elif action == "no_active":
+      return f"<b>WEEK {week}</b>\nThere are currently no qualified activities.\n\nYour academic risk factor is: <b>None</b>.\nYour highest possible grade is: <b>10</b>."

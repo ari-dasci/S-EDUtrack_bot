@@ -1,9 +1,11 @@
 import logging
+from datetime import datetime, timedelta
 import inspect
 import re
 import sys
 import os
 from colorama import init, Fore, Back
+from datetime import datetime, timedelta
 from unicodedata import normalize
 from config import (
   config_file as cfg,
@@ -19,6 +21,11 @@ def config_subject():
     if not sqlite.execute_statement(sql, fetch="fetchone")[0]:
       sqlite.create_db()
     cfg.config_files_set = are_config_files_set()
+
+    start_date = cfg.subject_data["start_date"]
+    start_date = datetime.strptime(start_date, "%d/%m/%Y")
+    cfg.monday_start_week = get_weekday_monday(start_date)
+
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     print_except(error_path)
@@ -69,6 +76,42 @@ def get_user_data(user_data, planet=""):
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     print_except(error_path)
     return False
+
+
+def get_weekday_monday(date):
+  try:
+    day = date.strftime("%A")
+    if day != "Monday":
+      for i in range(1, 8):
+        monday_date = date - timedelta(days=i)
+        day = monday_date.strftime("%A")
+        if day == "Monday":
+          return monday_date
+    else:
+      return date
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+    return False
+
+
+def get_week(action):
+  try:
+    today = datetime.now()
+    difference = today - cfg.monday_start_week
+    num_week = int(difference.days / 7) + 1
+    if num_week > int(cfg.course_weeks):
+      num_week = int(cfg.course_weeks)
+    if action == "num":
+      return num_week
+    elif action == "text":
+      text_week = "week_"
+      if len(cfg.subject_data["num_weeks"]) != len(str(num_week)):
+        text_week += "0" * (len(cfg.subject_data["num_weeks"]) - len(str(num_week)))
+      text_week += str(num_week)
+      return text_week
+  except:
+    print_except(inspect.stack()[0][3])
 
 
 def user_is_teacher(user_id):

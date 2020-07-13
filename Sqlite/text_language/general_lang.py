@@ -61,3 +61,28 @@ def wrong_num_arguments(lang, context):
     return "La cantidad de argumentos para el comando es incorrecta.\n"
   else:
     return "The number of arguments for the command is incorrect.\n"
+
+
+def file_not_created(lang):
+  if lang == "es":
+    return "Lo siento el archivo no pudo ser creado."
+  else:
+    return "I'm sorry the file couldn't be created."
+
+
+def linguistic_arf(lang, arf_text):
+  if lang == "es":
+    if arf_text == "irrecoverable":
+      return "Irrecuperable"
+    if arf_text == "very_critical":
+      return "Muy Crítico"
+    if arf_text == "critical":
+      return "Crítico"
+    if arf_text == "moderate":
+      return "Moderado"
+    if arf_text == "low":
+      return "Bajo"
+    if arf_text == "none":
+      return "Ninguno"
+  else:
+    return arf_text.replace("_", " ").capitalize()

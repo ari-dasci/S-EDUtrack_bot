@@ -1,10 +1,12 @@
 standby_teachers = False
 config_files_set = False
+monday_start_week = ""
 
 subject_data = {
   "name": "Fundamentos del Software",
   "_id": "FS1920",
-  "start_date": "07/09/2020",
+  "start_date": "09/07/2020",
+  "num_weeks": "15",
   "max_final_grade": "10",
   "min_grade_to_pass": "5",
   "min_ideal_grade": "7.5",

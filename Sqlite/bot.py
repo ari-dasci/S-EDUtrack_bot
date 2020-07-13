@@ -102,6 +102,43 @@ def main():
 
 def test():
 
+  ### NO BORRAR HASTA COPIAR A GET week
+  from datetime import datetime, timedelta
+
+  def get_weekday_monday(date):
+    day = date.strftime("%A")
+    if day != "Monday":
+      for i in range(1, 8):
+        monday_date = date - timedelta(days=i)
+        day = monday_date.strftime("%A")
+        if day == "Monday":
+          return monday_date
+    else:
+      return date
+
+  today = datetime.today()
+  start_date = datetime.strptime(today, "%d/%m/%Y")
+  start_monday_date = get_weekday_monday(start_date)
+  print(start_monday_date)
+
+  today = datetime.now() + timedelta(days=5)
+
+  difference = today - start_monday_date
+  num_week = int(difference.days / 7) + 1
+
+  if num_week > int(cfg.subject_data["num_weeks"]):
+    num_week = int(cfg.subject_data["num_weeks"])
+  action = "text"
+  if not action:
+    return num_week
+  else:
+    text_week = "week_"
+    if len(cfg.subject_data["num_weeks"]) != len(str(num_week)):
+      text_week += "0" * (len(cfg.subject_data["num_weeks"]) - len(str(num_week)))
+    text_week += str(num_week)
+    print(text_week)
+    return text_week
+
   """ start = time()
   sql_stu = "SELECT email FROM students_file"
   students = [stu[0] for stu in sqlite.execute_statement(sql_stu, "fetchall")]
