@@ -16,19 +16,26 @@ def connection(open_connection="False"):
   return conn if open_connection else conn.close()
 
 
-def execute_statement(sql_query, fetch=False, df=False):
+def execute_statement(
+  sql_query, fetch=False, df=False, as_dict=False, as_list=False, test=False
+):  ### BORRAR TEST
   try:
     # auto - closes
     with contextlib.closing(sqlite3.connect(db_path)) as conn:
       with conn:  # auto - commits
+        if as_dict:
+          conn.row_factory = sqlite3.Row
+        if as_list:
+          conn.row_factory = lambda cursor, row: row[0]
         with contextlib.closing(conn.cursor()) as cursor:  # auto - closes
           ######### COMPROBACION CURSOR
-          if fetch:
-            cursor.execute(sql_query)
-            print(
-              "PRUEBA CURSOR: ",
-              cursor.fetchone() if fetch == "fetchone" else cursor.fetchall(),
-            )
+          if test:
+            if fetch:
+              cursor.execute(sql_query)
+              print(
+                "PRUEBA CURSOR: ",
+                cursor.fetchone() if fetch == "fetchone" else cursor.fetchall(),
+              )
           ###############################
           cursor.execute(sql_query)
           if fetch:
@@ -99,16 +106,51 @@ def get_columns_names(table_name):
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
 
-def save_config_file_DB(df, table_name, action="replace"):
+
+def save_file_in_DB(df, table_name, index=False, action="replace"):
   try:
     conn = connection(True)
-    df.to_sql(table_name, con=conn, index=False, if_exists=action)
+    df.to_sql(table_name, con=conn, index=index, if_exists=action)
     conn.close()
     return True
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
     return False
+
+
+def save_elements_in_DB(df_to_save, table_name):
+  try:
+    conn = connection(True)
+    df_to_save.to_sql(
+      "delete", con=conn, index=False, if_exists="replace",
+    )
+    sql = f"DELETE FROM {table_name}"
+    execute_statement(sql)
+    sql = f"INSERT INTO {table_name} SELECT * FROM 'delete'"
+    execute_statement(sql)
+    sql = "DROP TABLE IF EXISTS 'delete'"
+    execute_statement(sql)
+    return True
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
+
+
+def table_DB_to_df(table_name, set_index=True):
+  try:
+    sql = f"SELECT * FROM {table_name}"
+    df = execute_statement(sql, df=True)
+    ID = df.columns[0]
+    if set_index:
+      df.set_index(ID, inplace=True)
+    return df
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
+
 
 # REVISAR SI SIRVE
 """ def is_user_registered(user):

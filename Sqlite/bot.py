@@ -89,10 +89,17 @@ def main():
     dp.add_handler(Cmd_Hdl("change_language", cmd.change_language))
     dp.add_handler(Cmd_Hdl("check_email", cmd.check_email))
     dp.add_handler(Cmd_Hdl("menu", cmd.menu))
+
+    ## Handlers Options Menu
     dp.add_handler(CQ_Hdl(b_fun.options_menu))
+
+    ## Handler who receives messages
     dp.add_handler(
       Msg_Hdl((~Filters.command) & (~Filters.status_update), b_fun.received_message)
     )
+
+    ## Handler Teacher Menu
+    dp.add_handler(Cmd_Hdl("grade_activity", cmd.grade_activity))
     run(updater)
 
   except:

@@ -241,10 +241,11 @@ def menu_act_view(lang):
   return (text, opt)
 
 
-def menu_act_grade(lang, action, elements="", num_elements=""):
+def menu_act_grade(lang, action, elements="", num_elements="", title=True):
   if lang == "es":
+    Title = "<b>CALIFICAR</b>\n" if title else ""
     if action == "menu":
-      text = "<b>CALIFICAR</b>\nSelecciona una opción:"
+      text = f"{Title}Selecciona una opción:"
       opt = [
         [IKBtn("Subir archivo", callback_data="t_menu-act-grade-upload")],
         [IKBtn("Utilizar comando", callback_data="t_menu-act-grade-cmd")],
@@ -252,27 +253,52 @@ def menu_act_grade(lang, action, elements="", num_elements=""):
       ]
       return (text, opt)
     elif action == "upload":
-      return "Descarga este archivo como base para crear el archivo de calificaciones. Envialo con el mismo nombre para cargar las calificaciones."
+      return f"{Title}Descarga este archivo como base para crear el archivo de calificaciones. Envialo con el mismo nombre para cargar las calificaciones."
     elif action == "cmd":
-      return f"<b>CALIFICAR ACTIVIDAD</b>\nEscribe el comando\n<code>/grade_activity {lt}id_actividad{gt} {lt}email_estudiante{gt} {lt}calificación{gt}</code>;\n\nCada estudiante debe separarse con el signo punto y coma ';' salvo el último\n\nEjemplo:\n<code>/grade_activity Prueba_1\nejemplo@correo.ugr.es 8.5;\nejemplo2@gmail.com 9.6;\nejemplo3@hotmail.com 9</code>"
+      return f"{Title}Escribe el comando\n<code>/grade_activity {lt}id_actividad{gt} {lt}email_estudiante{gt} {lt}calificación{gt}</code>;\n\nCada estudiante debe separarse con el signo punto y coma ';' salvo el último\n\nEjemplo:\n<code>/grade_activity Prueba_1\nejemplo@correo.ugr.es 8.5;\nejemplo2@gmail.com 9.6;\nejemplo3@hotmail.com 9</code>"
+
     elif action == "unregistered_stu":
-      if len(elements) == 1:
-        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nEl estudiante <b>{elements}</b> no se encuentra registrado."
+      if num_elements == 1:
+        return f"{Title}El estudiante <b>{elements}</b> no se encuentra registrado."
       else:
-        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nLos siguientes <b>{num_elements}</b> estudiantes no se encuentran registrados:\n<b>{elements}</b>"
+        return f"{Title}Los siguientes <b>{num_elements}</b> estudiantes no se encuentran registrados:\n<b>{elements}</b>"
     elif action == "unregistered_act":
-      if len(elements) == 1:
-        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nLa actividad <b>{elements}</b> no se encuentra registrada."
+      if num_elements == 1:
+        return f"{Title}La actividad <b>{elements}</b> no se encuentra registrada."
       else:
-        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nLas siguientes <b>{num_elements}</b> actividades no se encuentran registradas:\n<b>{elements}</b>"
-    elif action == "all_stu_unregistered":
-      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNingún estudiante en el archivo se encuentra registrado en la base de datos."
-    elif action == "all_act_unregistered":
-      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNinguna actividad en el archivo se encuentra registrada en la base de datos."
+        return f"{Title}Las siguientes <b>{num_elements}</b> actividades no se encuentran registradas:\n<b>{elements}</b>"
+    elif action == "duplicated_stu":
+      if num_elements == 1:
+        return f"{Title}El estudiante <b>{elements}</b> se encuentra duplicado."
+      else:
+        return f"{Title}Los siguientes <b>{num_elements}</b> estudiantes se encuentran duplicados:\n<b>{elements}</b>"
+    elif action == "duplicated_act":
+      if num_elements == 1:
+        return (
+          f"{Title}La actividad <b>{elements}</b> se encuentra duplicada en el archivo."
+        )
+      else:
+        return f"{Title}Las siguientes <b>{num_elements}</b> actividades se encuentran duplicadas en el archivo:\n<b>{elements}</b>"
+    elif action == "no_students":
+      return f"{Title}No se pudo registrar ningún estudiante en la base de datos."
+    elif action == "no_activities":
+      return f"{Title}No se pudo registrar ninguna actividad en la base de datos."
+    elif action == "no_arguments":
+      return (
+        f"{Title}El comando no tiene los argumentos necesarios.\n\n"
+        + menu_act_grade(lang, "cmd", title=False)
+      )
+    elif action == "grades_error":
+      return f"{Title}Se encontro un problema en los siguientes registros:\n{elements}"
+    elif action == "sucess":
+      return f"{Title}Se registraron las calificaciones."
+    elif action == "no_registration":
+      return f"{Title}No se registro ninguna calificación."
 
   else:
+    Title = "<b>GRADE</b>\n" if title else ""
     if action == "menu":
-      text = "<b>GRADE</b>\nSelect an option:"
+      text = f"{Title}Select an option:"
       opt = [
         [IKBtn("Upload File", callback_data="t_menu-act-grade-upload")],
         [IKBtn("Use Command", callback_data="t_menu-act-grade-cmd")],
@@ -280,23 +306,44 @@ def menu_act_grade(lang, action, elements="", num_elements=""):
       ]
       return (text, opt)
     elif action == "upload":
-      return "Download this file as a basis for creating the grade file. Send it with the same name to load the grades."
+      return f"{Title}Download this file as a basis for creating the grade file. Send it with the same name to load the grades."
     elif action == "cmd":
-      return f"<b>GRADE ACTIVITY:</b>\nType the command\n<code>/grade_activity {lt}id_activity{gt} {lt}student email{gt} {lt}grade{gt}</code>;\n\nEach student is separated with the semicolon char ';' except the last one\n\nExample:\n<code>/grade_activity Test_1\nexample@correo.ugr.es 8.5;\nexample2@gmail.es 9.6;\nexample3@hotmail.es 9</code>"
+      return f"{Title}Type the command\n<code>/grade_activity {lt}id_activity{gt} {lt}student email{gt} {lt}grade{gt}</code>;\n\nEach student is separated with the semicolon char ';' except the last one\n\nExample:\n<code>/grade_activity Test_1\nexample@correo.ugr.es 8.5;\nexample2@gmail.es 9.6;\nexample3@hotmail.es 9</code>"
     elif action == "unregistered_stu":
-      if len(elements) == 1:
-        return f"<b>GRADING FILE</b>\nThe student <b>{elements}</b> is not registered."
+      if num_elements == 1:
+        return f"{Title}The student <b>{elements}</b> is not registered."
       else:
-        return f"<b>GRADING FILE</b>\nThe following students are not registered:\n<b>{elements}</b>"
+        return f"{Title}The following students are not registered:\n<b>{elements}</b>"
     elif action == "unregistered_act":
-      if len(elements) == 1:
-        return f"<b>GRADING FILE</b>\nThe activity <b>{elements}</b> is not registered."
+      if num_elements == 1:
+        return f"{Title}The activity <b>{elements}</b> is not registered."
       else:
-        return f"<b>GRADING FILE</b>\nThe following activities are not registered:\n<b>{elements}</b>"
-    elif action == "all_stu_unregistered":
-      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNo student on file is registered in the database."
-    elif action == "all_act_unregistered":
-      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNo activity in the file is registered in the database."
+        return f"{Title}The following activities are not registered:\n<b>{elements}</b>"
+    elif action == "duplicated_stu":
+      if num_elements == 1:
+        return f"{Title}The student <b>{elements}</b> is duplicated in the file."
+      else:
+        return f"{Title}The following <b>{num_elements}</b> students are duplicated in the file:\n<b>{elements}</b>"
+    elif action == "duplicated_act":
+      if num_elements == 1:
+        return f"{Title}The activity <b>{elements}</b> is duplicated in the file."
+      else:
+        return f"{Title}The following <b>{num_elements}</b> activities are duplicated in the file:\n<b>{elements}</b>"
+    elif action == "no_students":
+      return f"{Title}No students could be registered in the database."
+    elif action == "no_activities":
+      return f"{Title}No activities could be registered in the database."
+    elif action == "no_arguments":
+      return (
+        f"{Title}The command does not have the necessary arguments.\n\n"
+        + menu_act_grade(lang, "cmd", title=False)
+      )
+    elif action == "grades_error":
+      return f"{Title}A problem was found in the following records:\n{elements}"
+    elif action == "sucess":
+      return f"{Title}The grades were registered."
+    elif action == "no_registration":
+      return f"{Title}No grades were recorded."
 
 
 def menu_act_replace(lang):
@@ -376,21 +423,27 @@ def menu_stu(lang):
   return (text, opt)
 
 
-def menu_stu_view(lang):
+def menu_stu_view(lang, action="menu"):
   if lang == "es":
-    text = "<b>VER LISTA DE ESTUDIANTES:</b>\nSelecciona una opción:"
-    opt = [
-      [IKBtn("Archivo students_format", callback_data="t_menu-stu-view-file")],
-      [IKBtn("Estudiantes registrados", callback_data="t_menu-stu-view-reg")],
-      [IKBtn("Atrás", callback_data="t_menu-stu")],
-    ]
+    if action == "menu":
+      text = "<b>VER LISTA DE ESTUDIANTES:</b>\nSelecciona una opción:"
+      opt = [
+        [IKBtn("Archivo students_format", callback_data="t_menu-stu-view-file")],
+        [IKBtn("Estudiantes registrados", callback_data="t_menu-stu-view-reg")],
+        [IKBtn("Atrás", callback_data="t_menu-stu")],
+      ]
+    elif action == "no_elements_registered":
+      return "No hay estudiantes registrados."
   else:
-    text = "<b>VIEW STUDENTS LIST:</b>\nSelect an option:"
-    opt = [
-      [IKBtn("students_format file", callback_data="t_menu-stu-view-file")],
-      [IKBtn("Registered students", callback_data="t_menu-stu-view-reg")],
-      [IKBtn("Back", callback_data="t_menu-stu")],
-    ]
+    if action == "menu":
+      text = "<b>VIEW STUDENTS LIST:</b>\nSelect an option:"
+      opt = [
+        [IKBtn("students_format file", callback_data="t_menu-stu-view-file")],
+        [IKBtn("Registered students", callback_data="t_menu-stu-view-reg")],
+        [IKBtn("Back", callback_data="t_menu-stu")],
+      ]
+    elif action == "no_elements_registered":
+      return "No students are registered."
   return (text, opt)
 
 

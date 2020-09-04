@@ -115,13 +115,6 @@ tables = [
               """,
   },
   {
-    "name": "academic_risk_factor",
-    "fields": """
-              _id INTEGER NOT NULL PRIMARY KEY,
-              FOREIGN KEY(_id) REFERENCES telegram_users(_id)
-              """,
-  },
-  {
     "name": "subject_data",
     "fields": f"""
               _id	TEXT NOT NULL PRIMARY KEY,
@@ -144,10 +137,8 @@ tables = [
               week INTEGER DEFAULT 0,
               weight REAL DEFAULT 0,
               visible INTEGER DEFAULT 0,
-              category TEXT,
-              active INTEGER DEFAULT 0
-              """
-    "",
+              category TEXT
+              """,
   },
 ]
 

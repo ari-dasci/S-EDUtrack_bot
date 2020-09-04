@@ -1,6 +1,7 @@
 import inspect
 import os
 import pandas as pd
+import numpy as np
 from telegram import ChatAction, InlineKeyboardMarkup as IKMarkup
 from functools import wraps
 from urllib.request import urlopen
@@ -61,7 +62,7 @@ def received_message(update, context):
 # Functions for configuring the course
 @send_action(ChatAction.TYPING)
 def config_files_set(update, context, user):
-  """Sends the student and activity configuration files for the teacher to configure the course.
+  """Sends the teacher the configuration files of the students and the activities, to configure the subjec.
 
     Args:
         context (:class:'telegram.ext-CallbackContext'): Context of the current request.
@@ -70,10 +71,10 @@ def config_files_set(update, context, user):
   try:
     not_set = []
     sql_stu = f"SELECT count(*) FROM students_file"
-    sql_act = f"SELECT count(*) FROM activities"
-
     if not sqlite.execute_statement(sql_stu, "fetchone")[0]:
       not_set.append("students")
+
+    sql_act = f"SELECT count(*) FROM activities"
     if not sqlite.execute_statement(sql_act, "fetchone")[0]:
       not_set.append("activities")
 
@@ -269,6 +270,66 @@ def config_files_upload(update, context, user):
       g_fun.print_except(error_path)
       return Exception
 
+  """ def create_arf_tables(students, add_elements=False):
+    num_weeks = cfg.subject_data["num_weeks"]
+    columns = "email"
+    for num_week in range(1, num_weeks + 1):
+      text_week = "week_"
+      if len(num_weeks) != len(str(num_week)):
+        text_week += "0" * (len(num_weeks) - len(str(num_week)))
+      columns += f",{text_week}"
+    print(columns)
+    for indicator in ["risk_factor", "linguistic_risk_factor", "recovery_factor"]:
+      sql = f"CREATE TABLE IF NOT EXISTS {indicator} ({columns})" """
+
+  def create_arf_tables(students, add_students=False):
+    try:
+      students = pd.DataFrame(students, columns=["email"])
+      if add_students:
+        sql = f"SELECT * FROM risk_factor"
+        risk_factor_students = sqlite.execute_statement(sql, df=True)
+        sql = f"SELECT * FROM linguistic_risk_factor"
+        linguistic_students = sqlite.execute_statement(sql, df=True)
+
+        columns = risk_factor_students.columns[1:]
+        for column in columns:
+          students[column] = 0.0
+
+        all_students = pd.concat([risk_factor_students, students])
+        sqlite.save_elements_in_DB(all_students, "risk_factor")
+        students = students.replace([0.0], "")
+        all_students = pd.concat([linguistic_students, students])
+        sqlite.save_elements_in_DB(all_students, "linguistic_risk_factor")
+
+      else:
+        num_weeks = "15"  # subject_data["num_weeks"]
+        columns_arf = columns_linguistic = "email TEXT NOT NULL PRIMARY KEY"
+
+        for num_week in range(1, int(num_weeks) + 1):
+          text_week = "week_"
+          if len(num_weeks) != len(str(num_week)):
+            text_week += "0" * (len(num_weeks) - len(str(num_week)))
+          text_week += str(num_week)
+          columns_arf += f",{text_week} REAL DEFAULT 0.0"
+          columns_linguistic += f",{text_week} TEXT DEFAULT ''"
+          students[text_week] = 0.0
+        columns_arf += ",FOREIGN KEY(email) REFERENCES students_file(email)"
+        columns_linguistic += ",FOREIGN KEY(email) REFERENCES students_file(email)"
+
+        sql = f"CREATE TABLE if not exists 'risk_factor' ({columns_arf})"
+        sqlite.execute_statement(sql)
+        sqlite.save_elements_in_DB(students, "risk_factor")
+        students = students.replace([0.0], "")
+        sql = (
+          f"CREATE TABLE if not exists 'linguistic_risk_factor' ({columns_linguistic})"
+        )
+        sqlite.execute_statement(sql)
+        sqlite.save_elements_in_DB(students, "linguistic_risk_factor")
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
+      return False
+
   try:
     doc = update.message.document
     add_elements = True if "add" in doc.file_name else False
@@ -299,17 +360,20 @@ def config_files_upload(update, context, user):
 
     if add_elements:
       all_elements, duplicate_elements, new_elements = separate_elements(df_file)
-
       if new_elements.empty:
         text = t_lang.config_files(user.language, "add_all_exists")
         context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
         return False
 
-      upload_data = sqlite.save_config_file_DB(new_elements, table_name, "append")
+      upload_data = sqlite.save_file_in_DB(new_elements, table_name, action="append")
       all_elements.to_csv(f_save_name, index=False)
+
     else:
-      upload_data = sqlite.save_config_file_DB(df_file, table_name, "replace")
+      # upload_data = sqlite.save_file_in_DB(df_file, table_name)
+      upload_data = sqlite.save_elements_in_DB(df_file, table_name)
       df_file.to_csv(f_save_name, index=False)
+      if elements == "activities" and upload_data:
+        create_activities_weighting(df_file[["_id", "weight", "category"]].copy())
 
     # Set the global variables for activities, sections and categories. Creates the evaluation schema.
 
@@ -328,6 +392,7 @@ def config_files_upload(update, context, user):
         if add_elements:
           students = list(new_elements["email"])
           if create_grades(update, context, students, add_elements=True):
+            create_arf_tables(students, add_elements)
             if duplicate_elements:
               elements = "\n".join(duplicate_elements)
               text = t_lang.config_files(
@@ -343,8 +408,9 @@ def config_files_upload(update, context, user):
             students = list(df_file["email"])
           else:
             sql = "SELECT DISTINCT email FROM  students_file"
-            students = [stu[0] for stu in sqlite.execute_statement(sql, "fetchall")]
+            students = sqlite.execute_statement(sql, fetch="fetchall", as_list=True)
           if create_grades(update, context, students):
+            create_arf_tables(students)
             text = t_lang.welcome_text(user.language, context, "not_start")
             context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
           else:
@@ -364,7 +430,7 @@ def config_files_upload(update, context, user):
       context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
       return False
   except:
-    g_fun.print_except(inspect.stack()[0][3], user)
+    g_fun.print_except(inspect.stack()[0][3])
     file = update.message.document.file_name
     text = g_lang.error_upload_file(user.language, file)
     context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
@@ -391,7 +457,7 @@ def data_preparation(data, elements):
       data["week"].fillna(0, inplace=True)
       data["visible"].fillna(0, inplace=True)
       data["weight"].fillna(0.0, inplace=True)
-      data["active"] = 0
+      # data["active"] = 0
       data.fillna("", inplace=True)
       for col in ["_id", "section", "category"]:
         data[col] = data[col].str.upper()
@@ -399,11 +465,18 @@ def data_preparation(data, elements):
     elif elements == "students":
       data.columns = map(str.lower, data.columns)
       data.fillna("", inplace=True)
-      for col in ["first_name", "last_name", "username", "planet"]:
-        data[col] = data[col].str.upper()
+      for col in data.columns:
+        if col != ID:
+          data[col] = data[col].str.upper()
+        else:
+          data[col] = data[col].str.lower()
+
+      data = data.sort_values(ID)
       # VER SI HACE FALTA PARA ALGO
       # data["name"] = data[ID].str.lower()
     elif elements == "grades":
+      data.columns = map(str.upper, data.columns)
+      data.rename(columns={data.columns[0]: data.columns[0].lower()}, inplace=True)
       data.fillna(0, inplace=True)
       data.replace({"-": 0}, inplace=True)
       grades_cols = list(data.columns[1:])
@@ -428,45 +501,52 @@ def create_grades(update, context, students, add_elements=False):
       bool: Returns True if the process is correct otherwise returns False
   """
   print("CHECK TEAFUN ** CREATE GRADES **")
+
   try:
     sql_act = "SELECT DISTINCT _id FROM activities WHERE weight>0"
-    activities = [act[0] for act in sqlite.execute_statement(sql_act, "fetchall")]
+    activities = sqlite.execute_statement(sql_act, fetch="fetchall", as_list=True)
 
     if not add_elements:
       sql = "DROP TABLE IF EXISTS grades"
-      print(sqlite.execute_statement(sql))
-      fields = """email TEXT NOT NULL PRIMARY KEY,
+      sqlite.execute_statement(sql)
+      sql = "DROP TABLE IF EXISTS student_scores"
+      sqlite.execute_statement(sql)
+      columns_grades = "email TEXT NOT NULL PRIMARY KEY"
+      columns_scores = """
+                  email TEXT NOT NULL PRIMARY KEY,
                   SUBJECT REAL DEFAULT 0,
                   _PERFORMANCE_SCORE REAL DEFAULT 0,
                   _MAX_ACTUAL_SCORE REAL DEFAULT 0,
                   _MAX_POSSIBLE_SCORE REAL DEFAULT 10
                   """
+      columns_activities = ""
       for act in activities:
-        fields += f", {act} REAL NOT NULL DEFAULT 0"
-      fields += ", FOREIGN KEY(email) REFERENCES students_file(email)"
-      sql = f"CREATE TABLE grades ({fields})"
+        columns_activities += f", {act} REAL NOT NULL DEFAULT 0"
+      columns_activities += ", FOREIGN KEY(email) REFERENCES students_file(email)"
+      columns_grades += columns_activities
+      columns_scores += columns_activities
+
+      sql = f"CREATE TABLE grades ({columns_grades})"
       sqlite.execute_statement(sql)
 
-    for student in students:
-      sql = f"INSERT INTO grades (email) VALUES('{student}')"
+      sql = f"CREATE TABLE student_scores ({columns_scores})"
       sqlite.execute_statement(sql)
 
+    sql = "SELECT * FROM grades"
+    grades_table = sqlite.execute_statement(sql, df=True)
+    df_students = pd.DataFrame(students, columns=["email"])
+    df_grades = pd.concat([grades_table, df_students])
+    df_grades.replace({np.nan: 0.0}, inplace=True)
+    sqlite.save_elements_in_DB(df_grades, "grades")
+    for column in [
+      "SUBJECT",
+      "_PERFORMANCE_SCORE",
+      "_MAX_ACTUAL_SCORE",
+      "_MAX_POSSIBLE_SCORE",
+    ]:
+      df_grades[column] = 0.0
+    sqlite.save_elements_in_DB(df_grades, "student_scores")
     return True
-
-    """ activities_list = dict.fromkeys(activities, 0)
-
-    for student in new_elements:
-      student.update(
-        {
-          "SUBJECT": 0,
-          "_PERFORMANCE_SCORE": 0,
-          "_MAX_ACTUAL_SCORE": 0,
-          "_MAX_POSSIBLE_SCORE": 10,
-        }
-      )
-      student.update(activities_list)
-    db.grades.insert_many(new_elements)
-    return True """
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
@@ -542,7 +622,7 @@ def options_menu(update, context):
               show_menu(query, text, options)
             elif selections[2] == "view":
               if len(selections) == 3:
-                text, options = t_lang.menu_act_view(user.language, "menu")
+                text, options = t_lang.menu_act_view(user.language)
                 show_menu(query, text, options)
               else:
                 user.activities_view(update, context, selections[3], query)
@@ -563,16 +643,17 @@ def options_menu(update, context):
               config_files_send_document(context, user, "activities")
             elif selections[2] == "modify":
               headers = "name\nsection\nweek\n"
-              text = t_lang.menu_act_modify(user.language)
+              text = t_lang.menu_act_modify(user.language, headers)
               query.edit_message_text(parse_mode="HTML", text=text)
             elif selections[2] == "delete":
               text = t_lang.menu_act_delete(user.language)
               query.edit_message_text(parse_mode="HTML", text=text)
             elif selections[2] == "active":
               sql = "SELECT DISTINCT _id FROM activities WHERE weight>0 AND active <> 1"
-              inactive_act = [
-                act[0] for act in sqlite.execute_statement(sql, "fetchall")
-              ]
+              inactive_act = sqlite.execute_statement(
+                sql, fetch="fetchall", as_list=True
+              )
+
               inactive_act = "\n".join(sorted(inactive_act))
               text = t_lang.menu_act_active(user.language, "text")
               query.edit_message_text(parse_mode="HTML", text=text)
@@ -585,7 +666,7 @@ def options_menu(update, context):
               show_menu(query, text, options)
             elif selections[2] == "view":
               if len(selections) == 3:
-                text, options = t_lang.menu_stu_view(user.language, "menu")
+                text, options = t_lang.menu_stu_view(user.language)
                 show_menu(query, text, options)
               else:
                 user.students_view(update, context, selections[3], query)
@@ -636,3 +717,42 @@ def show_menu(query, menu_text, menu_opt, context=""):
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
     return False
+
+
+def create_activities_weighting(df_activities_weights):
+  try:
+    sql = "DROP TABLE IF EXISTS 'evaluation_scheme'"
+    sqlite.execute_statement(sql)
+    columns = """_id TEXT NOT NULL PRIMARY KEY,
+                real_weight REAL NOT NULL DEFAULT 0.0,
+                category_score REAL NOT NULL DEFAULT 0.0,
+                subject_score REAL NOT NULL DEFAULT 0.0,
+                active INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY(_id) REFERENCES activities(_id)
+              """
+    sql = f"CREATE TABLE evaluation_scheme ({columns})"
+    sqlite.execute_statement(sql)
+
+    df_activities_weights = df_activities_weights.loc[
+      df_activities_weights["weight"] > 0
+    ].copy()
+
+    activities = df_activities_weights["_id"]
+    df_activities_weights["real_weight"] = 0.0
+    df_activities_weights["category_score"] = 0.0
+    df_activities_weights["subject_score"] = 0.0
+    df_activities_weights["active"] = 0
+
+    df_evaluation_scheme = df_activities_weights[
+      ["_id", "real_weight", "category_score", "subject_score", "active"]
+    ].copy()
+    sqlite.save_elements_in_DB(df_evaluation_scheme, "evaluation_scheme")
+    sql = "INSERT INTO evaluation_scheme VALUES('SUBJECT', 0.0, 0.0, 0.0, 1)"
+    sqlite.execute_statement(sql)
+    print()
+
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
+

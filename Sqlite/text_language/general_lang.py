@@ -33,9 +33,18 @@ def file_ready_for_download(lang):
 
 def error_upload_file(lang, file=""):
   if lang == "es":
-    return f"Hubo un error al subir el archivo {file}. Por favor inténtalo de nuevo."
+    return f"Hubo un error al subir el archivo {file}\nPor favor reviselo e inténtalo de nuevo."
   else:
-    return f"There was an error uploading the file {file}. Please try again."
+    return (
+      f"There was an error uploading the file {file}\nPlease check it and try again."
+    )
+
+
+def ok_upload_file(lang, file=""):
+  if lang == "es":
+    return f"El archivo {file} se subio correctamente."
+  else:
+    return f"The file {file} was uploaded correctly"
 
 
 def email_syntax_error(lang, email):

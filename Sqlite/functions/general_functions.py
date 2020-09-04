@@ -95,13 +95,14 @@ def get_weekday_monday(date):
     return False
 
 
+### CHECARLO CON CREATE GRADES
 def get_week(action):
   try:
     today = datetime.now()
     difference = today - cfg.monday_start_week
     num_week = int(difference.days / 7) + 1
-    if num_week > int(cfg.course_weeks):
-      num_week = int(cfg.course_weeks)
+    if num_week > int(cfg.subject_data["num_weeks"]):
+      num_week = int(cfg.subject_data["num_weeks"])
     if action == "num":
       return num_week
     elif action == "text":
@@ -111,7 +112,9 @@ def get_week(action):
       text_week += str(num_week)
       return text_week
   except:
-    print_except(inspect.stack()[0][3])
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+    return False
 
 
 def user_is_teacher(user_id):

@@ -230,3 +230,20 @@ def menu(update, context):
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
     return False
+
+
+def grade_activity(update, context):
+  try:
+    chat_id = update.message.chat_id
+    if chat_id > 0:
+      user = g_fun.get_user_data(update._effective_user)
+      if user:
+        if user.is_teacher:
+          user.grade_activity_cmd(update, context)
+        print()
+
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
+
