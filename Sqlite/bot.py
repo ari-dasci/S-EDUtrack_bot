@@ -1,27 +1,24 @@
-import logging
 import inspect
+import logging
 import os
 import sys
-import telegram
 from time import time
-from telegram.ext import (
-  Updater,
-  CommandHandler as Cmd_Hdl,
-  MessageHandler as Msg_Hdl,
-  CallbackQueryHandler as CQ_Hdl,
-  CallbackContext,
-  Filters,
-)
+
+import telegram
+from telegram.ext import Updater
+from telegram.ext import CallbackContext
+from telegram.ext import CallbackQueryHandler as CQ_Hdl
+from telegram.ext import CommandHandler as Cmd_Hdl
+from telegram.ext import Filters
+from telegram.ext import MessageHandler as Msg_Hdl
+
 import config.config_file as cfg
 import config.db_sqlite_connection as sqlite
+from functions import bot_functions as b_fun
+from functions import commands as cmd
+from functions import general_functions as g_fun
+from functions import jobs_queue
 from text_language import general_lang as g_lang
-from functions import (
-  general_functions as g_fun,
-  commands as cmd,
-  bot_functions as b_fun,
-  jobs_queue,
-)
-
 
 # Configurar logging
 logging.basicConfig(
@@ -84,73 +81,39 @@ def main():
     # Dispatcher creation
     dp = updater.dispatcher
 
-    # Handlers bot creation
+    # General Handlers
     dp.add_handler(Cmd_Hdl("start", cmd.start))
     dp.add_handler(Cmd_Hdl("change_language", cmd.change_language))
-    dp.add_handler(Cmd_Hdl("check_email", cmd.check_email))
     dp.add_handler(Cmd_Hdl("menu", cmd.menu))
 
     ## Handlers Options Menu
     dp.add_handler(CQ_Hdl(b_fun.options_menu))
 
-    ## Handler who receives messages
+    ## Handler receiving messages
     dp.add_handler(
       Msg_Hdl((~Filters.command) & (~Filters.status_update), b_fun.received_message)
     )
+    dp.add_handler(Msg_Hdl(Filters.status_update, b_fun.status_update))
 
-    ## Handler Teacher Menu
+    ## Handlers Teacher
     dp.add_handler(Cmd_Hdl("grade_activity", cmd.grade_activity))
-    run(updater)
+    dp.add_handler(Cmd_Hdl("add_teacher", cmd.add_teacher))
+    dp.add_handler(Cmd_Hdl("start_meeting", cmd.set_meeting))
+    dp.add_handler(Cmd_Hdl("end_meeting", cmd.set_meeting))
 
+    ## Handlers Students
+    dp.add_handler(Cmd_Hdl("check_email", cmd.check_email))
+    dp.add_handler(Cmd_Hdl("suggestion", cmd.suggestion))
+
+    # Start to receive updates
+    run(updater)
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
 
 
 def test():
-
-  ### NO BORRAR HASTA COPIAR A GET week
-  from datetime import datetime, timedelta
-
-  def get_weekday_monday(date):
-    day = date.strftime("%A")
-    if day != "Monday":
-      for i in range(1, 8):
-        monday_date = date - timedelta(days=i)
-        day = monday_date.strftime("%A")
-        if day == "Monday":
-          return monday_date
-    else:
-      return date
-
-  today = datetime.today()
-  start_date = datetime.strptime(today, "%d/%m/%Y")
-  start_monday_date = get_weekday_monday(start_date)
-  print(start_monday_date)
-
-  today = datetime.now() + timedelta(days=5)
-
-  difference = today - start_monday_date
-  num_week = int(difference.days / 7) + 1
-
-  if num_week > int(cfg.subject_data["num_weeks"]):
-    num_week = int(cfg.subject_data["num_weeks"])
-  action = "text"
-  if not action:
-    return num_week
-  else:
-    text_week = "week_"
-    if len(cfg.subject_data["num_weeks"]) != len(str(num_week)):
-      text_week += "0" * (len(cfg.subject_data["num_weeks"]) - len(str(num_week)))
-    text_week += str(num_week)
-    print(text_week)
-    return text_week
-
-  """ start = time()
-  sql_stu = "SELECT email FROM students_file"
-  students = [stu[0] for stu in sqlite.execute_statement(sql_stu, "fetchall")]
-  print("\n\n========================\n", students)
-  sql_time_1 = time() - start """
+  pass
 
 
 if __name__ == "__main__":

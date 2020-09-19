@@ -65,7 +65,7 @@ def wrong_command_group(lang, context):
     )
 
 
-def wrong_num_arguments(lang, context):
+def wrong_num_arguments(lang):
   if lang == "es":
     return "La cantidad de argumentos para el comando es incorrecta.\n"
   else:
@@ -95,3 +95,92 @@ def linguistic_arf(lang, arf_text):
       return "Ninguno"
   else:
     return arf_text.replace("_", " ").capitalize()
+
+
+def teacher_criteria(lang, criterion):
+  if lang == "es":
+    if criterion == "T_VOCALIZACION":
+      return f"Vocalización"
+    if criterion == "T_DOMINIO_TEMA":
+      return f"Dominio del tema"
+    if criterion == "T_CERCANIA":
+      return f"Cercania"
+    if criterion == "T_ATENCION_AUDIENCIA":
+      return f"Atención a la audiencia"
+    if criterion == "T_CLARIDAD_EXPRESIONES":
+      return f"Claridad en las expresiones"
+    if criterion == "C_CALIDAD_TRANSPARENCIAS":
+      return f"Calidad de las transparancias"
+    if criterion == "C_CALIDAD_EJEMPLOS":
+      return f"Calidad de los ejemplos"
+    if criterion == "C_CONTENIDOS_NIVEL":
+      return f"Contenidos adaptados al nivel"
+  else:
+    if criterion == "T_VOCALIZACION":
+      return f"Vocalization"
+    if criterion == "T_DOMINIO_TEMA":
+      return f"Mastery of the subject"
+    if criterion == "T_CERCANIA":
+      return f"Proximity"
+    if criterion == "T_ATENCION_AUDIENCIA":
+      return f"Audience Attention"
+    if criterion == "T_CLARIDAD_EXPRESIONES":
+      return f"Clarity of expressions"
+    if criterion == "C_CALIDAD_TRANSPARENCIAS":
+      return f"Quality of the transparencies"
+    if criterion == "C_CALIDAD_EJEMPLOS":
+      return f"Quality of the examples"
+    if criterion == "C_CONTENIDOS_NIVEL":
+      return f"Contents adapted to the level"
+
+
+def scale_7(lang, callback_data):
+  back_menu = "-".join(callback_data.split("-")[:-1])
+  if lang == "es":
+    return [
+      [
+        IKButton("Pésimo/a", callback_data=callback_data + "-s_0"),
+        IKButton("Muy malo/a", callback_data=callback_data + "-s_1"),
+        IKButton("Malo/a", callback_data=callback_data + "-s_2"),
+      ],
+      [IKButton("Normalito", callback_data=callback_data + "-s_3")],
+      [
+        IKButton("Bueno/a", callback_data=callback_data + "-s_4"),
+        IKButton("Muy bueno/a", callback_data=callback_data + "-s_5"),
+        IKButton("Excelente", callback_data=callback_data + "-s_6"),
+      ],
+      [IKButton("Regresar", callback_data=back_menu)],
+    ]
+  else:
+
+    return [
+      [
+        IKButton("Lousy", callback_data=callback_data + "-s_0"),
+        IKButton("Very Bad", callback_data=callback_data + "-s_1"),
+        IKButton("Bad", callback_data=callback_data + "-s_2"),
+      ],
+      [IKButton("Normal", callback_data=callback_data + "-s_3")],
+      [
+        IKButton("Good", callback_data=callback_data + "-s_4"),
+        IKButton("Very Good", callback_data=callback_data + "-s_5"),
+        IKButton("Excellent", callback_data=callback_data + "-s_6"),
+      ],
+      [IKButton("Back", callback_data=back_menu)],
+    ]
+
+
+def unauthorized_user(lang, context):
+  if lang == "es":
+    return f"Lo siento no eres un usuario autorizado para crear grupos con EDUtrack {context.bot.first_name}"
+  else:
+    return f"Sorry you are not an authorized user to create groups with EDUtrack {context.bot.first_name}"
+
+
+def change_language(lang):
+  if lang == "es":
+    return f"He cambiado tu idioma a <b>Español.</b>"
+  else:
+    return f"I changed your language to <b>English.</b>"
+
+
+back_text = {"es": "Regresar", "en": "Back"}

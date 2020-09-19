@@ -1,19 +1,23 @@
 import inspect
 import os
-import pandas as pd
-import numpy as np
-from telegram import ChatAction, InlineKeyboardMarkup as IKMarkup
+from collections import Counter
 from functools import wraps
 from urllib.request import urlopen
+
+import numpy as np
+import pandas as pd
+from telegram import ChatAction
+from telegram import InlineKeyboardMarkup as IKMarkup
+from time import time
+
 import config.config_file as cfg
 import config.db_sqlite_connection as sqlite
 from functions import general_functions as g_fun
-from text_language import (
-  bot_lang as b_lang,
-  general_lang as g_lang,
-  teacher_lang as t_lang,
-  student_lang as s_lang,
-)
+from text_language import bot_lang as b_lang
+from text_language import general_lang as g_lang
+from text_language import student_lang as s_lang
+from text_language import teacher_lang as t_lang
+
 
 # Function Decorator
 def send_action(action):
@@ -45,18 +49,20 @@ def received_message(update, context):
   """
   try:
     chat_id = update.message.chat_id
-    user = g_fun.get_user_data(update._effective_user)
+    planet = g_fun.strip_accents(update.message.chat.title) if chat_id < 0 else ""
+    user_data = update._effective_user
+    user = g_fun.get_user_data(user_data, planet)
     # get_user_data returns False if the user does not have the username set up
-    if chat_id > 0:
-      if user:
-        user.received_message(update, context)
-      else:
-        text = b_lang.no_username(update._effective_user.language_code)
-        update.message.reply_text(text)
-        return False
+    if user:
+      user.received_message(update, context)
+    else:
+      text = b_lang.no_username(user_data.language_code)
+      update.message.reply_text(text)
+      return False
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
+    return False
 
 
 # Functions for configuring the course
@@ -71,11 +77,11 @@ def config_files_set(update, context, user):
   try:
     not_set = []
     sql_stu = f"SELECT count(*) FROM students_file"
-    if not sqlite.execute_statement(sql_stu, "fetchone")[0]:
+    if not sqlite.execute_sql(sql_stu, "fetchone")[0]:
       not_set.append("students")
 
     sql_act = f"SELECT count(*) FROM activities"
-    if not sqlite.execute_statement(sql_act, "fetchone")[0]:
+    if not sqlite.execute_sql(sql_act, "fetchone")[0]:
       not_set.append("activities")
 
     if len(not_set) == 2:
@@ -200,7 +206,8 @@ def config_files_upload(update, context, user):
     def categories_have_weight(category_data):
       try:
         # Check if the defined categories have weight.
-        weightless_cat = list(category_data.loc[category_data["weight"] == ""]["_id"])
+        weightless_cat = category_data[category_data["_id"] == ""]
+        weightless_cat = list(weightless_cat["_id"])
         if weightless_cat:
           weightless_cat = "\n".join(weightless_cat)
           text = t_lang.config_files_activities(
@@ -252,8 +259,7 @@ def config_files_upload(update, context, user):
 
   def separate_elements(df_file):
     try:
-      sql = "SELECT * FROM students_file"
-      data_DB = sqlite.execute_statement(sql, df=True)
+      data_DB = sqlite.table_DB_to_df("students_file")
 
       all_elements = g_fun.dataframes_comparison(data_DB, df_file).drop(
         ["_merge"], axis=1
@@ -270,26 +276,67 @@ def config_files_upload(update, context, user):
       g_fun.print_except(error_path)
       return Exception
 
-  """ def create_arf_tables(students, add_elements=False):
-    num_weeks = cfg.subject_data["num_weeks"]
-    columns = "email"
-    for num_week in range(1, num_weeks + 1):
-      text_week = "week_"
-      if len(num_weeks) != len(str(num_week)):
-        text_week += "0" * (len(num_weeks) - len(str(num_week)))
-      columns += f",{text_week}"
-    print(columns)
-    for indicator in ["risk_factor", "linguistic_risk_factor", "recovery_factor"]:
-      sql = f"CREATE TABLE IF NOT EXISTS {indicator} ({columns})" """
+  def create_grades_table(students, add_elements=False):
+    """Creates the table 'element_liste database from the file of students and activities uploaded by the teacher.
+
+    Args:
+        update (:class:'telegram-Update'): Current request received by the bot.
+        context (:class:'telegram.ext-CallbackContext'): Context of the current request.
+        students (list): List of students to be saved in the 'grades' table
+        add_elements (bool, optional): Indicates if new elements will be added or if the table will be created. Defaults to False.
+
+    Returns:
+        bool: Returns True if the process is correct otherwise returns False
+    """
+    try:
+      sql = "SELECT DISTINCT _id FROM activities WHERE weight > 0"
+      activities = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+      sql = "SELECT DISTINCT category FROM activities WHERE category <> ''"
+      categories = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+      categories.remove("SUBJECT")
+      if "SUBJECT" not in activities:
+        activities.insert(0, "SUBJECT")
+      if not add_elements:
+        tables = ["grades", "actual_grades"]
+        for table in tables:
+          sql = f"DROP TABLE IF EXISTS {table}"
+          sqlite.execute_sql(sql)
+          sql = f"CREATE TABLE IF NOT EXISTS {table} ({cfg.tables[table]})"
+          sqlite.execute_sql(sql)
+
+        for activity in activities:
+          sql = f"""ALTER TABLE grades
+                  ADD COLUMN '{activity}' REAL DEFAULT 0.0"""
+          sqlite.execute_sql(sql)
+
+        for category in sorted(categories):
+          sql = f"""ALTER TABLE actual_grades
+          ADD COLUMN '{category}' REAL DEFAULT 0.0"""
+          sqlite.execute_sql(sql)
+
+      grades_table = sqlite.table_DB_to_df("grades")
+      df_students = pd.DataFrame(students, columns=["email"])
+      df_grades = pd.concat([grades_table, df_students])
+      df_grades.replace({np.nan: 0.0}, inplace=True)
+      sqlite.save_elements_in_DB(df_grades, "grades")
+
+      # df_scores = sqlite.table_DB_to_df("actual_grades")
+      df_categories = pd.concat(
+        [df_grades[["email", "SUBJECT"]], df_grades[categories]], axis=1
+      )
+      sqlite.save_elements_in_DB(df_categories, "actual_grades")
+      return True
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
+      return False
 
   def create_arf_tables(students, add_students=False):
     try:
       students = pd.DataFrame(students, columns=["email"])
       if add_students:
-        sql = f"SELECT * FROM risk_factor"
-        risk_factor_students = sqlite.execute_statement(sql, df=True)
-        sql = f"SELECT * FROM linguistic_risk_factor"
-        linguistic_students = sqlite.execute_statement(sql, df=True)
+        risk_factor_students = sqlite.table_DB_to_df("risk_factor")
+        linguistic_students = sqlite.table_DB_to_df("linguistic_risk_factor")
 
         columns = risk_factor_students.columns[1:]
         for column in columns:
@@ -302,28 +349,27 @@ def config_files_upload(update, context, user):
         sqlite.save_elements_in_DB(all_students, "linguistic_risk_factor")
 
       else:
-        num_weeks = "15"  # subject_data["num_weeks"]
-        columns_arf = columns_linguistic = "email TEXT NOT NULL PRIMARY KEY"
+        sqlite.execute_sql("DELETE FROM risk_factor")
+        sqlite.execute_sql("DELETE FROM linguistic_risk_factor")
 
-        for num_week in range(1, int(num_weeks) + 1):
-          text_week = "week_"
-          if len(num_weeks) != len(str(num_week)):
-            text_week += "0" * (len(num_weeks) - len(str(num_week)))
+        sql = f"PRAGMA table_info(risk_factor)"
+        table_columns = sqlite.execute_sql(sql, "fetchall")
+        columns = [col[1] for col in table_columns]
+
+        course_weeks = cfg.subject_data["course_weeks"]
+        for num_week in range(1, int(course_weeks) + 1):
+          text_week = "week_" if num_week >= 10 else "week_0"
           text_week += str(num_week)
-          columns_arf += f",{text_week} REAL DEFAULT 0.0"
-          columns_linguistic += f",{text_week} TEXT DEFAULT ''"
           students[text_week] = 0.0
-        columns_arf += ",FOREIGN KEY(email) REFERENCES students_file(email)"
-        columns_linguistic += ",FOREIGN KEY(email) REFERENCES students_file(email)"
+          if text_week not in columns:
+            sql = f"ALTER TABLE risk_factor ADD COLUMN {text_week} REAL DEFAULT 0.0"
+            sqlite.execute_sql(sql)
+            sql = f"""ALTER TABLE linguistic_risk_factor
+                  ADD COLUMN {text_week} TEXT DEFAULT '' """
+            sqlite.execute_sql(sql)
 
-        sql = f"CREATE TABLE if not exists 'risk_factor' ({columns_arf})"
-        sqlite.execute_statement(sql)
         sqlite.save_elements_in_DB(students, "risk_factor")
         students = students.replace([0.0], "")
-        sql = (
-          f"CREATE TABLE if not exists 'linguistic_risk_factor' ({columns_linguistic})"
-        )
-        sqlite.execute_statement(sql)
         sqlite.save_elements_in_DB(students, "linguistic_risk_factor")
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -369,29 +415,17 @@ def config_files_upload(update, context, user):
       all_elements.to_csv(f_save_name, index=False)
 
     else:
-      # upload_data = sqlite.save_file_in_DB(df_file, table_name)
       upload_data = sqlite.save_elements_in_DB(df_file, table_name)
       df_file.to_csv(f_save_name, index=False)
       if elements == "activities" and upload_data:
-        create_activities_weighting(df_file[["_id", "weight", "category"]].copy())
-
-    # Set the global variables for activities, sections and categories. Creates the evaluation schema.
+        create_evaluation_scheme(df_file[["_id", "weight", "category"]].copy())
 
     if upload_data:
-      # TODO: REVISAR ESTE APARTADO SI ES FUNCIONAL
-      """ if "activities" in doc.file_name:
-        # if collection.name == "activities":
-        cfg.activities_sections = set(db.activities.find().distinct("section"))
-        cfg.categories_evaluation = set(
-          db.activities.find({"category": {"$ne": ""}}).distinct("category")
-        )
-        g_fun.create_evaluation_scheme() """
-
       if g_fun.are_config_files_set():
         cfg.config_files_set = True
         if add_elements:
           students = list(new_elements["email"])
-          if create_grades(update, context, students, add_elements=True):
+          if create_grades_table(students, add_elements=True):
             create_arf_tables(students, add_elements)
             if duplicate_elements:
               elements = "\n".join(duplicate_elements)
@@ -404,19 +438,19 @@ def config_files_upload(update, context, user):
               text = t_lang.config_files(user.language, "add_ready", elements=elements)
               context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
         else:
-          if elements == "students":
-            students = list(df_file["email"])
-          else:
-            sql = "SELECT DISTINCT email FROM  students_file"
-            students = sqlite.execute_statement(sql, fetch="fetchall", as_list=True)
-          if create_grades(update, context, students):
+          sql = f"SELECT DISTINCT email FROM  students_file"
+          students = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+          if create_grades_table(students):
             create_arf_tables(students)
-            text = t_lang.welcome_text(user.language, context, "not_start")
+            text = t_lang.welcome_text(user.language, context, "long")
             context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
           else:
-            text = t_lang.config_files(user.language, "ready_one")
+            text = g_lang.config_files(
+              user.language, "error_upload_file", doc.file_name
+            )
             context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
             config_files_set(context, user)
+            return False
       else:
         if "students" in doc.file_name:
           missing_file = "activities_format.csv"
@@ -426,7 +460,7 @@ def config_files_upload(update, context, user):
         text = t_lang.config_files(user.language, "ready_one", missing_file)
         context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
     else:
-      text = t_lang.config_files(user.language, "no_loaded", doc.file_name)
+      text = g_lang.config_files(user.language, "error_upload_file", doc.file_name)
       context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
       return False
   except:
@@ -488,75 +522,11 @@ def data_preparation(data, elements):
     return False
 
 
-def create_grades(update, context, students, add_elements=False):
-  """Creates the table 'grades' in the database from the file of students and activities uploaded by the teacher.
-
-  Args:
-      update (:class:'telegram-Update'): Current request received by the bot.
-      context (:class:'telegram.ext-CallbackContext'): Context of the current request.
-      students (list): List of students to be saved in the 'grades' table
-      add_elements (bool, optional): Indicates if new elements will be added or if the table will be created. Defaults to False.
-
-  Returns:
-      bool: Returns True if the process is correct otherwise returns False
-  """
-  print("CHECK TEAFUN ** CREATE GRADES **")
-
-  try:
-    sql_act = "SELECT DISTINCT _id FROM activities WHERE weight>0"
-    activities = sqlite.execute_statement(sql_act, fetch="fetchall", as_list=True)
-
-    if not add_elements:
-      sql = "DROP TABLE IF EXISTS grades"
-      sqlite.execute_statement(sql)
-      sql = "DROP TABLE IF EXISTS student_scores"
-      sqlite.execute_statement(sql)
-      columns_grades = "email TEXT NOT NULL PRIMARY KEY"
-      columns_scores = """
-                  email TEXT NOT NULL PRIMARY KEY,
-                  SUBJECT REAL DEFAULT 0,
-                  _PERFORMANCE_SCORE REAL DEFAULT 0,
-                  _MAX_ACTUAL_SCORE REAL DEFAULT 0,
-                  _MAX_POSSIBLE_SCORE REAL DEFAULT 10
-                  """
-      columns_activities = ""
-      for act in activities:
-        columns_activities += f", {act} REAL NOT NULL DEFAULT 0"
-      columns_activities += ", FOREIGN KEY(email) REFERENCES students_file(email)"
-      columns_grades += columns_activities
-      columns_scores += columns_activities
-
-      sql = f"CREATE TABLE grades ({columns_grades})"
-      sqlite.execute_statement(sql)
-
-      sql = f"CREATE TABLE student_scores ({columns_scores})"
-      sqlite.execute_statement(sql)
-
-    sql = "SELECT * FROM grades"
-    grades_table = sqlite.execute_statement(sql, df=True)
-    df_students = pd.DataFrame(students, columns=["email"])
-    df_grades = pd.concat([grades_table, df_students])
-    df_grades.replace({np.nan: 0.0}, inplace=True)
-    sqlite.save_elements_in_DB(df_grades, "grades")
-    for column in [
-      "SUBJECT",
-      "_PERFORMANCE_SCORE",
-      "_MAX_ACTUAL_SCORE",
-      "_MAX_POSSIBLE_SCORE",
-    ]:
-      df_grades[column] = 0.0
-    sqlite.save_elements_in_DB(df_grades, "student_scores")
-    return True
-  except:
-    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-    g_fun.print_except(error_path)
-    return False
-
-
 def options_menu(update, context):
   try:
     query = update.callback_query
     selections = (query.data).split("-")
+    print("SLEECTIONS", selections)
     choice = selections[-1]
     user = g_fun.get_user_data(update._effective_user)
     if user:
@@ -566,17 +536,16 @@ def options_menu(update, context):
           if selections[1] == "back":
             text, options = s_lang.main_menu(user.language)
             show_menu(query, text, options)
-
           elif selections[1] == "grade":
-            s_fun.my_grade(update, context, user, query)
+            user.my_grade(update, context, query)
           elif selections[1] == "opn":
             if len(selections) == 2:
               text, options = s_lang.menu_opinion(user.language)
               show_menu(query, text, options)
-
+              ## The use of short identifiers such as 'tp' is because telegram callback_data only accepts 64 characters and the user id and the selected rating are saved in later options.
             elif selections[2] == "tp":
               if len(selections) == 3:
-                text, options = s_lang.opn_tea_practice_menu(user.language)
+                text, options = s_lang.menu_opn_tea_practice(user.language)
                 show_menu(query, text, options)
               elif selections[3] == "vc":
                 user.opn_tea_meetings(context, query, selections)
@@ -589,10 +558,7 @@ def options_menu(update, context):
             elif selections[2] == "tea_meet":
               user.opn_teacher_meetings(context, query, selections)
           elif selections[1] == "eva":
-            today = date.today()
-            start_date = date(2019, 10, 1)
-            end_date = date(2019, 11, 24)
-            if today >= start_date and today <= end_date:
+            if cfg.subject_data["activate_evaluations"]:
               if len(selections) == 2:
                 text, options = s_lang.menu_evaluate(user.language)
                 show_menu(query, text, options)
@@ -603,11 +569,11 @@ def options_menu(update, context):
               elif selections[2] == "teacher":
                 user.eva_teacher(context, query, user, selections)
             else:
-              text = s_lang.evaluate(user.language)
-              context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+              text = s_lang.evaluate(user.language, "not_available")
+              query.edit_message_text(parse_mode="HTML", text=text)
           elif choice == "suggestion":
-            text = s_lang.suggestion(user.language)
-            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+            text = s_lang.suggestion(user.language, "text")
+            query.edit_message_text(parse_mode="HTML", text=text)
 
         # TEACHER MENU
         elif selections[0] == "t_menu":
@@ -649,10 +615,10 @@ def options_menu(update, context):
               text = t_lang.menu_act_delete(user.language)
               query.edit_message_text(parse_mode="HTML", text=text)
             elif selections[2] == "active":
-              sql = "SELECT DISTINCT _id FROM activities WHERE weight>0 AND active <> 1"
-              inactive_act = sqlite.execute_statement(
-                sql, fetch="fetchall", as_list=True
+              sql = (
+                f"SELECT DISTINCT _id FROM activities WHERE weight>0 AND active <> 1"
               )
+              inactive_act = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
 
               inactive_act = "\n".join(sorted(inactive_act))
               text = t_lang.menu_act_active(user.language, "text")
@@ -689,6 +655,8 @@ def options_menu(update, context):
               show_menu(query, text, options)
             else:
               user.reports(update, context, selections[2], query)
+          elif selections[1] == "activate_eva":
+            user.activate_eva(update, context)
 
     else:
       text = b_lang.no_username(update._effective_user.language_code)
@@ -711,7 +679,7 @@ def show_menu(query, menu_text, menu_opt, context=""):
       )
     else:
       context.bot.sendMessage(
-        chat_id="443344899", text=menu_text, reply_markup=reply_markup
+        chat_id="1349123797", text=menu_text, reply_markup=reply_markup
       )
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -719,40 +687,600 @@ def show_menu(query, menu_text, menu_opt, context=""):
     return False
 
 
-def create_activities_weighting(df_activities_weights):
+def create_evaluation_scheme(df_activities_weights=""):
   try:
-    sql = "DROP TABLE IF EXISTS 'evaluation_scheme'"
-    sqlite.execute_statement(sql)
-    columns = """_id TEXT NOT NULL PRIMARY KEY,
-                real_weight REAL NOT NULL DEFAULT 0.0,
-                category_score REAL NOT NULL DEFAULT 0.0,
-                subject_score REAL NOT NULL DEFAULT 0.0,
-                active INTEGER NOT NULL DEFAULT 0,
-                FOREIGN KEY(_id) REFERENCES activities(_id)
-              """
-    sql = f"CREATE TABLE evaluation_scheme ({columns})"
-    sqlite.execute_statement(sql)
+    sql = f"DROP TABLE IF EXISTS 'evaluation_scheme'"
+    sqlite.execute_sql(sql)
+    sql = f"CREATE TABLE evaluation_scheme ({cfg.tables['evaluation_scheme']})"
+    sqlite.execute_sql(sql)
 
     df_activities_weights = df_activities_weights.loc[
       df_activities_weights["weight"] > 0
     ].copy()
 
     activities = df_activities_weights["_id"]
-    df_activities_weights["real_weight"] = 0.0
     df_activities_weights["category_score"] = 0.0
     df_activities_weights["subject_score"] = 0.0
     df_activities_weights["active"] = 0
 
     df_evaluation_scheme = df_activities_weights[
-      ["_id", "real_weight", "category_score", "subject_score", "active"]
+      ["_id", "category_score", "subject_score", "active"]
     ].copy()
     sqlite.save_elements_in_DB(df_evaluation_scheme, "evaluation_scheme")
-    sql = "INSERT INTO evaluation_scheme VALUES('SUBJECT', 0.0, 0.0, 0.0, 1)"
-    sqlite.execute_statement(sql)
-    print()
-
+    sql = f"INSERT INTO evaluation_scheme VALUES('SUBJECT', 0.0, 0.0, 0)"
+    sqlite.execute_sql(sql)
+    eva_scheme_tree()
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
     return False
 
+
+def eva_scheme_tree():
+  """ Crea el esquema de evaluación, que consiste en las categorías y subcategorias, así como su valor en la evaluación.
+  """
+  try:
+    cfg.evaluation_scheme = {}
+    sql = f"""SELECT _id, weight FROM activities
+              WHERE weight > 0
+              and _id in
+                (SELECT _id FROM evaluation_scheme WHERE active =1)"""
+    weights = dict(sqlite.execute_sql(sql, fetch="fetchall", as_dict=True))
+    sql = f"""SELECT _id, category FROM activities WHERE category <> ''"""
+    categories_active = dict(sqlite.execute_sql(sql, fetch="fetchall", as_dict=True))
+
+    for activity in weights:
+      path = g_fun.get_path_elements([activity], categories_active, reverse=False)
+      parents = path[activity]
+      maplist = []
+      for element in parents:
+        category_grade = weights[element] if element != "SUBJECT" else 1
+        maplist.append(element)
+        if not g_fun.get_from_dict(cfg.evaluation_scheme, maplist):
+          g_fun.set_in_dict(
+            cfg.evaluation_scheme,
+            maplist,
+            {},
+            # {"value": category_grade, "category_score": 0, "subject_score": 0},
+          )
+    print(cfg.evaluation_scheme)
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
+
+
+def thread_grade_activities(update, context, df_grades, user, meeting=False):
+  def grade_activities(df_grades, path_file_name):
+    def load_grades(df_grades, path_file_name):
+      def separate_elements(df_DB, df_grades):
+        try:
+          ## SEPARATE ELEMENTS
+          elements = {}
+          elements["registered_stu"] = set(df_grades["email"]) & set(df_DB["email"])
+          elements["unregistered_stu"] = set(df_grades["email"]) - set(df_DB["email"])
+          elements["duplicated_stu"] = [
+            stu for stu, count in Counter(df_grades["email"]).items() if count > 1
+          ]
+
+          sql = f"SELECT _id FROM evaluation_scheme  WHERE active=1"
+          activities_active = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+          elements["registered_act"] = set(df_grades.columns) & set(df_DB.columns)
+          elements["registered_act"].remove("email")
+          elements["non_active_act"] = elements["registered_act"] - set(
+            activities_active
+          )
+
+          # TODO: Improve to detect more than one duplicate.
+          elements["duplicated_act"] = [
+            act[:-2] for act in df_grades.columns if ".1" in act
+          ]
+
+          unregistered_act = set(df_grades.columns) - set(df_DB.columns)
+
+          elements["unregistered_act"] = {
+            act for act in unregistered_act if ".1" not in act
+          }
+          for element in elements:
+            elements[element] = sorted(list(elements[element]))
+
+          ## DELETE ELEMENTS
+          students = set(elements["unregistered_stu"] + elements["duplicated_stu"])
+          for stu in students:
+            df_grades = df_grades.drop(df_grades[df_grades["email"] == stu].index)
+
+          activities_error = list(unregistered_act) + elements["duplicated_act"]
+          df_grades = df_grades.drop(activities_error, axis=1)
+
+          return (df_grades, elements)
+
+        except:
+          error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+          g_fun.print_except(error_path)
+          return False
+
+      def join_dataframes(df_DB, df_grades, students):
+        try:
+          registered_students = set(df_DB["email"])
+          column_names = df_DB.columns
+
+          new_df = pd.merge(df_DB, df_grades, on="email", how="left")
+          new_df.set_index("email", inplace=True)
+          all_columns = list(new_df.columns)
+          all_columns.reverse()
+          for column in all_columns:
+            if "_y" in column:
+              column_name = column[:-2]
+              column_x = column_name + "_x"
+
+              # for student in registered_students.sorted():
+              for student in students:
+                grade = new_df.loc[student, column]
+                new_df.loc[student, column_x] = grade
+              new_df.rename(columns={column_x: column_name}, inplace=True)
+            else:
+              break
+
+          new_df["email"] = new_df.index
+          new_df = new_df[column_names]
+          new_df.replace({np.nan: 0.0}, inplace=True)
+          return new_df
+        except:
+          error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+          g_fun.print_except(error_path)
+          return False
+
+      def show_error_elements(df_grades, elements):
+        try:
+          title = True
+          if df_grades.shape[0] == 0:
+            text = t_lang.menu_act_grade(user.language, "no_students", title=title)
+            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+            title = False
+          if elements["unregistered_stu"]:
+            students = "\n".join(elements["unregistered_stu"])
+            num_stu = len(elements["unregistered_stu"])
+            text = t_lang.menu_act_grade(
+              user.language, "unregistered_stu", students, num_stu, title=title
+            )
+            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+            title = False
+          if elements["duplicated_stu"]:
+            students = "\n".join(elements["duplicated_stu"])
+            num_stu = len(elements["duplicated_stu"])
+            text = t_lang.menu_act_grade(
+              user.language, "duplicated_stu", students, num_stu, title=title
+            )
+            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+            title = False
+          if df_grades.shape[1] == 1:
+            text = t_lang.menu_act_grade(user.language, "no_activities", title=title)
+            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+            title = False
+          if elements["unregistered_act"]:
+            activities = "\n".join(elements["unregistered_act"])
+            num_act = len(elements["unregistered_act"])
+            text = t_lang.menu_act_grade(
+              user.language, "unregistered_act", activities, num_act, title=title,
+            )
+            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+            title = False
+          if elements["duplicated_act"]:
+            activities = "\n".join(elements["duplicated_act"])
+            num_act = len(elements["duplicated_act"])
+            text = t_lang.menu_act_grade(
+              user.language, "duplicated_act", activities, num_act, title=title
+            )
+            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+        except:
+          error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+          g_fun.print_except(error_path)
+          return False
+
+      try:
+        sucess = True
+        df_DB = sqlite.table_DB_to_df("grades")
+        df_grades, elements = separate_elements(df_DB, df_grades)
+
+        if df_grades.shape[0] == 0 or df_grades.shape[1] == 1:
+          sucess = False
+        else:
+          df_grades_to_upload = join_dataframes(
+            df_DB, df_grades, elements["registered_stu"]
+          )
+          df_grades_to_upload.to_csv(path_file_name, index=False)
+          sqlite.save_elements_in_DB(df_grades_to_upload, "grades")
+
+        show_error_elements(df_grades, elements)
+        return elements if sucess else False
+
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    """ def get_parent_categories(activities):
+      try:
+        sql = "SELECT _id, category FROM activities WHERE weight >0"
+        categories = dict(sqlite.execute_sql(sql, fetch="fetchall", as_dict=True))
+        parents = {}
+        for activity in activities:
+          parents.update(g_fun.get_path_elements([activity], True))
+          parents[activity] = parents[activity][1:-1]
+        return parents
+
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False """
+
+    def activate_activities(activities):
+      try:
+        for activity in activities:
+          categories = tuple(activities[activity]) + ("SUBJECT", activity)
+          sql = f"UPDATE evaluation_scheme SET active = 1 WHERE _id IN {categories}"
+          sqlite.execute_sql(sql)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def calculate_evaluation_scheme(new_activities=""):
+      try:
+        sql = f"SELECT _id, weight FROM activities WHERE weight > 0"
+        activities_weight = dict(
+          sqlite.execute_sql(sql, fetch="fetch_all", as_dict=True)
+        )
+
+        for activity in new_activities:
+          categories = new_activities[activity][1:]
+          actual_element = activity
+
+          subject_score = activities_weight[activity]
+          category_score = activities_weight[activity]
+
+          for category in categories:
+            # UPDATE REAL GRADE CATEGORY PARENT
+
+            if category != "SUBJECT":
+              category_score *= round(activities_weight[category], 10)
+              subject_score *= round(activities_weight[category], 10)
+            sql = f"UPDATE evaluation_scheme SET category_score = category_score + {category_score} WHERE _id = '{actual_element}'"
+            sqlite.execute_sql(sql)
+
+            # category_score = activities_weight[category]
+
+            actual_element = category
+          # UPDATE SUBJECT
+          """ sql = f"UPDATE evaluation_scheme SET real_weight = real_weight + {category_score} WHERE _id = '{actual_element}'"
+          sqlite.execute_sql(sql) """
+
+          sql = f"UPDATE evaluation_scheme SET category_score = category_score + {category_score} WHERE _id = '{actual_element}'"
+          sqlite.execute_sql(sql)
+
+          sql = f"UPDATE evaluation_scheme SET subject_score = subject_score + {subject_score} WHERE _id in {tuple(new_activities[activity])}"
+          sqlite.execute_sql(sql)
+        sql = f"SELECT subject_score FROM evaluation_scheme WHERE _id = 'SUBJECT'"
+        max_actual_score = sqlite.execute_sql(sql, fetch="fetchone")[0]
+        sql = f"UPDATE grades SET '_MAX_ACTUAL_SCORE' = {max_actual_score}"
+        sqlite.execute_sql(sql)
+        # cfg.evaluation_scheme = db.evaluation_scheme.find_one({}, {"_id": 0})
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def calculate_grades(students, activities):
+      def set_categories_grades(df_grades, activities, parent_cat, higher_cat=set()):
+        """It calculates and stores the actual score of each category based on all the activities that were recorded with the activity file.
+
+        Args:
+            df_grades (dataFrame): Contains the grades of the activities of each student in the DB.
+            activities (list or set): List of activities from which the grade of their parent categories will be obtained.
+            parent_cat (dict): Contains each activity with its corresponding parent category.
+            higher_cat (set): Contains the following level of parent categories. Defaults to set().
+
+        Returns:
+            [type]: [description]
+        """
+        try:
+          if activities:
+            new_activities = set()
+            for activity in activities:
+              parent = parent_cat[activity]
+              category_parent = g_fun.get_path_elements([parent], parent_cat)
+              higher_cat.update(set(category_parent[parent][1:-1]))
+              df_grades[parent] += round(df_grades[activity] * weights[activity], 7)
+              if parent != "SUBJECT" and parent not in higher_cat:
+                new_activities.add(parent)
+            if new_activities:
+              set_categories_grades(df_grades, new_activities, parent_cat, set())
+          return df_grades
+        except:
+          error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+          g_fun.print_except(error_path)
+          return False
+
+      def set_actual_grades():
+        """Sets the score for each category based only on the activities that are active at that time.
+        """
+        try:
+          df_eva_scheme = sqlite.table_DB_to_df("evaluation_scheme", set_index=True)
+
+          for category in categories:
+            max_actual_score = df_eva_scheme.loc[category]["category_score"]
+            if max_actual_score:
+              if category != "SUBJECT":
+                grade = df_grades[category]
+                weight = weights[category]
+                parent = parent_cats[category]
+                parent_weight = weights[parent] if parent != "SUBJECT" else 1
+                actual_grade = grade * weight * parent_weight / max_actual_score
+                df_actual_grades[category] = round(actual_grade, 10)
+              else:
+                df_actual_grades[parent] = df_grades[category] / 10 / max_actual_score
+
+          sqlite.save_elements_in_DB(df_actual_grades, "actual_grades")
+        except:
+          error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+          g_fun.print_except(error_path)
+          return False
+
+      try:
+        # COMPLETE CATEGORY GRADES
+        sql = f"""SELECT _id, weight FROM activities WHERE weight > 0"""
+        weights = dict(sqlite.execute_sql(sql, fetch="fetchall", as_dict=True))
+        sql = "SELECT DISTINCT category FROM activities WHERE category <> ''"
+        categories = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+        sql = f"SELECT _id, category FROM activities WHERE category <> ''"
+        parent_cats = dict(sqlite.execute_sql(sql, fetch="fetchall", as_dict=True))
+        sql = """SELECT _id FROM activities WHERE weight >0
+                and _id in (SELECT _id FROM evaluation_scheme WHERE active = 1)
+                and _id not in (SELECT category FROM activities WHERE category <> '')"""
+        non_category_acts = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+
+        df_grades = sqlite.table_DB_to_df("grades")
+        df_grades[categories] = 0.0
+        df_grades = set_categories_grades(df_grades, non_category_acts, parent_cats)
+
+        # _PERFORMANCE_SCORE MAX_POSSIBLE_GRADE
+        max_actual_score = df_grades["_MAX_ACTUAL_SCORE"]
+        max_activity_grade = float(cfg.subject_data["max_activity_grade"])
+        subject = df_grades["SUBJECT"]
+        df_grades["_PERFORMANCE_SCORE"] = (
+          subject / max_actual_score / max_activity_grade
+        )
+
+        subject_score = subject / max_activity_grade
+        df_grades["_MAX_POSSIBLE_GRADE"] = (
+          1 - max_actual_score + subject_score
+        ) * max_activity_grade
+        sqlite.save_elements_in_DB(df_grades, "grades")
+
+        ## ACTUAL_GRADES
+        actual_grades_columns = sqlite.table_DB_to_df("actual_grades").columns
+        df_actual_grades = pd.concat(
+          [df_grades["email"], df_grades[categories]], axis=1,
+        )
+        df_actual_grades = df_actual_grades[actual_grades_columns]
+        df_actual_grades[df_actual_grades.columns[1:]] = 0.0
+
+        set_actual_grades()
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def get_risk_factor(students):
+      """Obtains the academic risk factor (arf) of each student and its linguistic representation (linguistic_arf).
+
+      Args:
+          students (list): Student list from which the academic risk factor will be obtained.
+
+      Returns:
+          [bool]: True if the process is correct False otherwise.
+      """
+
+      def calculate_risk_factor():
+        """Calculates each student's academic risk factor for the current week and stores it in a DataFrame.
+        """
+        try:
+          # Rounding off to avoid excessive decimals
+          total_earned_score = round(df_grades["SUBJECT"], 10)
+          max_actual_score = round(df_grades["_MAX_ACTUAL_SCORE"], 10)
+
+          max_possible_grade = round(df_grades["_MAX_POSSIBLE_GRADE"], 10)
+          # remaining_score = max_final_score - max_actual_score
+          remaining_score = round(1 - max_actual_score[0], 10)
+
+          academic_risk_factor = (
+            total_earned_score + (max_possible_grade * remaining_score)
+          ) / max_final_score
+          df_risk_factor[actual_week] = round(academic_risk_factor, 10)
+
+        except:
+          error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+          g_fun.print_except(error_path)
+          return False
+
+      def set_linguistic_arf():
+        """Set the linguistic representation of each student's academic risk factor for the current week and store it in a DataFrame.
+        """
+        try:
+          lower_limit = min_grade_to_pass / max_final_score
+          increment = ((ideal_grading - min_grade_to_pass) / max_final_score) / 3
+          for student in students:
+            risk_factor = df_risk_factor.loc[student][actual_week]
+
+            if risk_factor >= lower_limit + (increment * 3):
+              linguistic_arf = "none"
+            elif risk_factor >= lower_limit + (increment * 2):
+              linguistic_arf = "low"
+            elif risk_factor >= lower_limit + increment:
+              linguistic_arf = "moderate"
+            elif risk_factor >= lower_limit:
+              linguistic_arf = "critical"
+            else:
+              linguistic_arf = "very_critical"
+            df_linguistic_arf.loc[student][actual_week] = linguistic_arf
+        except:
+          error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+          g_fun.print_except(error_path)
+          return False
+
+      try:
+        actual_week = g_fun.get_week(action="text")
+        max_final_score = float(cfg.subject_data["max_final_grade"])
+        min_grade_to_pass = float(cfg.subject_data["min_grade_to_pass"])
+        ideal_grading = float(cfg.subject_data["min_ideal_grade"])
+
+        df_grades = sqlite.table_DB_to_df("grades", set_index=True)
+        df_risk_factor = sqlite.table_DB_to_df("risk_factor", set_index=True)
+        df_linguistic_arf = sqlite.table_DB_to_df(
+          "linguistic_risk_factor", set_index=True
+        )
+
+        calculate_risk_factor()
+        set_linguistic_arf()
+
+        df_risk_factor.insert(0, column="email", value=df_risk_factor.index)
+        sqlite.save_elements_in_DB(df_risk_factor, "risk_factor")
+        df_linguistic_arf.insert(0, column="email", value=df_linguistic_arf.index)
+        sqlite.save_elements_in_DB(df_linguistic_arf, "linguistic_risk_factor")
+
+        return True
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    try:
+      elements = load_grades(df_grades, path_file_name)
+      if elements:
+        sql = f"SELECT email FROM risk_factor"
+        students = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+        sql = "SELECT _id, category FROM activities WHERE weight >0"
+        categories = dict(sqlite.execute_sql(sql, fetch="fetchall", as_dict=True))
+        non_active_activities = elements["non_active_act"]
+        non_active_categories = g_fun.get_path_elements(
+          non_active_activities, categories, reverse=True
+        )
+        if non_active_activities:
+          activate_activities(non_active_categories)
+          calculate_evaluation_scheme(non_active_categories)
+        activities = elements["registered_act"]
+        activities_with_categories = g_fun.get_path_elements(
+          activities, categories, reverse=True
+        )
+
+        calculate_grades(students, activities_with_categories)
+
+        get_risk_factor(students)
+        return True
+      else:
+        return False
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
+      return False
+
+  try:
+    sucess = True
+    file_name = "grades_format.csv"
+    path_file_name = "files/config/" + file_name
+    if grade_activities(df_grades, path_file_name):
+      if meeting:
+        meeting_num = meeting[0]
+        planet = meeting[1]
+        text = t_lang.meeting(user.language, "sucess", meeting_num, planet)
+      else:
+        text = t_lang.menu_act_grade(user.language, "sucess")
+    else:
+      text = g_lang.error_upload_file(user.language, file_name)
+    context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
+
+
+def status_update(update, context):
+  def any_admin_is_teacher():
+    sql = (
+      f"SELECT telegram_id FROM teachers WHERE telegram_id IN ({','.join(admins_list)})"
+    )
+    if sqlite.execute_sql(sql, fetch="fetchall", as_list=True):
+      return True
+    else:
+      return False
+
+  def new_member_planet(planet):
+    try:
+      new_member = upm.new_chat_members[0]
+      if not new_member["is_bot"]:
+        new_member = g_fun.get_user_data(new_member, planet)
+        if not new_member.is_teacher:
+          new_member.register_student()
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
+      return False
+
+  try:
+    upm = update.message
+    chat_id = upm.chat_id
+    print(
+      f"{'#'*20}\n SE HA REGISTRADO UNA ACTUALIZACION DEL ESTATUS EN EL GRUPO\n{'#'*20}"
+    )
+    print(update, "\n")
+    if chat_id < 0:
+      planet = g_fun.strip_accents(upm.chat.title)
+      user = g_fun.get_user_data(update._effective_user, planet)
+      admins_list = [
+        str(admin.user.id) for admin in context.bot.get_chat_administrators(chat_id)
+      ]
+      new_admins = set(admins_list)
+      if cfg.admins_list:
+        if planet in cfg.admins_list:
+          new_admins = set(admins_list) - cfg.admins_list[planet]
+
+      if str(context.bot.id) in new_admins:
+        text = f"Para accedere a las opciones de opinar sobre la colaboración de los compañeros, del profesor/a y de los recursos, inicia una conversación en privado con el bot EDUtrack @{context.bot.username} (da click en el usuario o buscalo directamente en Telegram.\n\nTo access the options to opine on the collaboration of classmates, teacher and resources, start a private conversation with the EDUtrack @{context.bot.username} bot (click on the user or search it directly in Telegram.)"
+        message_id = context.bot.sendMessage(
+          chat_id=chat_id, parse_mode="HTML", text=text
+        ).message_id
+        context.bot.pinChatMessage(chat_id=chat_id, message_id=message_id)
+
+      # ADD PLANET: Only the teacher can add a planet.
+      if user.is_teacher:
+        sql = f"INSERT OR IGNORE INTO planets (_id,active) VALUES('{planet}',1)"
+        sqlite.execute_sql(sql)
+        cfg.active_meetings.update({planet: {"users": {}, "meeting": ""}})
+
+      ## NEW MEMBER GROUP
+      if user.is_teacher or any_admin_is_teacher():
+        if upm.new_chat_members:
+          new_member_planet(planet)
+
+        ## MEMBER LEFT THE GROUP
+        elif upm.left_chat_member:
+          user_data = upm.left_chat_member
+          sqlite.execute_sql(sql)
+          sql = f"""UPDATE FROM planets
+                    SET num_members = num_members - 1
+                    WHERE _id = '{planet}'"""
+      else:
+        bot_id = context.bot.id
+        text = g_lang.unauthorized_user(user.language, context)
+        context.bot.sendMessage(chat_id=chat_id, parse_mode="HTML", text=text)
+        context.bot.kickChatMember(chat_id, bot_id)
+
+      cfg.admins_list[planet] = set(admins_list)
+
+      sql = f"""UPDATE planet_admins SET admins = '{','.join(admins_list)}'
+                WHERE _id = '{planet}'"""
+      sqlite.execute_sql(sql)
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False

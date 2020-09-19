@@ -1,9 +1,11 @@
 import contextlib
 import inspect
 import os
-import pandas as pd
 import sqlite3
 import sys
+
+import pandas as pd
+
 import config.config_file as cfg
 from functions import general_functions as g_fun
 
@@ -16,7 +18,7 @@ def connection(open_connection="False"):
   return conn if open_connection else conn.close()
 
 
-def execute_statement(
+def execute_sql(
   sql_query, fetch=False, df=False, as_dict=False, as_list=False, test=False
 ):  ### BORRAR TEST
   try:
@@ -45,51 +47,42 @@ def execute_statement(
           return True
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-    g_fun.print_except(error_path)
-    return False
+    g_fun.print_except(error_path, sql_query)
+    raise
 
 
 def create_db():
   try:
+    # CREATE TABLES
     for table in cfg.tables:
-      sql = f"""CREATE TABLE if not exists {table['name']} ({table['fields']})"""
-      execute_statement(sql)
-      print(f"Se ha agregado la tabla {table['name']} a la base de datos")
+      sql = f"""CREATE TABLE if not exists {table} ({cfg.tables[table]})"""
+      execute_sql(sql)
+      print(f"Se ha agregado la tabla {table} a la base de datos")
 
-    # sql = f"""INSERT INTO telegram_users VALUES (
-    sql = f"""INSERT OR IGNORE INTO telegram_users VALUES (
-      {int(cfg.teacher_data['_id'])},
-      '{cfg.teacher_data['telegram_name']}',
-      '{cfg.teacher_data['username']}',
-      {int(cfg.teacher_data['is_teacher'])},
-      '{cfg.teacher_data['language']}')"""
-    execute_statement(sql)
+    # SET SUBJECT DATA
+    sql = f"""INSERT INTO subject_data VALUES {tuple(cfg.subject_data.values())}"""
+
+    execute_sql(sql)
 
     # sql = f"""INSERT INTO teachers VALUES(
     sql = f"""INSERT OR IGNORE INTO teachers VALUES(
-      {int(cfg.teacher_data['_id'])},
-      '{cfg.teacher_data['telegram_name']}',
-      '{cfg.teacher_data['username']}',
-      '{cfg.teacher_data['email']}'
+      "{cfg.teacher_data['email']}",
+      "{cfg.teacher_data['telegram_name']}",
+      "{cfg.teacher_data['username']}",
+      "{int(cfg.teacher_data['telegram_id'])}"
       )"""
-    execute_statement(sql)
+    execute_sql(sql)
     print(f"Se agrego correctamente al docente {cfg.teacher_data['telegram_name']}.")
 
-    sql = "SELECT COUNT(name) FROM sqlite_master WHERE type='table' AND name='teachers_temp'"
-    if execute_statement(sql, "fetchone")[0]:
+    sql = f"SELECT COUNT(name) FROM sqlite_master WHERE type='table' AND name='teachers_temp'"
+    if execute_sql(sql, "fetchone")[0]:
       sql = f"SELECT COUNT(*) FROM teachers_temp"
-      if execute_statement(sql, "fetchone")[0]:
+      if execute_sql(sql, "fetchone")[0]:
         cfg.standby_teachers = True
 
-    # TRIGGER to update username in telegram_users
-    sql = f"""CREATE TRIGGER IF NOT EXISTS telegram_username
-              AFTER UPDATE ON telegram_users
-              WHEN t.username <> r.username
-              BEGIN
-                INSERT INTO registered_students (t_username, r_username, tipo_operacion, fecha_cambio)
-              VALUES
-                (t.username, r.username, 'UPDATE',DATETIME('NOW'));
-              """
+    for trigger in cfg.triggers:
+      sql = trigger
+      execute_sql(sql)
 
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -99,7 +92,7 @@ def create_db():
 def get_columns_names(table_name):
   try:
     sql = f"PRAGMA table_info({table_name});"
-    column_names = [x[1] for x in execute_statement(sql, fetch="fetchall")]
+    column_names = [x[1] for x in execute_sql(sql, fetch="fetchall")]
     print(column_names)
     return column_names
   except:
@@ -122,26 +115,32 @@ def save_file_in_DB(df, table_name, index=False, action="replace"):
 def save_elements_in_DB(df_to_save, table_name):
   try:
     conn = connection(True)
+
+    df_backup = table_DB_to_df(table_name)
     df_to_save.to_sql(
-      "delete", con=conn, index=False, if_exists="replace",
+      "delete",
+      con=conn,
+      index=False,
+      if_exists="replace",
     )
     sql = f"DELETE FROM {table_name}"
-    execute_statement(sql)
+    execute_sql(sql)
     sql = f"INSERT INTO {table_name} SELECT * FROM 'delete'"
-    execute_statement(sql)
-    sql = "DROP TABLE IF EXISTS 'delete'"
-    execute_statement(sql)
+    execute_sql(sql)
+    sql = f"DROP TABLE IF EXISTS 'delete'"
+    execute_sql(sql)
     return True
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
-    return False
+    save_elements_in_DB(df_backup, table_name)
+    raise
 
 
-def table_DB_to_df(table_name, set_index=True):
+def table_DB_to_df(table_name, columns="*", set_index=False):
   try:
-    sql = f"SELECT * FROM {table_name}"
-    df = execute_statement(sql, df=True)
+    sql = f"SELECT {columns} FROM {table_name}"
+    df = execute_sql(sql, df=True)
     ID = df.columns[0]
     if set_index:
       df.set_index(ID, inplace=True)

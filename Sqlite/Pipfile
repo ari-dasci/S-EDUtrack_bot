@@ -4,9 +4,13 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-pylint = "*"
 
 [packages]
+telegram = "*"
+python-telegram-bot = "*"
+pandas = "*"
+colorama = "*"
+black = "==20.8b1"
 
 [requires]
 python_version = "3.7"
