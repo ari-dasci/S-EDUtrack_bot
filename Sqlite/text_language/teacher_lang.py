@@ -12,13 +12,13 @@ def welcome_text(lang, context, action):
       return (
         "Escribe el comando /menu para ver las opciones con las que podemos trabajar."
       )
-    if action == "not_start":
+    if action == "long":
       text = "Hemos terminado de configurar la asignatura.\n\n"
     return f"{text}Bienvenido a EDUtrack <b>{bot_username}</b>. Te ayudaré en esta asignatura manteniendote informado de los estudiantes que están en riesgo de fracaso academic de forma semanal.\n\nAdemás de llevar un control de la comunicación en Telegram de los estudiantes, te proporcionaré informes sobre la opinión colectiva sobre la asignatura recogida mediante EDUtrack.\nMis comandos son:\n\n/menu\n Te mostraré las opciones con las que podemos trabajar juntos.\n\n/change_language\nTe ayudaré a cambiar el idioma en que te muestro los contenidos. Las opciones actuales son Inglés y Español.\n\n/help\nTe informaré sobre el menú de opciones. También podrás acceder al manual de usuario."
   else:
     if action == "short":
       return "Type command /menu to see the options with which we can work together."
-    if action == "not_start":
+    if action == "long":
       text = "We've finished configuring the subject.\n\n"
     return f"{text}<b>{bot_username}</b>, welcome to EDUtrack. I will help you in this course by keeping you informed of students who are at risk of academic failure on a weekly basis.\n\nIn addition to keeping track of students' Telegram communication, I will provide you with reports on the collective opinion on the course collected through EDUtrack.\nMy commands are:\n\n/menu\n I will show you the options with which we can work together.\n\n/change_language\n I will help you switch the language in which I show you the contents. The current options are English and Spanish.\n\n/help\nI'll inform you about the options menu. You will also be able to access the user manual."
 
@@ -27,7 +27,7 @@ def config_files(lang, action, file_name="", elements="", context=""):
   if lang == "es":
     if action == "download":
       bot_username = context.bot.username
-      return f"<b>Asistente para la configuración de la asignatura.</b>\n\nBienvenido a EDUtrack <b>{bot_username}</b>. Antes de usar EDUtrack debes terminar de configurar la asignatura. Descarga y edita estos archivos. Cuando los tengas listos enviámelos con el mismo nombre."
+      return f"<b>Asistente para la configuración de la asignatura.</b>\n\nBienvenido a EDUtrack <b>{bot_username}</b>. Antes de usar EDUtrack debes terminar de configurar la asignatura. Descarga y edita estos archivos. Cuando los tengas listos <b>enviámelos con el mismo nombre.</b>"
     if action == "ready_one":
       return f"El archivo se ha subido correctamente. Aún falta por subir el archivo <b>{file_name}</b> para finalizar la configuración."
     if action == "replace":
@@ -41,7 +41,7 @@ def config_files(lang, action, file_name="", elements="", context=""):
       return f"El archivo de configuración <b>{file_name}</b> aún no se ha cargado. Recuerda que lo debes subir con el mismo nombre."
     if action == "exists_in_DB":
       if "students" in file_name:
-        return f"<b>ARCHIVO EXISTENTE</b>\nLa seccion <b>estudiantes</b> ya existe en la base de datos.\nPara agregar más {elements} renombra el archivo como <b>add_{file_name}</b>.\n\nPara reemplazar todo, renombra el archivo como <b>replace_{file_name}</b>.\nSi utilizas está opción, la sección de calificaciones también se borrará, eliminando todas las calificaciones cargadas previamente."
+        return f"<b>ARCHIVO EXISTENTE</b>\nLa seccion <b>estudiantes</b> ya existe en la base de datos.\nPara agregar más <b>{elements}</b> renombra el archivo como <b>add_{file_name}</b>.\n\nPara reemplazar todo, renombra el archivo como <b>replace_{file_name}</b>.\nSi utilizas está opción, la sección de calificaciones también se borrará, eliminando todas las calificaciones cargadas previamente."
       else:
         #  The activity file does not allow you to add activities to maintain the correct grading scheme.
         return f"<b>ARCHIVO EXISTENTE</b>\nLa seccion <b>actividades</b> ya existe en la base de datos.\nPara reemplazar las actividades, renombra el archivo como <b>replace_{file_name}</b>.\nSi utilizas está opción, la sección de calificaciones también se borrará, eliminando todas las calificaciones cargadas previamente."
@@ -62,9 +62,9 @@ def config_files(lang, action, file_name="", elements="", context=""):
   else:
     if action == "download":
       bot_username = context.bot.username
-      return f"<b>Course setup wizard.</b>\n\nWelcome to EDUtrack {bot_username}. Before using EDUtrack you must finish configuring the course. Download and edit these files. When done, send them to me keeping the file names."
+      return f"<b>Course setup wizard.</b>\n\nWelcome to EDUtrack <b>{bot_username}</b>. Before using EDUtrack you must finish configuring the course. Download and edit these files. When done, send them to me <b>keeping the file names.</b>"
     if action == "ready_one":
-      return f"The file uploaded correctly. The {filename} configuration file has yet to be uploaded."
+      return f"The file has been uploaded successfully. The <b>{file_name}</b> configuration file has yet to be uploaded."
     if action == "replace":
       return f"The file has been uploaded successfully."
     if action == "no_set_up":
@@ -75,9 +75,7 @@ def config_files(lang, action, file_name="", elements="", context=""):
       return f"Configuration file <b>{file_name}</b> is not uploaded. Remember to keep the file name."
     if action == "exists_in_DB":
       elements = "students" if "students" in file_name else "activities"
-      return f"<b>EXISTING FILE</b>\nSection <b>{elements}</b> already exists in the database.\nTo add more {elements} rename the file to <b>add_{file_name}</b>.\n\nTo replace everything, rename the file to <b>replace_{file_name}</b>.\nIf you use the latter option, the grades section will also be cleared, deleting all previously loaded grades."
-    if action == "add_elements_ready":
-      return f"Successfully added {elements}"
+      return f"<b>EXISTING FILE</b>\nSection <b>{elements}</b> already exists in the database.\nTo add more <b>{elements}</b> rename the file to <b>add_{file_name}</b>.\n\nTo replace everything, rename the file to <b>replace_{file_name}</b>.\nIf you use the latter option, the grades section will also be cleared, deleting all previously loaded grades."
     if action == "add_ready":
       return f"Successfully added {elements}"
     if action == "add_all_exists":
@@ -131,6 +129,37 @@ def config_files_activities(lang, action, elements=""):
         return f"<b>NO PARENT CATEGORY</b>\n\nThe following categories don't have the parent category defined:\n\n<b>{elements}</b>"
 
 
+def add_teacher(lang, action, username="", bot_username="", title=True):
+  if lang == "es":
+    Title = "<b>AGREGAR DOCENTE</b>\n" if title else ""
+    if action == "text":
+      return f"{Title}Solicite al nuevo profesor/a interactuar con el bot @{bot_username}.\nPosteriormente utiliza el comando /add_teacher {lt}username{gt} {lt}email{gt}.\n\n<b>EJEMPLO:</b>\n/add_teacher teacher_username email@teacher.com"
+    if action == "sucess":
+      return f"{Title}Se ha registrado el profesor/a {username} satisfactoriamente."
+    if action == "not_found":
+      return (
+        f"{Title}El profesor/a {username} no ha interactuado con el bot."
+        + "\n\n"
+        + add_teacher(lang, "text", bot_username=bot_username, title=False)
+      )
+    if action == "already":
+      return f"{Title}El profesor/a ya se encuentra registrado."
+  else:
+    Title = "<b>ADD TEACHER</b>\n" if title else ""
+    if action == "text":
+      return f"{Title}Ask the new teacher to interact with the bot @{bot_username}.\nThen use the command /add_teacher {lt}username{gt} {lt}email{gt}.\n\n<b>EXAMPLE:</b>\n/add_teacher teacher_username email@teacher.com"
+    if action == "sucess":
+      return f"{Title}The teacher {username} has been successfully registered."
+    if action == "not_found":
+      return (
+        f"{Title}The teacher {username} has not interacted with the bot."
+        + "\n\n"
+        + add_teacher(lang, "text", bot_username=bot_username, title=False)
+      )
+    if action == "already":
+      return f"{Title}The teacher is already registered."
+
+
 ##### MENUS ###################
 def main_menu(lang):
   if lang == "es":
@@ -141,6 +170,7 @@ def main_menu(lang):
         IKBtn("Estudiantes", callback_data="t_menu-stu"),
       ],
       [IKBtn("Generar Reportes", callback_data="t_menu-reports")],
+      [IKBtn("Activar Evaluaciones", callback_data="t_menu-activate_eva")],
       [IKBtn("Enviar mensaje a los planetas", callback_data="t_menu-msg")],
       # [IKBtn("ON/OFF registro en planetas", callback_data="t_menu-reg_planet")],
     ]
@@ -148,10 +178,11 @@ def main_menu(lang):
     text = "<b>TEACHER MENU</b>\nSelect an option:"
     opt = [
       [
-        IKBtn("ACtivities", callback_data="t_menu-act"),
+        IKBtn("Activities", callback_data="t_menu-act"),
         IKBtn("Students", callback_data="t_menu-stu"),
       ],
       [IKBtn("Generate Reports", callback_data="t_menu-reports")],
+      [IKBtn("Activate Evaluations", callback_data="t_menu-activate_eva")],
       [IKBtn("Send message to the planets", callback_data="t_menu-msg")],
       # [IKBtn("ON/OFF planet registry", callback_data="t_menu-reg_planet")],
     ]
@@ -241,10 +272,11 @@ def menu_act_view(lang):
   return (text, opt)
 
 
-def menu_act_grade(lang, action, elements="", num_elements=""):
+def menu_act_grade(lang, action, elements="", num_elements="", title=True):
   if lang == "es":
+    Title = "<b>CALIFICAR</b>\n" if title else ""
     if action == "menu":
-      text = "<b>CALIFICAR</b>\nSelecciona una opción:"
+      text = f"{Title}Selecciona una opción:"
       opt = [
         [IKBtn("Subir archivo", callback_data="t_menu-act-grade-upload")],
         [IKBtn("Utilizar comando", callback_data="t_menu-act-grade-cmd")],
@@ -252,51 +284,97 @@ def menu_act_grade(lang, action, elements="", num_elements=""):
       ]
       return (text, opt)
     elif action == "upload":
-      return "Descarga este archivo como base para crear el archivo de calificaciones. Envialo con el mismo nombre para cargar las calificaciones."
+      return f"{Title}Descarga este archivo como base para crear el archivo de calificaciones. Envialo con el mismo nombre para cargar las calificaciones."
     elif action == "cmd":
-      return f"<b>CALIFICAR ACTIVIDAD</b>\nEscribe el comando\n<code>/grade_activity {lt}id_actividad{gt} {lt}email_estudiante{gt} {lt}calificación{gt}</code>;\n\nCada estudiante debe separarse con el signo punto y coma ';' salvo el último\n\nEjemplo:\n<code>/grade_activity Prueba_1\nejemplo@correo.ugr.es 8.5;\nejemplo2@gmail.com 9.6;\nejemplo3@hotmail.com 9</code>"
+      return f"{Title}Escribe el comando\n<code>/grade_activity {lt}id_actividad{gt} {lt}email_estudiante{gt} {lt}calificación{gt}</code>;\n\nCada estudiante debe separarse con el signo punto y coma ';' salvo el último\n\nEjemplo:\n<code>/grade_activity Prueba_1\nejemplo@correo.ugr.es 8.5;\nejemplo2@gmail.com 9.6;\nejemplo3@hotmail.com 9</code>"
+
     elif action == "unregistered_stu":
-      if len(elements) == 1:
-        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nEl estudiante <b>{elements}</b> no se encuentra registrado."
+      if num_elements == 1:
+        return f"{Title}El estudiante <b>{elements}</b> no se encuentra registrado."
       else:
-        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nLos siguientes <b>{num_elements}</b> estudiantes no se encuentran registrados:\n<b>{elements}</b>"
+        return f"{Title}Los siguientes <b>{num_elements}</b> estudiantes no se encuentran registrados:\n<b>{elements}</b>"
     elif action == "unregistered_act":
-      if len(elements) == 1:
-        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nLa actividad <b>{elements}</b> no se encuentra registrada."
+      if num_elements == 1:
+        return f"{Title}La actividad <b>{elements}</b> no se encuentra registrada."
       else:
-        return f"<b>ARCHIVO DE CALIFICACIONES</b>\nLas siguientes <b>{num_elements}</b> actividades no se encuentran registradas:\n<b>{elements}</b>"
-    elif action == "all_stu_unregistered":
-      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNingún estudiante en el archivo se encuentra registrado en la base de datos."
-    elif action == "all_act_unregistered":
-      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNinguna actividad en el archivo se encuentra registrada en la base de datos."
+        return f"{Title}Las siguientes <b>{num_elements}</b> actividades no se encuentran registradas:\n<b>{elements}</b>"
+    elif action == "duplicated_stu":
+      if num_elements == 1:
+        return f"{Title}El estudiante <b>{elements}</b> se encuentra duplicado."
+      else:
+        return f"{Title}Los siguientes <b>{num_elements}</b> estudiantes se encuentran duplicados:\n<b>{elements}</b>"
+    elif action == "duplicated_act":
+      if num_elements == 1:
+        return (
+          f"{Title}La actividad <b>{elements}</b> se encuentra duplicada en el archivo."
+        )
+      else:
+        return f"{Title}Las siguientes <b>{num_elements}</b> actividades se encuentran duplicadas en el archivo:\n<b>{elements}</b>"
+    elif action == "no_students":
+      return f"{Title}No se pudo registrar ningún estudiante en la base de datos."
+    elif action == "no_activities":
+      return f"{Title}No se pudo registrar ninguna actividad en la base de datos."
+    elif action == "no_arguments":
+      return (
+        f"{Title}El comando no tiene los argumentos necesarios.\n\n"
+        + menu_act_grade(lang, "cmd", title=False)
+      )
+    elif action == "grades_error":
+      return f"{Title}Se encontro un problema en los siguientes registros:\n{elements}"
+    elif action == "sucess":
+      return f"{Title}Se registraron las calificaciones."
+    elif action == "no_registration":
+      return f"{Title}No se registro ninguna calificación."
 
   else:
+    Title = "<b>GRADE</b>\n" if title else ""
     if action == "menu":
-      text = "<b>GRADE</b>\nSelect an option:"
+      text = f"{Title}Select an option:"
       opt = [
         [IKBtn("Upload File", callback_data="t_menu-act-grade-upload")],
         [IKBtn("Use Command", callback_data="t_menu-act-grade-cmd")],
-        [IKBtn("Atrás", callback_data="t_menu-act")],
+        [IKBtn("Back", callback_data="t_menu-act")],
       ]
       return (text, opt)
     elif action == "upload":
-      return "Download this file as a basis for creating the grade file. Send it with the same name to load the grades."
+      return f"{Title}Download this file as a basis for creating the grade file. Send it with the same name to load the grades."
     elif action == "cmd":
-      return f"<b>GRADE ACTIVITY:</b>\nType the command\n<code>/grade_activity {lt}id_activity{gt} {lt}student email{gt} {lt}grade{gt}</code>;\n\nEach student is separated with the semicolon char ';' except the last one\n\nExample:\n<code>/grade_activity Test_1\nexample@correo.ugr.es 8.5;\nexample2@gmail.es 9.6;\nexample3@hotmail.es 9</code>"
+      return f"{Title}Type the command\n<code>/grade_activity {lt}id_activity{gt} {lt}student email{gt} {lt}grade{gt}</code>;\n\nEach student is separated with the semicolon char ';' except the last one\n\nExample:\n<code>/grade_activity Test_1\nexample@correo.ugr.es 8.5;\nexample2@gmail.es 9.6;\nexample3@hotmail.es 9</code>"
     elif action == "unregistered_stu":
-      if len(elements) == 1:
-        return f"<b>GRADING FILE</b>\nThe student <b>{elements}</b> is not registered."
+      if num_elements == 1:
+        return f"{Title}The student <b>{elements}</b> is not registered."
       else:
-        return f"<b>GRADING FILE</b>\nThe following students are not registered:\n<b>{elements}</b>"
+        return f"{Title}The following students are not registered:\n<b>{elements}</b>"
     elif action == "unregistered_act":
-      if len(elements) == 1:
-        return f"<b>GRADING FILE</b>\nThe activity <b>{elements}</b> is not registered."
+      if num_elements == 1:
+        return f"{Title}The activity <b>{elements}</b> is not registered."
       else:
-        return f"<b>GRADING FILE</b>\nThe following activities are not registered:\n<b>{elements}</b>"
-    elif action == "all_stu_unregistered":
-      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNo student on file is registered in the database."
-    elif action == "all_act_unregistered":
-      return f"<b>ARCHIVO DE CALIFICACIONES</b>\nNo activity in the file is registered in the database."
+        return f"{Title}The following activities are not registered:\n<b>{elements}</b>"
+    elif action == "duplicated_stu":
+      if num_elements == 1:
+        return f"{Title}The student <b>{elements}</b> is duplicated in the file."
+      else:
+        return f"{Title}The following <b>{num_elements}</b> students are duplicated in the file:\n<b>{elements}</b>"
+    elif action == "duplicated_act":
+      if num_elements == 1:
+        return f"{Title}The activity <b>{elements}</b> is duplicated in the file."
+      else:
+        return f"{Title}The following <b>{num_elements}</b> activities are duplicated in the file:\n<b>{elements}</b>"
+    elif action == "no_students":
+      return f"{Title}No students could be registered in the database."
+    elif action == "no_activities":
+      return f"{Title}No activities could be registered in the database."
+    elif action == "no_arguments":
+      return (
+        f"{Title}The command does not have the necessary arguments.\n\n"
+        + menu_act_grade(lang, "cmd", title=False)
+      )
+    elif action == "grades_error":
+      return f"{Title}A problem was found in the following records:\n{elements}"
+    elif action == "sucess":
+      return f"{Title}The grades were registered."
+    elif action == "no_registration":
+      return f"{Title}No grades were recorded."
 
 
 def menu_act_replace(lang):
@@ -376,21 +454,27 @@ def menu_stu(lang):
   return (text, opt)
 
 
-def menu_stu_view(lang):
+def menu_stu_view(lang, action="menu"):
   if lang == "es":
-    text = "<b>VER LISTA DE ESTUDIANTES:</b>\nSelecciona una opción:"
-    opt = [
-      [IKBtn("Archivo students_format", callback_data="t_menu-stu-view-file")],
-      [IKBtn("Estudiantes registrados", callback_data="t_menu-stu-view-reg")],
-      [IKBtn("Atrás", callback_data="t_menu-stu")],
-    ]
+    if action == "menu":
+      text = "<b>VER LISTA DE ESTUDIANTES:</b>\nSelecciona una opción:"
+      opt = [
+        [IKBtn("Archivo students_format", callback_data="t_menu-stu-view-file")],
+        [IKBtn("Estudiantes registrados", callback_data="t_menu-stu-view-reg")],
+        [IKBtn("Atrás", callback_data="t_menu-stu")],
+      ]
+    elif action == "no_elements_registered":
+      return "No hay estudiantes registrados."
   else:
-    text = "<b>VIEW STUDENTS LIST:</b>\nSelect an option:"
-    opt = [
-      [IKBtn("students_format file", callback_data="t_menu-stu-view-file")],
-      [IKBtn("Registered students", callback_data="t_menu-stu-view-reg")],
-      [IKBtn("Back", callback_data="t_menu-stu")],
-    ]
+    if action == "menu":
+      text = "<b>VIEW STUDENTS LIST:</b>\nSelect an option:"
+      opt = [
+        [IKBtn("students_format file", callback_data="t_menu-stu-view-file")],
+        [IKBtn("Registered students", callback_data="t_menu-stu-view-reg")],
+        [IKBtn("Back", callback_data="t_menu-stu")],
+      ]
+    elif action == "no_elements_registered":
+      return "No students are registered."
   return (text, opt)
 
 
@@ -405,7 +489,7 @@ def menu_stu_modify(lang, headers):
   if lang == "es":
     return f"<b>MODIFICAR ESTUDIANTE:</b>\nPara modificar un estudiante escribe el comando\n<code>/modify_student {lt}email{gt} {lt}campo a modificar{gt} {lt}nuevo contenido{gt}</code>\n\nLos campos que puedes modificar son:\n{headers}\n\n<b>Ejemplo:</b>\n<code>/modify_student ejemplo@correo.ugr.es first_name David</code> (Modifica el nombre del estudiante por David)."
   else:
-    return f"<b>MODIFY STUDENT:</b>\nTo modify a student, type command\n<code>/modify_student {lt}email{gt} {lt}field to modify{gt} {lt}new content{gt}</code>\n\nThe fields you can modify are:\n{headers}\n\n<b>Example:</b>\n<code>/delete_student example@correo.ugr.es first_name David</code> (modify  the student's first name to David).\n\n<code>/modify_activity GLOSSARY name Topic 2 Glossary</code> (modifies the activity name)"
+    return f"<b>MODIFY STUDENT:</b>\nTo modify a student, type command\n<code>/modify_student {lt}email{gt} {lt}field to modify{gt} {lt}new content{gt}</code>\n\nThe fields you can modify are:\n{headers}\n\n<b>Example:</b>\n<code>/delete_student example@correo.ugr.es first_name David</code> (modify  the student's first name to David)."
 
 
 def menu_stu_delete(lang):
@@ -423,7 +507,7 @@ def menu_reports(lang):
       [IKBtn("Calificaciones", callback_data="t_menu-reports-grades")],
       [IKBtn("Factor de Riesgo Académico", callback_data="t_menu-reports-ARF")],
       [IKBtn("Participación en meetings", callback_data="t_menu-reports-meetings")],
-      [IKBtn("EValuación docente", callback_data="t_menu-reports-eva_teacher")],
+      [IKBtn("Evaluación docente", callback_data="t_menu-reports-eva_teacher")],
       [IKBtn("Evaluación de recursos", callback_data="t_menu-reports-eva_resources")],
       [
         IKBtn(
@@ -453,3 +537,65 @@ def menu_reports(lang):
       [IKBtn("Back", callback_data="t_menu-back")],
     ]
   return (text, opt)
+
+
+def menu_activate_eva(lang, state):
+  if lang == "es":
+    if state == 1:
+      return f"Las evaluaciones han sido activadas."
+    elif state == 0:
+      return f"Las evaluaciones han sido desactivadas."
+  else:
+    if state == 1:
+      return f"The evaluations have been activated."
+    elif state == 0:
+      return f"The evaluations have been deactivated."
+
+
+def meeting(lang, action, meeting_num="", planet=""):
+  if lang == "es":
+    if action == "active":
+      return f"No se puede iniciar otro meeting, actualmente está activo el meeting {meeting_num} en este planeta. Para iniciar otro, primero debes finalizar el actual con el comando:\n\n/end_meeting {meeting_num}"
+    elif action == "is_not_a_number":
+      return f"El número de meeting que escribiste '{meeting_num}' no es un número."
+    elif action == "no_number":
+      if meeting_num:
+        return f"<b>Meeting {meeting_num} activo.</b>\nPara iniciar o finalizar un meeting se debe escribir el número de meeting."
+      else:
+        return (
+          f"Para iniciar o finalizar un meeting se debe escribir el número de meeting."
+        )
+    elif action == "finish_no_active":
+      return f"Meeting no finalizado. El meeting actualmente activo es meeting {meeting_num}."
+    elif action == "none_active":
+      return f"No hay ningún meeting activo."
+    elif action == "start":
+      return f"El meeting {meeting_num} se ha iniciado con éxito."
+    elif action == "end":
+      return f"El meeting {meeting_num} se ha finalizado con éxito."
+    elif action == "error_args":
+      return f"Como argumento solo debes escribir el numero de meeting."
+    elif action == "sucess":
+      return f"Se ha registrado la asistencia y las calificaciones del meeting <b>{meeting_num}</b> en el planeta <b>{planet}</b>."
+  else:
+    if action == "active":
+      return f"Cannot start another meeting, currently meeting {meeting_num} is active on this planet. To start another, first you must end the current one with the command:\n\n/end_meeting {meeting_num}"
+    elif action == "is_not_a_number":
+      return f"The meeting number you typed '{meeting_num}' is not a number."
+    elif action == "no_number":
+      if meeting_num:
+        return f"<b>Meeting {meeting_num} active.</b>\nTo start or finish a meeting you must type the meeting number."
+      else:
+        return f"To start or finish a meeting you must type the meeting number."
+    elif action == "no_active":
+      return f"Meeting not finished. Current active meeting is meeting {meeting_num}."
+    elif action == "none_active":
+      return f"There is no active meeting."
+    elif action == "start":
+      return f"The meeting {meeting_num} has been successfully started."
+    elif action == "end":
+      return f"The meeting {meeting_num} was successfully completed."
+    elif action == "error_args":
+      return f"As an argument you only have to write the meeting number."
+    elif action == "sucess":
+      return f"The attendance and grades of the meeting <b>{meeting_num}</b> have been saved on the planet <b>{planet}</b>."
