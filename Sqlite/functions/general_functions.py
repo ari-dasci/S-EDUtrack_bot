@@ -1,45 +1,80 @@
-import logging
-from datetime import datetime, timedelta
 import inspect
+import logging
+import operator
+import os
 import re
 import sys
-import os
-from colorama import init, Fore, Back
 from datetime import datetime, timedelta
+from functools import reduce
 from unicodedata import normalize
-from config import (
-  config_file as cfg,
-  db_sqlite_connection as sqlite,
-)
+
+from colorama import Back, Fore, init
+
+from config import config_file as cfg
+from config import db_sqlite_connection as sqlite
 from config.create_files_format import create_files
-from user_types import Teacher, Student
+from functions import bot_functions as b_fun
+from user_types import Student, Teacher
 
 
 def config_subject():
   try:
+    # If they don't exist, create the tables in the DB
     sql = 'SELECT count(*) FROM sqlite_master WHERE type = "table"'
-    if not sqlite.execute_statement(sql, fetch="fetchone")[0]:
+    if not sqlite.execute_sql(sql, fetch="fetchone")[0]:
       sqlite.create_db()
+
+    # Check if the subject is configured
     cfg.config_files_set = are_config_files_set()
 
+    # Get the date of the Monday of the week in which the course starts
     start_date = cfg.subject_data["start_date"]
     start_date = datetime.strptime(start_date, "%d/%m/%Y")
     cfg.monday_start_week = get_weekday_monday(start_date)
 
+    # Get the admins for each planet
+    sql = f"SELECT _id, admins FROM planet_admins"
+    planets = sqlite.execute_sql(sql, fetch="fetchall", as_dict=True)
+    if planets:
+      planets = dict(planets)
+      for planet in planets:
+        admins = planets[planet]
+        if admins:
+          cfg.admins_list[planet] = set(admins.split(","))
+        else:
+          cfg.admins_list[planet] = set()
+        cfg.active_meetings.update({planet: {"users": {}, "meeting": ""}})
+
+    # Get the relationship between the Telegram ID and the email of each registered student.
+    sql = f"""SELECT _id, email FROM registered_students"""
+    _id_email = sqlite.execute_sql(sql, fetch="fetchall", as_dict=True)
+    if _id_email:
+      cfg.registered_emails = dict(_id_email)
+
+    # Gets the tree of the evaluation scheme
+    b_fun.eva_scheme_tree()
+
+    # Set activate_evaluations
+    sql = f"SELECT activate_evaluations FROM subject_data"
+    cfg.subject_data["activate_evaluations"] = sqlite.execute_sql(
+      sql, fetch="fetchone"
+    )[0]
+
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     print_except(error_path)
+    print()
 
 
 def print_except(function, *extra_info):
   try:
     exc_type, exc_obj, exc_tb = sys.exc_info()
-    function += f" line:{exc_tb.tb_lineno}"
     error_text = f"""
     ====================
     ERROR IN FUNCTION {function}
     {exc_type}
     {exc_obj}
+    line:{exc_tb.tb_lineno}
     """
     if extra_info:
       for element in extra_info:
@@ -54,23 +89,21 @@ def print_except(function, *extra_info):
 
 def get_user_data(user_data, planet=""):
   try:
-    if user_is_teacher(user_data.id):
-      if user_data.username:
-        return Teacher(user_data)
-    else:
-      if user_data.username:
-        user = Student(user_data)
-        if planet:
-          user.planet = planet
-        else:
-          sql = (
-            f"SELECT planet FROM students_file where username= '{user_data.username}'"
-          )
-          planet = sqlite.execute_statement(sql, "fetchone")
-          if planet:
-            user.planet = planet[0]
-          return user
-      # TODO: Saber que se necesita para obtener la información de un estudiante
+    if user_data.username:
+      if user_is_teacher(user_data.id):
+        user = Teacher(user_data, planet)
+      else:
+        user = Student(user_data, planet)
+        if not user.planet:
+          sql = f"SELECT COUNT (*) FROM registered_students WHERE _id = {user._id}"
+          if sqlite.execute_sql(sql, fetch="fetchone")[0]:
+            sql = f"SELECT planet FROM registered_students where _id = {user._id}"
+            user.planet = sqlite.execute_sql(sql, fetch="fetchone")[0]
+          else:
+            sql = f"SELECT planet FROM students_file where username = '{user_data.username}'"
+            user.planet = sqlite.execute_sql(sql, fetch="fetchone")
+      print(user)
+      return user
     return False
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -95,29 +128,33 @@ def get_weekday_monday(date):
     return False
 
 
+### CHECARLO CON CREATE GRADES
 def get_week(action):
   try:
     today = datetime.now()
     difference = today - cfg.monday_start_week
     num_week = int(difference.days / 7) + 1
-    if num_week > int(cfg.course_weeks):
-      num_week = int(cfg.course_weeks)
+    course_weeks = cfg.subject_data["course_weeks"]
+    if num_week > int(course_weeks):
+      num_week = int(course_weeks)
     if action == "num":
-      return num_week
+      return 2 # num_week
     elif action == "text":
       text_week = "week_"
-      if len(cfg.subject_data["num_weeks"]) != len(str(num_week)):
-        text_week += "0" * (len(cfg.subject_data["num_weeks"]) - len(str(num_week)))
+      if len(course_weeks) != len(str(num_week)):
+        text_week += "0" * (len(course_weeks) - len(str(num_week)))
       text_week += str(num_week)
       return text_week
   except:
-    print_except(inspect.stack()[0][3])
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+    return False
 
 
 def user_is_teacher(user_id):
-  sql = f"SELECT * FROM teachers WHERE _id={user_id}"
+  sql = f"SELECT COUNT(*) FROM teachers WHERE telegram_id={user_id}"
   try:
-    return 1 if sqlite.execute_statement(sql, fetch="fetchone") else 0
+    return sqlite.execute_sql(sql, fetch="fetchone")[0]
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     print_except(error_path)
@@ -129,31 +166,14 @@ def are_config_files_set(table_name=""):
     sql_stu = "SELECT count(*) FROM students_file"
     sql_act = "SELECT count(*) FROM activities"
     if (
-      sqlite.execute_statement(sql_stu, fetch="fetchone")[0]
-      and sqlite.execute_statement(sql_act, fetch="fetchone")[0]
+      sqlite.execute_sql(sql_stu, fetch="fetchone")[0]
+      and sqlite.execute_sql(sql_act, fetch="fetchone")[0]
     ):
       return True
     return False
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     print_except(error_path)
-
-
-def strip_accents(string):
-  """Recibe un string y elimina los acentos y lo devuelve en mayúsculas."""
-  # print("CHECK GFUN *** ENTRO A STRIP ACCENTS ***")
-  try:
-    string = re.sub(
-      r"([^n\u0300-\u036f]|n(?!\u0303(?![\u0300-\u036f])))[\u0300-\u036f]+",
-      r"\1",
-      normalize("NFD", string),
-      0,
-      re.I,
-    )
-    string = normalize("NFC", string)
-    return string.upper()
-  except:
-    print_except(inspect.stack()[0][3], string)
 
 
 def remove_file(file):
@@ -234,3 +254,92 @@ def db_to_csv_html(df, file, headers=[], title="", date=True):
   except:
     print_except(inspect.stack()[0][3])
     return False
+
+
+def strip_accents(string):
+  """Recibe un string y elimina los acentos y lo devuelve en mayúsculas."""
+  # print("CHECK GFUN *** ENTRO A STRIP ACCENTS ***")
+  try:
+    string = re.sub(
+      r"([^n\u0300-\u036f]|n(?!\u0303(?![\u0300-\u036f])))[\u0300-\u036f]+",
+      r"\1",
+      normalize("NFD", string),
+      0,
+      re.I,
+    )
+    string = normalize("NFC", string)
+    return string.upper()
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+
+
+# REVISAR sI SE UTILIZA EL ESQUEMA
+def get_evaluation_scheme_tree():
+  try:
+    cfg.evaluation_scheme = {}
+    sql = f"SELECT _id, weight FROM activities WHERE weight > 0"
+    weights = dict(sqlite.execute_sql(sql, fetch="fetchall", as_dict=True))
+    sql = f"SELECT _id, category FROM activities WHERE category <> ''"
+    categories = dict(sqlite.execute_sql(sql, fetch="fetchall", as_dict=True))
+
+    parent = []
+    for activity in weights:
+      parent = get_path_dict([activity], categories)
+      maplist = []
+      for element in parent:
+        category_grade = weights[element] if element != "SUBJECT" else 1
+        maplist.append(element)
+        if not get_from_dict(cfg.evaluation_scheme, maplist):
+          set_in_dict(
+            cfg.evaluation_scheme,
+            maplist,
+            {},
+            # {"value": category_grade, "category_score": 0, "subject_score": 0},
+          )
+    new = {"_id": "SUBJECT"}
+    new.update(cfg.evaluation_scheme["SUBJECT"])
+    # del new["category_score"]
+    print(cfg.evaluation_scheme)
+    return cfg.evaluation_scheme
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+    return False
+
+
+## Dictionary functions
+def get_path_elements(element_list, categories, reverse=True):
+  def path_element(element_path):
+    try:
+      if element_path[0] != "SUBJECT":
+        element_path.insert(0, categories[element_path[0]])
+        parent = path_element(element_path)
+      return element_path
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      print_except(error_path)
+      return False
+
+  try:
+    path = {}
+    for element in element_list:
+      path[element] = path_element([element])
+      if reverse:
+        path[element].reverse()
+    return path
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+
+
+def get_from_dict(dataDict, mapList):
+  try:
+    return reduce(operator.getitem, mapList, dataDict)
+  except:
+    # NO MODIFICAR
+    return False
+
+
+def set_in_dict(dataDict, mapList, value):
+  get_from_dict(dataDict, mapList[:-1])[mapList[-1]] = value
