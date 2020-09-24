@@ -1,26 +1,28 @@
 standby_teachers = False
 config_files_set = False
-monday_start_week = ""
+active_activities = False
 active_meetings = {}
+monday_start_week = ""
 admins_list = {}
-registered_emails = {}
+registered_stu = {}
 evaluation_scheme = {}
+resources = {"week": 0}
 
 subject_data = {
   "_id": "FS1920",
   "name": "Fundamentos del Software",
-  "start_date": "15/09/2020",
+  "start_date": "22/09/2020",
   "course_weeks": "15",
   "max_final_grade": "10",
   "max_activity_grade": "10",
   "min_grade_to_pass": "5",
   "min_ideal_grade": "7.5",
   "activate_evaluations:": "0",
-  "active_planet_registry": "1"
+  "active_planet_registry": "1",
 }
 
 teacher_data = {
-  "email": "escribeleaqui@gmail.com",
+  "email": "edutrack.ugr@gmail.com",
   "telegram_name": "Profesor Edutrack",
   "username": "Profesor_Edutrack",
   "telegram_id": "1349123797",
@@ -61,8 +63,6 @@ list_config_files = [
   "replace_activities_format.csv",
 ]
 
-active_meetings = {}
-
 tables = {
   "activities": f"""
         _id TEXT NOT NULL PRIMARY KEY,
@@ -79,16 +79,18 @@ tables = {
         FOREIGN KEY(email) REFERENCES students_file(email)
         """,
   "eva_collaboration": f"""
-        email TEXT NOT NULL,
+        _id INTEGER NOT NULL,
         planet TEXT NOT NULL,
         classmate_id INTEGER NOT NULL,
         value TEXT NOT NULL,
-        FOREIGN KEY(email) REFERENCES students_file(email)
+        FOREIGN KEY(_id) REFERENCES telegram_users(_id),
+        FOREIGN KEY(planet) REFERENCES planets(_id),
+        FOREIGN KEY(classmate_id) REFERENCES telegram_users(_id)
         """,
   "eva_teacher": f"""
-        email TEXT NOT NULL PRIMARY KEY,
+        _id INTEGER NOT NULL PRIMARY KEY,
         value TEXT,
-        FOREIGN KEY(email) REFERENCES students_file(email)
+        FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         """,
   "evaluation_scheme": f"""
         _id TEXT NOT NULL PRIMARY KEY,
@@ -108,42 +110,44 @@ tables = {
         email TEXT NOT NULL PRIMARY KEY,
         FOREIGN KEY(email) REFERENCES students_file(email)
         """,
-  "meetings_attendace": f"""
-        email TEXT NOT NULL,
+  "meetings_attendance": f"""
+        _id INTEGER NOT NULL,
         meeting INTEGER NOT NULL,
-        FOREIGN KEY(email) REFERENCES students_file(email)
+        FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         """,
   "opn_collaboration": f"""
-        email TEXT NOT NULL,
+        _id INTEGER NOT NULL,
         planet TEXT NOT NULL,
         classmate_id INTEGER NOT NULL,
         week TEXT NOT NULL,
         value TEXT NOT NULL,
-        FOREIGN KEY(email) REFERENCES students_file(email)
+        FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         """,
   "opn_resources": f"""
         _id TEXT NOT NULL,
+        section TEXT,
         resource TEXT NOT NULL,
         value TEXT NOT NULL,
         FOREIGN KEY(_id) REFERENCES activities(_id)
         """,
   "opn_teacher_meetings": f"""
-        email TEXT NOT NULL,
+        _id INTEGER NOT NULL,
         meeting INTEGER NOT NULL,
         value TEXT NOT NULL,
-        FOREIGN KEY(email) REFERENCES students_file(email)
+        FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         """,
   "opn_teacher_practice": f"""
-        email TEXT NOT NULL,
-        WEEK INTEGER NOT NULL,
-        CRITERION TEXT NOT NULL,
-        VALUE TEXT NOT NULL,
-        FOREIGN KEY(email) REFERENCES students_file(email)
+        _id INTEGER NOT NULL,
+        week INTEGER NOT NULL,
+        criterion TEXT NOT NULL,
+        value TEXT NOT NULL,
+        FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         """,
   "planets": """
         _id TEXT NOT NULL PRIMARY KEY,
+        chat_id INTEGER DEFAULT '',
         num_members	INTEGER NOT NULL DEFAULT 0,
-        active INTEGER NOT NULL DEFAULT 1
+        active INTEGER NOT NULL DEFAULT 0
         """,
   "planet_admins": """
         _id TEXT NOT NULL PRIMARY KEY,
@@ -160,8 +164,8 @@ tables = {
   "registered_students": """
         _id	INTEGER NOT NULL PRIMARY KEY,
         full_name	TEXT NOT NULL,
-        email	TEXT NOT NULL UNIQUE,
-        username TEXT NOT NULL UNIQUE,
+        email	TEXT NOT NULL,
+        username TEXT NOT NULL,
         planet TEXT,
         FOREIGN KEY(_id) REFERENCES telegram_users(_id),
         FOREIGN KEY(email) REFERENCES students_file(email)
@@ -216,7 +220,7 @@ tables = {
   "teachers": """
         email	TEXT NOT NULL PRIMARY KEY,
         telegram_name	TEXT NOT NULL,
-        username TEXT NOT NULL UNIQUE,
+        username TEXT NOT NULL,
         telegram_id	INTEGER,
         FOREIGN KEY(telegram_id) REFERENCES telegram_users(_id)
         """,
@@ -237,7 +241,7 @@ tables = {
   "telegram_users": """
         _id INTEGER NOT NULL PRIMARY KEY,
         telegram_name	TEXT NOT NULL,
-        username	TEXT NOT NULL UNIQUE,
+        username	TEXT NOT NULL,
         is_teacher	INTEGER NOT NULL DEFAULT 0,
         language	TEXT DEFAULT 'en'
         """,
@@ -246,27 +250,27 @@ tables = {
 
 triggers = [
   """
-        CREATE TRIGGER IF NOT EXISTS set_user_planet
-        AFTER INSERT ON registered_students
-        BEGIN
-          INSERT OR IGNORE INTO planet_users (_id, planet)
-            VALUES ( new._id, new.planet);
-          UPDATE planet_users SET registered = 1 WHERE _id = new._id;
+    CREATE TRIGGER IF NOT EXISTS set_user_planet
+    AFTER INSERT ON registered_students
+    BEGIN
+      INSERT OR IGNORE INTO planet_users (_id, planet)
+        VALUES ( new._id, new.planet);
+      UPDATE planet_users SET registered = 1 WHERE _id = new._id;
+      INSERT OR IGNORE INTO planets (_id) VALUES(new.planet);
+      UPDATE planets SET num_members = num_members + 1 WHERE _id = new.planet;
+      INSERT OR IGNORE INTO student_messages (_id, planet)
+        VALUES(new._id, new.planet);
+    END;
+    """,
+  """
+    CREATE TRIGGER update_user_planet
+      AFTER UPDATE OF planet ON registered_students
+      BEGIN
+          UPDATE planet_users SET planet = new.planet WHERE _id = new._id;
           INSERT OR IGNORE INTO planets (_id) VALUES(new.planet);
           UPDATE planets SET num_members = num_members + 1 WHERE _id = new.planet;
-          INSERT OR IGNORE INTO student_messages (_id, planet)
-            VALUES(new._id, new.planet);
-        END;
-      """,
-  """
-        CREATE TRIGGER update_user_planet
-          AFTER UPDATE OF planet ON registered_students
-          BEGIN
-              UPDATE planet_users SET planet = new.planet WHERE _id = new._id;
-              INSERT OR IGNORE INTO planets (_id) VALUES(new.planet);
-              UPDATE planets SET num_members = num_members + 1 WHERE _id = new.planet;
-              UPDATE planets SET num_members = num_members - 1 WHERE _id = old.planet;
-          END;
+          UPDATE planets SET num_members = num_members - 1 WHERE _id = old.planet;
+      END;
       """,
   """
     CREATE TRIGGER update_is_teacher

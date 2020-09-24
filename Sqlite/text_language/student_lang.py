@@ -86,7 +86,7 @@ def main_menu(lang):
         IKButton("Evaluar", callback_data="s_menu-eva"),
       ],
       [IKButton("Sugerencia", callback_data="s_menu-suggestion")],
-      # [IKButton("Cambiar Idioma", callback_data="change_language")],
+      [IKButton("Cambiar Idioma", callback_data="s_menu-change_language")],
     ]
   else:
     text = "<b>STUDENT MENU</b>\nSelect an option:"
@@ -97,7 +97,7 @@ def main_menu(lang):
         IKButton("Evaluate", callback_data="s_menu-eva"),
       ],
       [IKButton("Suggestion", callback_data="s_menu-suggestion")],
-      # [IKButton("Change Language", callback_data="change_language")],
+      [IKButton("Change Language", callback_data="s_menu-change_language")],
     ]
   return (text, opt)
 
@@ -106,7 +106,7 @@ def my_grade(lang, action, week, stu_data=""):
   if lang == "es":
     Title = f"<b>MI CALIFICACIÓN - SEMANA {week}:</b>\n\n"
     if action == "grades":
-      return f"{Title}Tu factor de riesgo académico es: <b>{stu_data['linguistic']}</b>.\nTu calificación actual es: <b>{stu_data['actual_grade']}</b>\nTu calificación máxima posible es: <b>{stu_data['max_possible_grade']}</b> \n\nA continuación te muestro cada actividad que se ha evaluado hasta este momento y su calificación:\n\n{stu_data['activities']}\n\n"
+      return f"{Title}Tu factor de riesgo académico es: <b>{stu_data['linguistic']}</b>.\nTu calificación actual es: <b>{stu_data['actual_grade']}</b>\nTu calificación máxima posible es: <b>{stu_data['max_possible_grade']}</b> \n\nA continuación te muestro cada actividad que se ha evaluado hasta este momento y su calificación:{stu_data['activities']}"
     elif action == "no_active":
       return f"{Title}Actualmente no existen actividades calificadas.\n\nTu factor de riesgo académico es: <b>Ninguno</b>.\nTu máxima calificación posible es: <b>10</b>"
     elif action == "no_email":
@@ -114,7 +114,7 @@ def my_grade(lang, action, week, stu_data=""):
   else:
     Title = f"<b>MY GRADE WEEK {week}</b>\n\n"
     if action == "grades":
-      return f"{Title}Your academic risk factor is <b>{stu_data['linguistic']}</b>.\nYour actual grade is: <b>{stu_data['actual_grade']}</b>\nYour highest possible grade is: <b>{stu_data['max_possible_grade']}</b>\n\nBelow I show you each activity that has been evaluated so far and its grade:\n{stu_data['activities']}"
+      return f"{Title}Your academic risk factor is <b>{stu_data['linguistic']}</b>.\nYour actual grade is: <b>{stu_data['actual_grade']}</b>\nYour highest possible grade is: <b>{stu_data['max_possible_grade']}</b>\n\nBelow I show you each activity that has been evaluated so far and its grade:{stu_data['activities']}"
     elif action == "no_active":
       return f"{Title}There are currently no qualified activities.\n\nYour academic risk factor is: <b>None</b>.\nYour highest possible grade is: <b>10</b>."
     elif action == "no_email":
@@ -174,6 +174,8 @@ def opn_tea_practice(lang, action, week, criterion=""):
       return f"{Title}No hay criterios que evaluar o ya los has evaluado todos esta semana. Regresa en otro momento o la siguiente semana."
     elif action == "choice_criterion":
       return f"{Title}Selecciona un criterio para evaluarlo."
+    elif action == "success":
+      return f"Se ha guardado correctamente tu evaluación."
   else:
     Title = f"<b>TEACHING PRACTICE OPINION\nWEEK {week}</b>\n\n"
     if action == "criterion":
@@ -184,97 +186,92 @@ def opn_tea_practice(lang, action, week, criterion=""):
       return f"{Title}There are no criteria to evaluate or you've already evaluated them all this week. Come back at another time or the next week."
     elif action == "choice_criterion":
       return f"{Title}Selecciona un criterio para evaluarlo."
+    elif action == "success":
+      return f"Your evaluation has been saved correctly."
 
 
-def opn_collaboration(lang, action, classmate="", week=""):
+### MENU opn_collaboration
+def opn_collaboration(lang, action, week, data=""):
   if lang == "es":
-    Title = f"<b>OPINION SOBRE LA COLABORACION ENTRE COMPAÑEROS\nSEMANA {week}</b>\n\n"
-    if action == "text":
-      return f"Selecciona una opción."
-    if action == "no_planet":
-      return f"{Title}Aún no estás registrado en ningún planeta."
+    Title = f"<b>OPINION SOBRE LA COLABORACION ENTRE COMPAÑEROS\nSEMANA {week}</b>\n"
+    if action == "choice":
+      return f"{Title}Selecciona una opción."
     elif action == "scale":
-      return f"{Title}¿Cómo consideras que ha sido la colaboración de tu compañero/a <b>{classmate}</b> en las tareas de tu planeta durante esta semana?."
+      return f"{Title}¿Cómo consideras que ha sido la colaboración de tu compañero/a <b>{data['name']}</b> con el username <b>{data['username']}</b> en las tareas y actividades de tu planeta durante esta semana?."
     elif action == "no_classmates":
-      return f"{Title}No hay compañeros de equipo que evaluar o ya has evaluado a todos en esta semana. Regresa en otro momento o la siguiente semana."
-    elif action == "text_after_save":
-      return (
-        f"{Title}Se ha guardado correctamente tu evaluación.\n\nSelecciona una opción."
-      )
-
+      return f"No hay compañeros de equipo que evaluar o ya has evaluado a todos en esta semana. Regresa en otro momento o la siguiente semana."
+    elif action == "success":
+      return f"Se ha guardado correctamente tu evaluación."
   else:
-    Title = f"<b>PEER COLLABORATION OPINION\nWEEK {week}</b>\n\n"
-    if action == "text":
+    Title = f"<b>PEER COLLABORATION OPINION</b>\n"
+    if action == "choice":
       return f"{Title}Select an option:"
-    if action == "no_planet":
-      return (
-        f"<b>PEER COLLABORATION OPINION</b>\nYou're not registered in any planet yet."
-      )
     elif action == "scale":
-      return f"{Title}How do you think your team-mate <b>{classmate}</b> collaborated in your planet's tasks this week?."
+      return f"<b>PEER COLLABORATION OPINION\nWEEK {week}</b>\n\nHow do you consider the collaboration of your teammate <b>{data['name']}</b> with the username <b>{data['username']}</b> in the tasks and activities of your planet during this week?"
     elif action == "no_classmates":
-      return f"{Title}There are no teammates to evaluate or you have already evaluated everyone this week. Come back at another time or the next week."
-    elif action == "text_after_save":
-      return f"{Title}Your evaluation has been saved correctly.\n\nSelect an option:"
+      return f"There are no teammates to evaluate or you have already evaluated everyone this week. Come back at another time or the next week."
+    elif action == "success":
+      return f"Your evaluation has been saved correctly."
+
+  return (text, opt)
 
 
 ## MENU - OPINION - RESOURCES
 def opn_resources(lang, action, resource=""):
   if lang == "es":
     Title = f"<b>OPINION SOBRE LOS RECURSOS</b>\n"
-    if action == "text_section":
-      return f"{Title}Selecciona una sección para ver sus recursos."
-    elif action == "text_rsrc":
+    if action == "section":
+      return f"{Title}Selecciona una sección para ver sus recursos.\n<b>Nota FC_ML Son recursos de Flipped Classrom y M-Learning.</b>"
+    elif action == "rsrc":
       return f"{Title}Selecciona una opción:"
     elif action == "scale":
       return f"{Title}¿Como consideras el recurso/material <b>{resource}</b>?."
+    elif action == "no_resources":
+      return f"{Title}Actualmente no hay más recursos que evaluar en esta seccion. Selecciona otra sección."
     elif action == "no_section":
       return f"{Title}Actualmente no hay más recursos que evaluar. Regresa en otro momento o la siguiente semana."
-    elif action == "text_after_save":
-      return (
-        f"{title}Se ha guardado correctamente tu opinión.\n\nSelecciona una opción."
-      )
+    elif action == "success":
+      return f"{Title}Se ha guardado correctamente tu opinión."
 
   else:
     Title = f"<b>RESOURCES OPINION</b>\n"
-    if action == "text_section":
-      return f"{Title}Select a section to view its resources."
-    elif action == "text_rsrc":
+    if action == "section":
+      return f"{Title}Select a section to view its resources.\n<b>Note: FC_ML are resources of Flipped Classrom and M-Learning.</b>"
+    elif action == "rsrc":
       return f"{Title}Select an option:"
     elif action == "scale":
       return f"{Title}How do you consider the resource/material <b>{resource}</b>?"
+    elif action == "no_resources":
+      return f"{Title}There are currently no more resources to evaluate in this section. Select another section."
     elif action == "no_section":
       return f"{Title}Currently there are no more resources to evaluate. Come back at another time or the next week."
-    elif action == "text_after_save":
-      return f"{Title}Your opinion has been saved correctly.\n\nSelect an option:"
+    elif action == "success":
+      return f"{Title}Your opinion has been saved correctly."
 
 
 ## MENU - OPINION - TEACHER - MEETINGS
-def opn_tea_meet(lang, action, meeting=""):
+def opn_tea_meeting(lang, action, meeting=""):
   if lang == "es":
     Title = f"<b>OPINIÓN SOBRE LA COMUNICACIÓN VIRTUAL CON EL DOCENTE</b>\n"
     if action == "text_meeting":
       return f"{Title}Selecciona una meeting."
     elif action == "no_meetings":
-      return f"{Title}Aún no se ha realizado ningún meeting. Regresa después."
-    elif action == "all_meetings_evaluated":
-      return f"{Title}Ya has evaluado las meetings hasta la fecha. Regresa después."
+      return f"{Title}Aún no se ha realizado ninguna meeting ó ya has evaluado las meetings hasta la fecha. Regresa después."
     elif action == "scale":
       return f"{Title}¿Como consideras que fue la actuación del docente en la <b>meeting {meeting}</b>?."
+    elif action == "success":
+      return f"Se ha guardado correctamente tu evaluación."
 
   else:
     Title = f"<b>OPINION OF THE VIRTUAL COMMUNICATION WITH THE TEACHER</b>\n"
     if action == "text_meeting":
       return f"{Title}Select a meeting."
     elif action == "no_meetings":
-      return f"{Title}No meeting has yet taken place. Come back later."
-    elif action == "all_meetings_evaluated":
-      return (
-        f"{Title}You've already evaluated the meetings to <date class="
-        "></date> Come back later."
-      )
+      return f"{Title}No meeting has been taken place yet or you have already evaluated all meetings to date. Come back later."
     elif action == "scale":
       return f"{Title}How do you think the teacher's performance was in the <b>meeting {meeting}</b>?"
+    elif action == "success":
+      return f"Your evaluation has been saved correctly."
 
 
 def evaluate(lang, action):

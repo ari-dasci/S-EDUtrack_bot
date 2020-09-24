@@ -1,7 +1,7 @@
 import bisect
 import inspect
+import operator
 import os
-import re
 import threading
 from datetime import datetime, timedelta
 from time import time
@@ -24,7 +24,9 @@ from text_language import teacher_lang as t_lang
 class User:
   def __init__(self, user_data, planet=""):
     self._id = user_data["id"]
-    self.telegram_name = user_data.full_name
+    self.telegram_name = (
+      user_data.full_name if hasattr(user_data, "full_name") else user_data["full_name"]
+    )
     self.username = user_data["username"].upper()
     self.language = user_data["language_code"]
     self.planet = g_fun.strip_accents(planet)
@@ -34,7 +36,7 @@ class User:
       self.language = "en"
 
     self.add_telegram_user()
-    self.check_language_username()
+    self.set_selected_language()
 
   def add_telegram_user(self):
     try:
@@ -47,13 +49,14 @@ class User:
       g_fun.print_except(error_path)
       return False
 
-  def check_language_username(self):
+  def set_selected_language(self):
     """It maintains the language selected by the user."""
     try:
       sql = f"SELECT language, username FROM telegram_users WHERE _id={self._id}"
       language = sqlite.execute_sql(sql, "fetchone")
       if language:
         self.language = language[0]
+
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
       g_fun.print_except(error_path)
@@ -63,18 +66,18 @@ class User:
     def get_message_type():
       try:
         message_type = ""
-        if upm.text:
+        if chat.text:
           message_type = "TEXT"
-        elif upm.photo:
+        elif chat.photo:
           message_type = "IMAGE"
-        elif upm.video or upm.video_note:
+        elif chat.video or chat.video_note:
           message_type = "VIDEO"
-        elif upm.voice:
+        elif chat.voice:
           message_type = "VOICE"
-        elif upm.sticker:
+        elif chat.sticker:
           message_type = "STICKER"
-        elif upm.document:
-          type_document = upm.document.mime_type.split("/")
+        elif chat.document:
+          type_document = chat.document.mime_type.split("/")
           type_document = type_document[0]
           if type_document == "video":
             message_type = "GIF"
@@ -89,7 +92,7 @@ class User:
         return False
 
     try:
-      upm = update.message
+      chat = update.message
       message_type = get_message_type()
       meeting_data = cfg.active_meetings[self.planet]
       meeting = meeting_data["meeting"][-1] if meeting_data["meeting"] else -1
@@ -110,6 +113,7 @@ class User:
                   and planet = '{self.planet}'
                   and meeting = {meeting} """
       sqlite.execute_sql(sql)
+
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
       g_fun.print_except(error_path)
@@ -139,6 +143,7 @@ class Student(User):
           values = f"""{self._id}, "", "", '{self.username}', '{planet}'"""
           sql = f"INSERT INTO registered_students VALUES({values})"
           sqlite.execute_sql(sql)
+          cfg.registered_stu = sqlite.table_DB_to_df("registered_students")
 
         else:
           return False
@@ -195,15 +200,14 @@ class Student(User):
 
   def received_message(self, update, context):
     try:
-      upm = update.message
-      chat_id = upm.chat_id
+      chat = update._effective_message
       from_planet = False
       if cfg.config_files_set:
-        if chat_id < 0:
+        if chat.chat_id < 0:
           from_planet = True
 
         if self.register_student(from_planet):
-          if chat_id < 0:
+          if chat.chat_id < 0:
             self.reg_messages(update)
           else:
             text = s_lang.welcome(self.language, context)
@@ -212,7 +216,7 @@ class Student(User):
           text = s_lang.check_email(self.language, "registration")
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
       else:
-        if chat_id > 0:
+        if chat.chat_id > 0:
           text = s_lang.not_config_files_set(self.language, context)
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
     except:
@@ -228,9 +232,7 @@ class Student(User):
         keyboard = options
         reply_markup = IKMarkup(keyboard)
         update.message.reply_text(
-          parse_mode="HTML",
-          text=text,
-          reply_markup=reply_markup,
+          parse_mode="HTML", text=text, reply_markup=reply_markup
         )
       else:
         text = s_lang.check_email(self.language, "registration")
@@ -240,7 +242,51 @@ class Student(User):
       g_fun.print_except(error_path)
       return False
 
-  def my_grade(self, update, context, query):
+  def my_grade(self, context, query=""):
+    def get_student_grades():
+      try:
+        sql = f"""SELECT _id FROM activities WHERE weight >0
+              and _id not in (SELECT category FROM activities WHERE category <> '')"""
+        activities = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+
+        sql = f"SELECT * FROM grades WHERE email = '{email}'"
+        df_grades_activities = sqlite.execute_sql(sql, df=True)
+        sql = f"SELECT * FROM actual_grades WHERE email = '{email}'"
+        df_grades_categories = sqlite.execute_sql(sql, df=True)
+        df_grades = pd.concat(
+          [df_grades_activities[activities], df_grades_categories], axis=1
+        )
+        df_grades = df_grades[sorted(df_grades.columns)].T
+        df_grades.columns = ["grade"]
+        return df_grades
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def get_student_data():
+      try:
+        sql = f"""SELECT l.{actual_week}, a.SUBJECT, g._MAX_POSSIBLE_GRADE
+                  FROM  linguistic_risk_factor l
+                  INNER JOIN grades g
+                  ON l.email = g.email
+                  INNER JOIN actual_grades a
+                  ON l.email = a.email
+                  WHERE l.email = '{email}'"""
+        data = sqlite.execute_sql(sql, fetch="fetchone")
+        linguistic_arf = g_lang.linguistic_arf(self.language, data[0])
+        max_activity_grade = float(cfg.subject_data["max_activity_grade"])
+        student_data = {}
+        if data:
+          student_data["linguistic"] = linguistic_arf
+          student_data["actual_grade"] = round(data[1] * max_activity_grade, 3)
+          student_data["max_possible_grade"] = round(data[2], 3)
+        return student_data
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
     def get_activities_list(eva_scheme, def_grades, text="", level=1):
       try:
         for element in eva_scheme:
@@ -264,76 +310,45 @@ class Student(User):
     try:
       actual_week = g_fun.get_week("text")
       num_week = g_fun.get_week("num")
-      sql = "SELECT COUNT(*) FROM evaluation_scheme WHERE active = 1"
-      if sqlite.execute_sql(sql, fetch="fetchone")[0]:
-        if self._id in cfg.registered_emails:
-          if cfg.registered_emails[self._id]:
-            email = cfg.registered_emails[self._id]
-            columns = "_id, name, visible"
-            df_act_names = sqlite.table_DB_to_df(
-              "activities", columns=columns, set_index=True
-            )
-            sql = f"""SELECT l.{actual_week}, a.SUBJECT, g._MAX_POSSIBLE_GRADE
-                      FROM  linguistic_risk_factor l
-                      INNER JOIN grades g
-                      ON l.email = g.email
-                      INNER JOIN actual_grades a
-                      ON l.email = a.email
-                      WHERE l.email = '{email}'"""
-            data = sqlite.execute_sql(sql, fetch="fetchone")
-            sql = f"SELECT {actual_week} FROM risk_factor Where email = '{email}'"
-            stu_risk_factor = sqlite.execute_sql(sql, fetch="fetchone")[0]
-
-            sql = "SELECT category FROM activities WHERE category <> ''"
-            categories = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
-            sql = """SELECT _id FROM activities WHERE weight >0
-                  and _id not in (SELECT category FROM activities WHERE category <> '')"""
-            activities = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
-
-            sql = f"SELECT * FROM grades WHERE email = '{email}'"
-            df_grades_activities = sqlite.execute_sql(sql, df=True)
-            sql = f"SELECT * FROM actual_grades WHERE email = '{email}'"
-            df_grades_categories = sqlite.execute_sql(sql, df=True)
-            df_grades = pd.concat(
-              [df_grades_activities[activities], df_grades_categories],
-              axis=1,
-            )
-            df_grades = df_grades[sorted(df_grades.columns)].T
-            df_grades.columns = ["grade"]
-
-            linguistic_arf = g_lang.linguistic_arf(self.language, data[0])
-            max_activity_grade = float(cfg.subject_data["max_activity_grade"])
-            student_data = {}
-            if data:
-              student_data["linguistic"] = linguistic_arf
-              student_data["actual_grade"] = round(data[1] * max_activity_grade, 3)
-              student_data["max_possible_grade"] = round(data[2], 3)
+      if cfg.active_activities:
+        df_reg_stu = cfg.registered_stu.copy()
+        if self._id in list(df_reg_stu["_id"]):
+          email = df_reg_stu[df_reg_stu["_id"] == self._id]["email"].item()
+          if email:
+            df_grades = get_student_grades()
+            student_data = get_student_data()
 
             # GET ACTIVITIES LIST
+            columns = "_id, name, visible"
+            df_act_names = sqlite.table_DB_to_df(
+              "activities", columns=columns, index=True
+            )
             student_data["activities"] = get_activities_list(
               cfg.evaluation_scheme["SUBJECT"], df_grades
             )
+
             text = s_lang.my_grade(self.language, "grades", num_week, student_data)
-            #### REVISAR ESTE SI ES CONTEXT
-            query.edit_message_text(parse_mode="HTML", text=text)
+            if query:
+              query.edit_message_text(parse_mode="HTML", text=text)
+            else:
+              context.bot.sendMessage(
+                chat_id=int(self._id), parse_mode="HTML", text=text
+              )
+
           else:
             text = s_lang.my_grade(self.language, "no_email", num_week)
-            query.edit_message_text(chat_id=self._id, parse_mode="HTML", text=text)
+            if query:
+              query.edit_message_text(parse_mode="HTML", text=text)
+            else:
+              context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
             text = s_lang.check_email(self.language, "registration")
-            #### REVISAR ESTE SI ES CONTEXT
-            context.bot.sendMessage(parse_mode="HTML", text=text)
-
-          # GET ACTUAL_GRADE
-
-          # GET MAX_POSSIBLE_GRADE
-
-          # GET ACTIVITIES LIST
-          sql = "SELECT _id FROM activities WHERE visible =1"
-          visible_activities = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
 
       else:
         text = s_lang.my_grade(self.language, "no_active", num_week)
-        query.edit_message_text(parse_mode="HTML", text=text)
+        if query:
+          query.edit_message_text(parse_mode="HTML", text=text)
+        else:
+          context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -341,179 +356,280 @@ class Student(User):
       return False
 
   def opn_tea_practice(self, context, query, selections):
+    def select_criterion():
+      try:
+        if category == "teacher":
+          criteria = {
+            criterion for criterion in cfg.teacher_criteria if "T_" in criterion
+          }
+        else:
+          criteria = {
+            criterion for criterion in cfg.teacher_criteria if "C_" in criterion
+          }
+
+        # if email:
+        sql = f"""SELECT criterion FROM opn_teacher_practice
+        WHERE _id = '{self._id}' and week = {num_week}"""
+        evaluated_criteria = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+        if evaluated_criteria:
+          criteria = criteria - set(evaluated_criteria)
+
+        criteria_dict = {}
+        for criterion in criteria:
+          criterion_name = g_lang.teacher_criteria(self.language, criterion)
+          criteria_dict[criterion_name] = criterion
+        criteria = sorted(criteria_dict.items()) if criteria_dict else []
+
+        keyboard = []
+        for criterion in criteria:
+          keyboard.append(
+            [
+              IKButton(
+                criterion[0], callback_data=f"s_menu-opn-tp-{category}-{criterion[1]}"
+              )
+            ]
+          )
+        back = "-".join(selections[:-1])
+        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+
+        if len(keyboard) == 1:
+          text = s_lang.opn_tea_practice(self.language, "no_criteria", week=num_week)
+        else:
+          text = s_lang.opn_tea_practice(self.language, "choice_criterion", num_week)
+        b_fun.show_menu(query, text, keyboard, context, self._id)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def select_value():
+      try:
+        criterion_name = g_lang.teacher_criteria(self.language, criterion)
+        options = g_lang.scale_7(self.language, query.data)
+        text = s_lang.opn_tea_practice(
+          self.language, "criterion", num_week, criterion_name
+        )
+        b_fun.show_menu(query, text, options)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def set_value():
+      try:
+        sql = f"""INSERT OR IGNORE INTO opn_teacher_practice
+              VALUES({self._id}, {num_week}, '{criterion}', '{value}')"""
+        sqlite.execute_sql(sql)
+        text = s_lang.opn_tea_practice(self.language, "success", num_week)
+        query.edit_message_text(parse_mode="HTML", text=text)
+
+        self.opn_tea_practice(context, query="", selections=selections[:-2])
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
     try:
-      actual_week = g_fun.get_week("text")
       num_week = g_fun.get_week("num")
-      email = cfg.registered_emails[self._id]
+
       criterion = value = ""
       category = selections[3]
+
       if len(selections) > 4:
         criterion = selections[4]
         if len(selections) > 5:
           value = selections[5]
-
-      if not value:
-        if not criterion:
-          if category == "teacher":
-            criteria = {
-              criterion for criterion in cfg.teacher_criteria if "T_" in criterion
-            }
-          else:
-            criteria = {
-              criterion for criterion in cfg.teacher_criteria if "C_" in criterion
-            }
-
-          if email:
-            sql = f"""SELECT CRITERION FROM opn_teacher_practice
-            WHERE email = '{email}' and week = {num_week}"""
-            evaluated_criteria = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
-            if evaluated_criteria:
-              criteria = criteria - set(evaluated_criteria)
-
-            criteria_dict = {}
-            for criterion in criteria:
-              criterion_name = g_lang.teacher_criteria(self.language, criterion)
-              criteria_dict[criterion_name] = criterion
-            criteria = sorted(criteria_dict.items()) if criteria_dict else []
-
-            keyboard = []
-            for criterion in criteria:
-              keyboard.append(
-                [
-                  IKButton(
-                    criterion[0], callback_data=f"s_menu-opn-tp-{category}-{criterion[1]}"
-                  )
-                ]
-              )
-            keyboard.append(
-              [
-                IKButton(
-                  g_lang.back_text[self.language], callback_data=f"s_menu-opn-tp"
-                )
-              ]
-            )
-
-          if len(keyboard) == 1:
-            text = s_lang.opn_tea_practice(self.language, "no_criteria", week=num_week)
-            b_fun.show_menu(query, text, keyboard)
-
-          else:
-            text = s_lang.opn_tea_practice(self.language, "choice_criterion", num_week)
-            b_fun.show_menu(query, text, keyboard)
-
+          set_value()
         else:
-          criterion_name = g_lang.teacher_criteria(self.language, criterion)
-          options = g_lang.scale_7(self.language, query.data)
-          text = s_lang.opn_tea_practice(self.language, "criterion", num_week, criterion_name)
-          b_fun.show_menu(query, text, options)
-
+          select_value()
       else:
-        sql = f"""INSERT OR IGNORE INTO opn_teacher_practice
-              VALUES('{email}', {num_week}, '{criterion}', '{value}')"""
-        sqlite.execute_sql(sql)
-        # g_fun.show_menu(query,stu_lang.opn_tea_practice_menu[user['language']]['opt'],stu_lang.opn_tea_practice(user['language'],'text_after_save'))
-        print(selections[:-3])
+        select_criterion()
 
-        self.opn_tea_practice(context, query, selections[:-2])
     except:
-      error_path = f'{inspect.stack()[0][1]} - {inspect.stack()[0][3]}'
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
       g_fun.print_except(error_path)
       return False
 
   def opn_collaboration(self, context, query, selections):
+    def select_classmate():
+      try:
+        sql_evaluated = f"""SELECT classmate_id FROM opn_collaboration
+                        WHERE _id = {self._id} and planet = '{self.planet}'"""
+        sql = f"""SELECT _id, username FROM registered_students
+                WHERE _id <>{self._id} and
+                _id not in ({sql_evaluated})"""
+        classmates = sqlite.execute_sql(sql, fetch="fetchall", as_dict=True)
+        if classmates:
+          classmates = dict(classmates)
+          classmates = sorted(classmates.items(), key=operator.itemgetter(1))
+
+        keyboard = []
+        for classmate in classmates:
+          keyboard.append(
+            [IKButton(classmate[1], callback_data=f"s_menu-opn-coll-{classmate[0]}")]
+          )
+        back = "-".join(selections[:-1])
+        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+        if len(keyboard) == 1:
+          text = s_lang.opn_collaboration(self.language, "no_classmates", num_week)
+        else:
+          text = s_lang.opn_collaboration(self.language, "choice", num_week)
+        b_fun.show_menu(query, text, keyboard, context, self._id)
+
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def select_value():
+      try:
+
+        df_stu_reg = cfg.registered_stu.copy()
+        df_stu_reg.set_index("_id", inplace=True)
+        data = {}
+        data["name"] = df_stu_reg.loc[classmate]["full_name"]
+        data["username"] = df_stu_reg.loc[classmate]["username"]
+        options = g_lang.scale_7(self.language, query.data)
+        text = s_lang.opn_collaboration(self.language, "scale", num_week, data)
+        b_fun.show_menu(query, text, options)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def set_value():
+      try:
+        sql = f"""INSERT OR IGNORE INTO opn_collaboration
+              VALUES({self._id}, '{self.planet}',{classmate},{num_week},'{value}')"""
+        sqlite.execute_sql(sql)
+        text = s_lang.opn_collaboration(self.language, "success", num_week)
+        query.edit_message_text(parse_mode="HTML", text=text)
+        self.opn_collaboration(context, query="", selections=selections[:-2])
+
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
     try:
-      if (
-        user["_id"] in cfg.registered_students
-        and user["_id"] not in cfg.identified_students
-      ):
-        actual_week = g_fun.get_week("text")
-        num_week = g_fun.get_week()
-        classmate = value = ""
+      # actual_week = g_fun.get_week("text")
+      num_week = g_fun.get_week("num")
+      classmate = value = ""
 
-        if len(selections) > 3:
-          classmate = selections[3]
-          if len(selections) > 4:
-            value = selections[4]
+      if len(selections) > 3:
+        classmate = int(selections[3])
+        if len(selections) > 4:
+          value = selections[4]
+          set_value()
+        else:
+          select_value()
+      else:
+        select_classmate()
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
+      return False
 
-        if not value:
-          if not classmate:
-            classmates = db.opn_collaboration.find_one(
-              {"_id": user["planet"]}, {"_id": 0}
-            )["members"][user["_id"]]["classmates"]
+  def opn_rsrcs(self, context, query, selections):
+    def select_section():
+      try:
+        sections = sorted(cfg.resources)
+        sections.remove("week")
+        keyboard = []
+        for section in sections:
+          sql = f"""SELECT COUNT(resource) FROM opn_resources
+                  WHERE _id = {self._id} and section = '{section}'"""
+          rsrcs_evaluated = sqlite.execute_sql(sql, fetch="fetchone")[0]
+          if rsrcs_evaluated < len(cfg.resources[section]):
+            keyboard.append(
+              [IKButton(section, callback_data=f"s_menu-opn-rsrcs-{section}")]
+            )
+            """ for resource in cfg.resources[section]:
+              if resource not in resources_evaluated:
+                keyboard.append(
+                  [IKButton(section, callback_data=f"s_menu-opn-rsrcs-{section}")]
+                )
+                break """
+        back = "-".join(selections[:-1])
+        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
 
-            keyboard = []
-            for classmate in classmates:
-              if not classmates[classmate]["values"][actual_week]:
-                if db.registered_students.find_one({"_id": classmate}):
-                  name = db.registered_students.find_one({"_id": classmate})["name"]
-                  keyboard.append(
-                    [IKButton(name, callback_data=f"s_menu-opn-coll-{classmate}")]
-                  )
+        if len(keyboard) == 1:
+          text = s_lang.opn_resources(self.language, "no_section")
+        else:
+          text = s_lang.opn_resources(self.language, "section")
+        b_fun.show_menu(query, text, keyboard, context, self._id)
+
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def select_resource():
+      try:
+        sql_evaluated = f"""SELECT resource FROM opn_resources
+                          WHERE _id = {self._id} and section = '{section}'"""
+        sql = f"""SELECT _id FROM activities
+                WHERE section = '{section}' and week < {num_week}
+                and _id not in ({sql_evaluated})"""
+        resources = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+        keyboard = []
+        if resources:
+          for resource in sorted(resources):
+            resource_name = rsrc_name[resource] if rsrc_name[resource] else resource
             keyboard.append(
               [
                 IKButton(
-                  g_lang.back_text[user["language"]], callback_data=f"s_menu-opn"
+                  resource_name, callback_data=f"s_menu-opn-rsrcs-{section}-{resource}"
                 )
               ]
             )
-            if len(keyboard) == 1:
-              g_fun.show_menu(
-                query,
-                keyboard,
-                stu_lang.opn_collaboration(
-                  user["language"], "no_classmates", week=num_week
-                ),
-              )
-            else:
-              g_fun.show_menu(
-                query, keyboard, stu_lang.opn_collaboration(user["language"], "text")
-              )
-          else:
-            name = db.registered_students.find_one({"_id": classmate})["name"]
-            g_fun.show_menu(
-              query,
-              g_lang.scale_7(user["language"], query.data),
-              stu_lang.opn_collaboration(user["language"], "scale", name, num_week),
-            )
+        back = "-".join(selections[:-1])
+        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+        if len(keyboard) == 1:
+          text = s_lang.opn_resources(self.language, "no_resources")
         else:
-          db.opn_collaboration.update_one(
-            {"_id": user["planet"]},
-            {
-              "$set": {
-                f"members.{user['_id']}.classmates.{classmate}.values.{actual_week}": value
-              },
-              "$push": {
-                f"members.{classmate}.weekly_values.{actual_week}.values": value,
-                f"members.{classmate}.general_values": value,
-                f"weekly_values.{actual_week}.values": value,
-                f"planet_values": value,
-              },
-            },
-          )
+          text = s_lang.opn_resources(self.language, "rsrc")
+        b_fun.show_menu(query, text, keyboard, context, self._id)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
 
-          t = threading.Thread(
-            target=edu_fun.student_tupla, args=(classmate, user["planet"], actual_week)
-          )
-          t.start()
+    def select_value():
+      try:
+        resource_name = rsrc_name[resource]
+        options = g_lang.scale_7(self.language, query.data)
+        text = s_lang.opn_resources(self.language, "scale", resource)
+        b_fun.show_menu(query, text, options)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
 
-          opn_collaboration(context, query, user, selections[:-2])
-      else:
-        g_fun.send_Msg(
-          context,
-          user["_id"],
-          stu_lang.opn_collaboration(user["language"], "no_planet"),
-          query=query,
-        )
-    except:
-      g_fun.print_except(inspect.stack()[0][3], user, selections)
+    def set_value():
+      try:
+        sql = f"""INSERT OR IGNORE INTO opn_resources
+              VALUES({self._id},'{section}', '{resource}','{value}')"""
+        sqlite.execute_sql(sql)
+        text = s_lang.opn_resources(self.language, "success")
+        query.edit_message_text(parse_mode="HTML", text=text)
+        self.opn_rsrcs(context, query="", selections=selections[:-2])
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
 
-  def opn_rsrcs(self, context, query, selections):
     try:
       # actual_week = g_fun.get_week("text")
-      num_week = g_fun.get_week()
+      num_week = g_fun.get_week("num")
       if cfg.resources["week"] < num_week:
         g_fun.get_resources()
       section = resource = value = ""
+
+      sql = "SELECT _id, name FROM activities WHERE section <> ''"
+      rsrc_name = sqlite.execute_sql(sql, fetch="fetchall", as_dict=True)
+      if rsrc_name:
+        rsrc_name = dict(rsrc_name)
 
       if len(selections) > 3:
         section = selections[3]
@@ -521,141 +637,99 @@ class Student(User):
           resource = selections[4]
           if len(selections) > 5:
             value = selections[5]
-      student_resources = db.opn_resources.find_one({"_id": user["_id"]}, {"_id": 0})
-      keyboard = []
-      if not value:
-        if not resource:
-          if not section:
-            sections = sorted(cfg.resources)
-            sections.remove("week")
-            for section in sections:
-              for resource in cfg.resources[section]:
-                if not student_resources[section][resource]:
-                  # bisect.insort(keyboard, [IKButton(section, callback_data=f"s_menu-opn-rsrcs-{section}")])
-                  keyboard.append(
-                    [IKButton(section, callback_data=f"s_menu-opn-rsrcs-{section}")]
-                  )
-                  break
-            keyboard.append(
-              [
-                IKButton(
-                  g_lang.back_text[user["language"]], callback_data=f"s_menu-opn"
-                )
-              ]
-            )
-
-            if len(keyboard) == 1:
-              g_fun.show_menu(
-                query, keyboard, stu_lang.opn_resources(user["language"], "no_section")
-              )
-            else:
-              g_fun.show_menu(
-                query,
-                keyboard,
-                stu_lang.opn_resources(user["language"], "text_section"),
-              )
+            set_value()
           else:
-            for resource in sorted(cfg.resources[section]):
-              if not student_resources[section][resource]:
-                resource_name = db.activities.find_one({"_id": resource})["name"]
-
-                keyboard.append(
-                  [
-                    IKButton(
-                      resource_name,
-                      callback_data=f"s_menu-opn-rsrcs-{section}-{resource}",
-                    )
-                  ]
-                )
-            keyboard.append(
-              [
-                IKButton(
-                  g_lang.back_text[user["language"]], callback_data=f"s_menu-opn"
-                )
-              ]
-            )
-            g_fun.show_menu(
-              query, keyboard, stu_lang.opn_resources(user["language"], "text_rsrc")
-            )
+            select_value()
         else:
-          resource_name = db.activities.find_one({"_id": resource})["name"]
-          g_fun.show_menu(
-            query,
-            g_lang.scale_7(user["language"], query.data),
-            stu_lang.opn_resources(user["language"], "scale", resource_name),
-          )
-
+          select_resource()
       else:
-        db.opn_resources.update_one(
-          {"_id": user["_id"]}, {"$set": {f"{section}.{resource}": value}}
-        )
+        select_section()
 
-        opn_rsrcs(context, query, user, selections[:-3])
     except:
-      g_fun.print_except(inspect.stack()[0][3], user, selections)
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      return False
 
   def opn_tea_meetings(self, context, query, selections):
-    try:
-      if db.opn_teacher_meetings.find_one():
-        meeting = value = ""
-        if len(selections) > 4:
-          meeting = selections[4]
-          if len(selections) > 5:
-            value = selections[5]
-
+    def select_meeting():
+      try:
+        sql_meetings_evaluated = f"""SELECT DISTINCT meeting
+                                  FROM opn_teacher_meetings
+                                  where _id = {self._id}"""
+        sql = f"""SELECT DISTINCT meeting FROM teacher_messages
+                WHERE meeting <> -1
+                and meeting not in ({sql_meetings_evaluated})"""
+        meetings = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
         keyboard = []
-        if not value:
-          if not meeting:
-            meetings = db.opn_teacher_meetings.find().distinct("_id")
-            for meeting in meetings:
-              meeting_data = meeting.split("_")
-              meeting_num = meeting_data[1]
-              if (
-                user["_id"]
-                not in db.opn_teacher_meetings.find_one({"_id": meeting})["students"]
-              ):
-                keyboard.append(
-                  [
-                    IKButton(
-                      f"Meeting {meeting_num}",
-                      callback_data=f"s_menu-opn-tp-vc-{meeting}",
-                    )
-                  ]
-                )
-            keyboard.append(
-              [
-                IKButton(
-                  g_lang.back_text[user["language"]], callback_data=f"s_menu-opn"
-                )
-              ]
-            )
-            if len(keyboard) == 1:
-              g_fun.show_menu(
-                query,
-                keyboard,
-                stu_lang.opn_tea_meet(user["language"], "all_meetings_evaluated"),
+        for meeting in meetings:
+          keyboard.append(
+            [
+              IKButton(
+                f"Meeting {meeting}", callback_data=f"s_menu-opn-tp-vc-{meeting}"
               )
-            else:
-              g_fun.show_menu(
-                query, keyboard, stu_lang.opn_tea_meet(user["language"], "text_meeting")
-              )
-          else:
-            meeting_data = meeting.split("_")
-            meeting_num = meeting_data[1]
-            g_fun.show_menu(
-              query,
-              g_lang.scale_7(user["language"], query.data),
-              stu_lang.opn_tea_meet(user["language"], "scale", meeting_num),
-            )
-        else:
-          db.opn_teacher_meetings.update_one(
-            {"_id": meeting}, {"$push": {"students": user["_id"], "values": value}}
+            ]
           )
-          opn_tea_meetings(context, query, user, selections[:-3])
+        back = "-".join(selections[:-1])
+        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+        if len(keyboard) == 1:
+          text = s_lang.opn_tea_meeting(self.language, "no_meetings")
+          b_fun.show_menu(query, text, keyboard, context, self._id)
+
+        else:
+          text = s_lang.opn_tea_meeting(self.language, "text_meeting")
+          b_fun.show_menu(query, text, keyboard, context, self._id)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def select_value():
+      try:
+        options = g_lang.scale_7(self.language, query.data)
+        text = s_lang.opn_tea_meeting(self.language, "scale", meeting)
+        b_fun.show_menu(query, text, options)
+
+        """ g_fun.show_menu(
+          query,
+          g_lang.scale_7(user["language"], query.data),
+          stu_lang.opn_tea_meet(user["language"], "scale", meeting_num),
+        ) """
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def set_value():
+      try:
+        sql = f"""INSERT OR IGNORE INTO opn_teacher_meetings
+        VALUES ({self._id}, {meeting}, '{value}')"""
+        sqlite.execute_sql(sql)
+        text = s_lang.opn_tea_meeting(self.language, "success")
+        query.edit_message_text(parse_mode="HTML", text=text)
+
+        self.opn_tea_meetings(context, query="", selections=selections[:-2])
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    try:
+      if len(selections) > 4:
+        meeting = selections[4]
+        if len(selections) > 5:
+          value = selections[5]
+          set_value()
+        else:
+          select_value()
       else:
-        g_fun.show_menu(
+        select_meeting()
+
+        """  g_fun.show_menu(
           query, keyboard, stu_lang.opn_tea_meet(user["language"], "no_meetings")
-        )
+        ) """
+
+      """ if db.opn_teacher_meetings.find_one():
+        meeting = value = "" """
 
     except:
       g_fun.print_except(inspect.stack()[0][3], user, selections)
@@ -665,7 +739,7 @@ class Student(User):
       if context.args:
 
         message = " ".join(context.args)
-        email = cfg.registered_emails[self._id]
+        email = cfg.registered_stu[self._id]
         today = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
         sql = f"INSERT INTO suggestions VALUES({self._id}, '{email}', '{today}', '{message}')"
         sqlite.execute_sql(sql)
@@ -685,16 +759,12 @@ class Student(User):
       if not self.register_student():
         if len(context.args) == 1:
           email = context.args[0].lower()
-          if re.match(
-            "^[(a-z0-9\_\-\.)]+@[(a-z0-9\_\-\.)]+\.[(a-z)]{2,15}$", email.lower()
-          ):
+          if g_fun.validate_email(email):
             sql = f"SELECT COUNT(*) FROM registered_students WHERE email='{email}'"
             if sqlite.execute_sql(sql, "fetchone")[0]:
               # Tenia registration como accion
               text = s_lang.check_email(self.language, "exists_email")
-              context.bot.sendMessage(
-                chat_id=self._id, parse_mode="HTML", text=text
-              )
+              context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
               return True
             else:
               sql = f"SELECT * FROM students_file WHERE email='{email}'"
@@ -704,28 +774,21 @@ class Student(User):
                 values = f"{self._id}, '{student['last_name']}, {student['first_name']}', '{email}', '{self.username}','{student['planet']}'"
                 sql = f"INSERT INTO registered_students VALUES({values})"
                 sqlite.execute_sql(sql)
-                cfg.registered_emails[self._id] = email
+                cfg.registered_stu[self._id] = email
                 if student["planet"]:
                   cfg.active_meetings.update(
                     {student["planet"]: {"users": {}, "meeting": ""}}
                   )
                 text = s_lang.check_email(self.language, "success", email)
-                context.bot.sendMessage(
-                  chat_id=self._id, parse_mode="HTML", text=text
-                )
+                context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
                 text = s_lang.welcome(self.language, context, "long")
-                context.bot.sendMessage(
-                  chat_id=self._id, parse_mode="HTML", text=text
-                )
-                # cfg.registered_students.add(self["_id"])
-                # cfg.registered_stu_emails.add(self["email"])
+                context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+                cfg.registered_stu = sqlite.table_DB_to_df("registered_students")
                 return True
 
               else:
                 text = s_lang.check_email(self.language, "not_found")
-                context.bot.sendMessage(
-                  chat_id=self._id, parse_mode="HTML", text=text
-                )
+                context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
           else:
             text = g_lang.email_syntax_error(self.language, email)
             context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
@@ -733,9 +796,7 @@ class Student(User):
           text = s_lang.check_email(self.language, "no_args")
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
         else:
-          text = s_lang.check_email(
-            self.language, "many_args", " ".join(context.args)
-          )
+          text = s_lang.check_email(self.language, "many_args", " ".join(context.args))
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
       else:
         sql = f"SELECT email FROM registered_students WHERE _id={self._id}"
@@ -744,7 +805,7 @@ class Student(User):
           text = s_lang.check_email(self.language, "registered_user", email_DB[0])
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
     except:
-      error_path = f'{inspect.stack()[0][1]} - {inspect.stack()[0][3]}'
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
       g_fun.print_except(error_path)
       return False
 
@@ -791,18 +852,20 @@ class Teacher(User):
         g_fun.print_except(error_path)
 
     try:
-      upm = update.message
-      if cfg.config_files_set and not upm.document:
-        if upm.chat_id < 0:
+      chat = update._effective_message
+
+      if cfg.config_files_set and not chat.document:
+        if chat.chat_id < 0:
+          b_fun.get_admins_group(context, chat.chat_id, self.planet)
           self.reg_messages(update)
         else:
           text = t_lang.welcome_text(self.language, context, "short")
           context.bot.sendMessage(chat_id=self._id, text=text)
 
-      elif upm.document:
+      elif chat.document:
         # Check if the document is a configuration document.
-        if upm.chat_id > 0:
-          doc = upm.document
+        if chat.chat_id > 0:
+          doc = chat.document
           config_file = is_configuration_file(doc)
           if config_file:
             if config_file == "grades":
@@ -813,12 +876,7 @@ class Teacher(User):
                 df_grades = b_fun.data_preparation(df_grades, "grades")
                 thread_grades = threading.Thread(
                   target=b_fun.thread_grade_activities,
-                  args=(
-                    update,
-                    context,
-                    df_grades,
-                    self,
-                  ),
+                  args=(update, context, df_grades, self),
                 )
                 thread_grades.start()
               else:
@@ -832,7 +890,7 @@ class Teacher(User):
               b_fun.config_files_upload(update, context, self)
 
       else:
-        if upm.chat_id > 0:
+        if chat.chat_id > 0:
           text = t_lang.config_files(self.language, "no_set_up")
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
           b_fun.config_files_set(update, context, self)
@@ -845,11 +903,7 @@ class Teacher(User):
       text, options = t_lang.main_menu(self.language)
       keyboard = options
       reply_markup = IKMarkup(keyboard)
-      update.message.reply_text(
-        parse_mode="HTML",
-        text=text,
-        reply_markup=reply_markup,
-      )
+      update.message.reply_text(parse_mode="HTML", text=text, reply_markup=reply_markup)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
       g_fun.print_except(error_path)
@@ -933,12 +987,7 @@ class Teacher(User):
             )
             thread_grades = threading.Thread(
               target=b_fun.thread_grade_activities,
-              args=(
-                update,
-                context,
-                df_grades,
-                self,
-              ),
+              args=(update, context, df_grades, self),
             )
             thread_grades.start()
 
@@ -983,6 +1032,115 @@ class Teacher(User):
 
       context.bot.sendDocument(chat_id=self._id, document=open(f"{file}.csv", "rb"))
       context.bot.sendDocument(chat_id=self._id, document=open(f"{file}.html", "rb"))
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
+      return False
+
+  def modify_student(self, update, context):
+    def modify_email():
+      try:
+        username = context.args[0].upper()
+        cfg.registered_stu.set_index("username", inplace=True)
+        if username in cfg.registered_stu.index:
+          new_email = context.args[1].lower()
+          if g_fun.validate_email(new_email):
+            student = cfg.registered_stu.loc[username]
+            if student["email"]:
+              tables = [
+                "students_file",
+                "actual_grades",
+                "grades",
+                "linguistic_risk_factor",
+                "risk_factor",
+              ]
+
+              for table in tables:
+                sqlite.change_primary_key(table, student["email"], new_email)
+
+              for table in ["suggestions", "registered_students"]:
+                sql = f"UPDATE '{table}' SET email = '{new_email}' WHERE email='{student['email']}'"
+                sqlite.execute_sql(sql)
+            else:
+              sql = f"""UPDATE registered_students SET email = '{new_email}'
+                      WHERE username = '{username}'"""
+              sqlite.execute_sql(sql)
+
+              sql = f"""UPDATE students_file
+                      SET username = '{username}', planet = '{student["planet"]}'
+                      WHERE email = '{new_email}'"""
+              sqlite.execute_sql(sql)
+            text = t_lang.menu_stu_modify(self.language, "success", data="email")
+            context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+          else:
+            text = g_lang.email_syntax_error(self.language, new_email)
+            context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+        else:
+          text = t_lang.menu_stu_modify(
+            self.language, "unregistered_user", data=username
+          )
+          context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def modify_name():
+      try:
+
+        sql = f"SELECT first_name, last_name FROM students_file where email = '{email}'"
+        student_data = sqlite.execute_sql(sql, fetch="fetchone", as_dict=True)
+        if student_data:
+          student_data = dict(student_data)
+          if column == "first_name":
+            full_name = f"{student_data['last_name']}, {value}"
+          else:
+            full_name = f"{value}, {student_data['first_name']}"
+          sql = (
+            f"UPDATE students_file SET '{column}' = '{value}' WHERE email ='{email}'"
+          )
+          sqlite.execute_sql(sql)
+          sql = f"""UPDATE registered_students SET full_name = '{full_name}'
+                    WHERE email ='{email}'"""
+          sqlite.execute_sql(sql)
+          text = t_lang.menu_stu_modify(self.language, "success", data=column)
+          context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    try:
+      if len(context.args) == 2:
+        modify_email()
+      elif len(context.args) >= 3:
+        email = context.args[0]
+        if g_fun.validate_email(email):
+          column = context.args[1].lower()
+          value = " ".join(context.args[2:]).upper()
+          cfg.registered_stu.set_index("email", inplace=True)
+          if email in cfg.registered_stu.index:
+            if column == "first_name" or column == "last_name":
+              modify_name()
+            else:
+              text = t_lang.menu_stu_modify(self.language, "column_error", data=column)
+              context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+          else:
+            text = t_lang.menu_stu_modify(
+              self.language, "unregistered_email", data=email
+            )
+            context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+        else:
+          text = g_lang.email_syntax_error(self.language, email)
+          context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+      else:
+        text = g_lang.wrong_num_arguments(self.language)
+        context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+        text = t_lang.menu_stu_modify(
+          self.language, "cmd", headers="first_name\nlast_name"
+        )
+        context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+      cfg.registered_stu = sqlite.table_DB_to_df("registered_students")
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
       g_fun.print_except(error_path)
@@ -1050,6 +1208,134 @@ class Teacher(User):
       g_fun.print_except(error_path)
       return False
 
+  def set_meetings(self, update, context, chat="", change_grades=False):
+    def set_meeting_attendance():
+      try:
+        sql = f"SELECT DISTINCT _id FROM student_messages WHERE meeting = {meeting_num}"
+        students = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+        df_students = pd.DataFrame(students, columns=["_id"])
+        df_students["meeting"] = meeting_num
+        df_students_DB = sqlite.table_DB_to_df("meetings_attendance")
+        df_attendance = pd.concat([df_students_DB, df_students])
+        df_attendance = df_attendance.drop_duplicates()
+        sqlite.save_elements_in_DB(df_attendance, "meetings_attendance")
+
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def get_score_meetings():
+      """Guarda la calificación de cada estudiante que ha participado en el meeting especificado.
+
+          Arguments:
+              planet {str} -- Nombre del planeta
+              meeting {[type]} -- ID del meeting
+          """
+      try:
+        meeting_id = f"ML_{meeting.upper()}"
+        sql = f"""SELECT email FROM registered_students WHERE _id in
+                (SELECT _id FROM meetings_attendance WHERE meeting = '{meeting_num}')"""
+        students_email = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+        emails = "','".join(students_email)
+        df_grades = sqlite.table_DB_to_df(
+          "grades", columns=f"email, {meeting_id}", index=True
+        )
+
+        for student in students_email:
+          if student:
+            # TODO: REVISAR LA CALIFICACION SOBRE 10 ó SOBRE 1
+            df_grades.loc[student][meeting_id] = 10
+
+        df_grades.insert(0, column="email", value=df_grades.index)
+        df_grades.reset_index(drop=True, inplace=True)
+        thread_grade_meeting = threading.Thread(
+          target=b_fun.thread_grade_activities,
+          args=(update, context, df_grades, self, meeting),
+        )
+        thread_grade_meeting.start()
+
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    try:
+      args = context.args
+      planet = g_fun.strip_accents(chat.chat.title)
+      if len(args) == 1:
+        try:
+          meeting_num = int(args[0])
+        except:
+          text = t_lang.meeting(self.language, "is_not_a_number", args[0])
+          context.bot.sendMessage(chat_id=chat.chat_id, parse_mode="HTML", text=text)
+          return False
+        else:
+          meeting = f"meeting_{meeting_num}"
+          # VER COMO SABER SI EL COMANDO ES START O END
+          if chat.text.startswith("/start_meeting"):
+            if planet not in cfg.active_meetings:
+              cfg.active_meetings.update({planet: {"users": {}, "meeting": meeting}})
+            elif meeting not in cfg.active_meetings[planet]["meeting"]:
+              cfg.active_meetings[planet].update({"meeting": meeting})
+              text = t_lang.meeting(self.language, "start", meeting_num)
+              context.bot.sendMessage(
+                chat_id=chat.chat_id, parse_mode="HTML", text=text
+              )
+            else:
+              text = t_lang.meeting(self.language, "active", meeting_num)
+              context.bot.sendMessage(
+                chat_id=chat.chat_id, parse_mode="HTML", text=text
+              )
+
+          elif chat.text.startswith("/end_meeting"):
+            if cfg.active_meetings[planet]["meeting"]:
+              if meeting in cfg.active_meetings[planet]["meeting"]:
+                cfg.active_meetings[planet]["meeting"] = ""
+                # cfg.closed_meetings.add(meeting)
+                text = t_lang.meeting(self.language, "end", meeting_num)
+                context.bot.sendMessage(
+                  chat_id=chat.chat_id, parse_mode="HTML", text=text
+                )
+                # Guarda en la base de datos la asisencia a meetings
+                set_meeting_attendance()
+                get_score_meetings()
+
+              else:
+                meeting_num = cfg.active_meetings[planet]["meeting"][-1]
+                text = t_lang.meeting(self.language, "finish_no_active", meeting_num)
+                context.bot.sendMessage(
+                  chat_id=chat.chat_id, parse_mode="HTML", text=text
+                )
+            else:
+              text = t_lang.meeting(self.language, "none_active", meeting_num)
+              context.bot.sendMessage(
+                chat_id=chat.chat_id, parse_mode="HTML", text=text
+              )
+      else:
+        if not args:
+          if cfg.active_meetings:
+            if cfg.active_meetings[planet]:
+              if cfg.active_meetings[planet]["meeting"]:
+                meeting_num = cfg.active_meetings[planet]["meeting"][-1]
+                text = t_lang.meeting(self.language, "no_number", meeting_num)
+                context.bot.sendMessage(
+                  chat_id=chat.chat_id, parse_mode="HTML", text=text
+                )
+                return False
+
+          text = t_lang.meeting(self.language, "no_number")
+          context.bot.sendMessage(chat_id=chat.chat_id, parse_mode="HTML", text=text)
+          return False
+        else:
+          text = t_lang.meeting(self.language, "error_args")
+          context.bot.sendMessage(chat_id=chat.chat_id, parse_mode="HTML", text=text)
+        return False
+
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
+      return False
 
   def __str__(self):
     return f"""

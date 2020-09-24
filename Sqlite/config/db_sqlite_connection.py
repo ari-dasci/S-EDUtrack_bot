@@ -93,7 +93,6 @@ def get_columns_names(table_name):
   try:
     sql = f"PRAGMA table_info({table_name});"
     column_names = [x[1] for x in execute_sql(sql, fetch="fetchall")]
-    print(column_names)
     return column_names
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -117,12 +116,7 @@ def save_elements_in_DB(df_to_save, table_name):
     conn = connection(True)
 
     df_backup = table_DB_to_df(table_name)
-    df_to_save.to_sql(
-      "delete",
-      con=conn,
-      index=False,
-      if_exists="replace",
-    )
+    df_to_save.to_sql("delete", con=conn, index=False, if_exists="replace")
     sql = f"DELETE FROM {table_name}"
     execute_sql(sql)
     sql = f"INSERT INTO {table_name} SELECT * FROM 'delete'"
@@ -137,13 +131,17 @@ def save_elements_in_DB(df_to_save, table_name):
     raise
 
 
-def table_DB_to_df(table_name, columns="*", set_index=False):
+def table_DB_to_df(table_name, columns="*", sql=False, index=False):
   try:
-    sql = f"SELECT {columns} FROM {table_name}"
+    if not sql:
+      sql = f"SELECT {columns} FROM {table_name}"
     df = execute_sql(sql, df=True)
-    ID = df.columns[0]
-    if set_index:
-      df.set_index(ID, inplace=True)
+    if index:
+      if isinstance(index, str):
+        df.set_index(index, inplace=True)
+      else:
+        ID = df.columns[0]
+        df.set_index(ID, inplace=True)
     return df
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -151,11 +149,14 @@ def table_DB_to_df(table_name, columns="*", set_index=False):
     return False
 
 
-# REVISAR SI SIRVE
-""" def is_user_registered(user):
+def change_primary_key(table_name, old_value, new_value):
   try:
-    sql = f"SELECT count(*) FROM registered_students WHERE _id={user._id}"
-    return True if execute_statement(sql, "fetchone") else False
+    df_table = table_DB_to_df(table_name)
+    primary_key = df_table.columns[0]
+    row_index = df_table[df_table[primary_key] == old_value].index[0]
+    df_table.loc[row_index, (primary_key)] = new_value
+    save_elements_in_DB(df_table, table_name)
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-    g_fun.print_except(error_path) """
+    g_fun.print_except(error_path)
+    return False

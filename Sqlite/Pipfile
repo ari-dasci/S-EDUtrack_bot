@@ -10,7 +10,8 @@ telegram = "*"
 python-telegram-bot = "*"
 pandas = "*"
 colorama = "*"
-black = "==20.8b1"
+black = "==18.9b0"
+cblack = "*"
 
 [requires]
 python_version = "3.7"

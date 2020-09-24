@@ -24,6 +24,10 @@ def welcome(user):
     return f"Hello {user.telegram_name}, I am your bot."
 
 
+def pinned_message(context):
+  return f"Para acceder a las opciones de opinar sobre la colaboración de los compañeros, del profesor/a y de los recursos, inicia una conversación en privado con el bot EDUtrack @{context.bot.username} (click en el usuario o buscalo directamente en Telegram).\n\nTo access the options to opine on the collaboration of classmates, teacher and resources, start a private conversation with the EDUtrack @{context.bot.username} bot (click on the user or search it directly in Telegram)."
+
+
 def file_ready_for_download(lang):
   if lang == "es":
     return "Archivo listo para su descarga."
@@ -184,3 +188,16 @@ def change_language(lang):
 
 
 back_text = {"es": "Regresar", "en": "Back"}
+
+help_send_manual = {
+  "es": "files/guides/ES/EDUtrack_manual_estudiante.pdf",
+  "en": "files/guides/EN/EDUtrack_student_manual.pdf",
+}
+
+
+def help(lang, context):
+  bot_username = context.bot.username
+  if lang == "es":
+    return f"El bot con el que se estarás trabajando en esta asignatura soy yo @{bot_username}, en el manual solo se usa @EDUTrack_bot como ejemplo."
+  else:
+    return f"The bot you will be working with in this subject is me @{bot_username}, the manual only uses EDUTrack_bot as an example."

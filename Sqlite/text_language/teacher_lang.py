@@ -234,7 +234,9 @@ def menu_act(lang):
         IKBtn("Modificar", callback_data="t_menu-act-modify"),
       ],
       [IKBtn("Activar Actividad", callback_data="t_menu-act-active")],
-      [IKBtn("Atrás", callback_data="t_menu-back"),],
+      [
+        IKBtn("Atrás", callback_data="t_menu-back"),
+      ],
     ]
   else:
     text = "<b>ACTIVITIES</b>\nSelect an option:"
@@ -258,7 +260,12 @@ def menu_act_view(lang):
     text = "<b>VER LISTA DE ACTIVIDADES</b>\nSelecciona una opción:"
     opt = [
       [IKBtn("Todas las Actividades", callback_data="t_menu-act-view-all")],
-      [IKBtn("Actividades Calificables", callback_data="t_menu-act-view-qualifying",)],
+      [
+        IKBtn(
+          "Actividades Calificables",
+          callback_data="t_menu-act-view-qualifying",
+        )
+      ],
       [IKBtn("Recursos", callback_data="t_menu-act-view-resources")],
       [IKBtn("Atrás", callback_data="t_menu-act")],
     ]
@@ -485,11 +492,31 @@ def menu_stu_add(lang):
     return "<b>ADD STUDENT:</b>To add more students upload a file with the name <b>add_students_format.csv</b> with the format of <b>students_format</b>."
 
 
-def menu_stu_modify(lang, headers):
+def menu_stu_modify(lang, action, headers="", data=""):
   if lang == "es":
-    return f"<b>MODIFICAR ESTUDIANTE:</b>\nPara modificar un estudiante escribe el comando\n<code>/modify_student {lt}email{gt} {lt}campo a modificar{gt} {lt}nuevo contenido{gt}</code>\n\nLos campos que puedes modificar son:\n{headers}\n\n<b>Ejemplo:</b>\n<code>/modify_student ejemplo@correo.ugr.es first_name David</code> (Modifica el nombre del estudiante por David)."
+    Title = "<b>MODIFICAR ESTUDIANTE:</b>\n"
+    if action == "cmd":
+      return f"{Title}Para modificar el nombre de un estudiante escribe el comando:\n<code>/modify_student {lt}email{gt} {lt}campo a modificar{gt} {lt}nuevo contenido{gt}</code>\n\nLos campos que puedes modificar son:\n{headers}\n<b>Ejemplo:</b>\n<code>/modify_student ejemplo@correo.ugr.es first_name David</code>\n(Modifica el nombre del estudiante por David).\n\nPara agregar o modificar el correo de un estudiante, escribe el comando:\n<code>/modify_student {lt}username{gt} {lt}nuevo_email{gt}</code>\n<b>Ejemplo:</b>\n<code>/modify_student David_2020 nuevo@correo.ugr.es</code>\n (Modifica o agrega el nuevo email al estudiante con el username <b>David_2020</b>)."
+    elif action == "unregistered_email":
+      return f"{Title}El email {data} no se encuentra registrado."
+    elif action == "unregistered_user":
+      return f"{Title}El username {data} no se encuentra registrado."
+    elif action == "column_error":
+      return f"{Title}El campo <b>{data}</b> que deseas modificar no es correcto."
+    elif action == "success":
+      return f"{Title}Se ha modificado el campo {data} con éxito."
   else:
-    return f"<b>MODIFY STUDENT:</b>\nTo modify a student, type command\n<code>/modify_student {lt}email{gt} {lt}field to modify{gt} {lt}new content{gt}</code>\n\nThe fields you can modify are:\n{headers}\n\n<b>Example:</b>\n<code>/delete_student example@correo.ugr.es first_name David</code> (modify  the student's first name to David)."
+    Title = "<b>MODIFY STUDENT:</b>\n"
+    if action == "cmd":
+      return f"{Title}To change a student's name type the command:\n<code>/modify_student {lt}email{gt} {lt}field to modify{gt} {lt}new content{gt}</code>\n\nThe fields you can modify are:\n{headers}\n\n<b>Example:</b>\n<code>/modify_student example@correo.ugr.es first_name David</code>\n(modify the student's first name to David).\n\nTo add or modify a student's email, type the command:\n<code>/modify_student {lt}username{gt} {lt}new_email{gt}\n</code><b>Example:</b>\n<code>/modify_student David_2020 new_email@correo.ugr.es</code>\n(Modify or add the new email to the student with the username <b>David_2020</b>)."
+    elif action == "unregistered_email":
+      return f"{Title}The email {data} is not registered."
+    elif action == "unregistered_user":
+      return f"{Title}The username {data} is not registered."
+    elif action == "column_error":
+      return f"{Title}The <b>{data}</b> field you want to modify is not correct."
+    elif action == "success":
+      return f"{Title}The {data} field has been modified successfully."
 
 
 def menu_stu_delete(lang):
@@ -524,17 +551,26 @@ def menu_reports(lang):
       [IKBtn("Atrás", callback_data="t_menu-back")],
     ]
   else:
-    text = "<b>STUDENTS:</b>\nSelect an option:"
+    text = "<b>REPORTS:</b>\nSelect an option:"
     opt = [
+      [IKBtn("Grades", callback_data="t_menu-reports-grades")],
+      [IKBtn("Academic Risk Factor", callback_data="t_menu-reports-ARF")],
+      [IKBtn("Participation in meetings", callback_data="t_menu-reports-meetings")],
+      [IKBtn("Teacher Evaluation", callback_data="t_menu-reports-eva_teacher")],
+      [IKBtn("Resource Evaluation", callback_data="t_menu-reports-eva_resources")],
       [
-        IKBtn("View List", callback_data="t_menu-stu-view"),
-        IKBtn("Add", callback_data="t_menu-stu-add"),
+        IKBtn(
+          "Meeting peer evaluation",
+          callback_data="t_menu-reports-eva_p2p_in_meet",
+        )
       ],
       [
-        IKBtn("Modify", callback_data="t_menu-stu-modify"),
-        IKBtn("Delete", callback_data="t_menu-stu-delete"),
+        IKBtn(
+          "Peer review outside of meetings",
+          callback_data="t_menu-reports-eva_p2p_out_meet",
+        )
       ],
-      [IKBtn("Back", callback_data="t_menu-back")],
+      [IKBtn("Atrás", callback_data="t_menu-back")],
     ]
   return (text, opt)
 
@@ -587,7 +623,7 @@ def meeting(lang, action, meeting_num="", planet=""):
         return f"<b>Meeting {meeting_num} active.</b>\nTo start or finish a meeting you must type the meeting number."
       else:
         return f"To start or finish a meeting you must type the meeting number."
-    elif action == "no_active":
+    elif action == "finish_no_active":
       return f"Meeting not finished. Current active meeting is meeting {meeting_num}."
     elif action == "none_active":
       return f"There is no active meeting."

@@ -27,10 +27,17 @@ def config_subject():
     # Check if the subject is configured
     cfg.config_files_set = are_config_files_set()
 
+    # Check for active activities
+    sql = "SELECT COUNT(*) FROM evaluation_scheme WHERE active=1"
+    if sqlite.execute_sql(sql, fetch="fetchone")[0]:
+      cfg.active_activities = True
+
     # Get the date of the Monday of the week in which the course starts
     start_date = cfg.subject_data["start_date"]
     start_date = datetime.strptime(start_date, "%d/%m/%Y")
     cfg.monday_start_week = get_weekday_monday(start_date)
+
+    #
 
     # Get the admins for each planet
     sql = f"SELECT _id, admins FROM planet_admins"
@@ -45,11 +52,14 @@ def config_subject():
           cfg.admins_list[planet] = set()
         cfg.active_meetings.update({planet: {"users": {}, "meeting": ""}})
 
-    # Get the relationship between the Telegram ID and the email of each registered student.
-    sql = f"""SELECT _id, email FROM registered_students"""
-    _id_email = sqlite.execute_sql(sql, fetch="fetchall", as_dict=True)
-    if _id_email:
-      cfg.registered_emails = dict(_id_email)
+    # Get the name and email associated with the Telegram ID of each registered student.
+    cfg.registered_stu = sqlite.table_DB_to_df("registered_students")
+
+    ''' sql = f"""SELECT _id, full_name, email FROM registered_students"""
+    data = sqlite.execute_sql(sql, fetch="fetchall")
+    if data:
+      for student in data:
+        cfg.registered_stu[student[0]] = {"full_name":student[1],"email":student[2]} '''
 
     # Gets the tree of the evaluation scheme
     b_fun.eva_scheme_tree()
@@ -60,17 +70,20 @@ def config_subject():
       sql, fetch="fetchone"
     )[0]
 
+    # Get the resources up to the current week
+    cfg.resources["week"] = get_week("num")
+    get_resources()
+
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     print_except(error_path)
-    print()
+    return False
 
 
 def print_except(function, *extra_info):
   try:
     exc_type, exc_obj, exc_tb = sys.exc_info()
-    error_text = f"""
-    ====================
+    error_text = f"""====================
     ERROR IN FUNCTION {function}
     {exc_type}
     {exc_obj}
@@ -78,8 +91,8 @@ def print_except(function, *extra_info):
     """
     if extra_info:
       for element in extra_info:
-        error_text += "\n" + element
-    error_text += "===================="
+        error_text += "\n   " + str(element)
+    error_text += "\n===================="
     print(Back.RED)
     logging.info(error_text + Back.RESET)
   except:
@@ -137,14 +150,25 @@ def get_week(action):
     course_weeks = cfg.subject_data["course_weeks"]
     if num_week > int(course_weeks):
       num_week = int(course_weeks)
+    num_week = 8
     if action == "num":
-      return 2 # num_week
+      return num_week
     elif action == "text":
       text_week = "week_"
       if len(course_weeks) != len(str(num_week)):
         text_week += "0" * (len(course_weeks) - len(str(num_week)))
       text_week += str(num_week)
       return text_week
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+    return False
+
+
+def validate_email(email):
+  try:
+    if re.match("^[(a-z0-9\_\-\.)]+@[(a-z0-9\_\-\.)]+\.[(a-z)]{2,15}$", email.lower()):
+      return True
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     print_except(error_path)
@@ -258,7 +282,6 @@ def db_to_csv_html(df, file, headers=[], title="", date=True):
 
 def strip_accents(string):
   """Recibe un string y elimina los acentos y lo devuelve en mayúsculas."""
-  # print("CHECK GFUN *** ENTRO A STRIP ACCENTS ***")
   try:
     string = re.sub(
       r"([^n\u0300-\u036f]|n(?!\u0303(?![\u0300-\u036f])))[\u0300-\u036f]+",
@@ -300,7 +323,6 @@ def get_evaluation_scheme_tree():
     new = {"_id": "SUBJECT"}
     new.update(cfg.evaluation_scheme["SUBJECT"])
     # del new["category_score"]
-    print(cfg.evaluation_scheme)
     return cfg.evaluation_scheme
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -343,3 +365,37 @@ def get_from_dict(dataDict, mapList):
 
 def set_in_dict(dataDict, mapList, value):
   get_from_dict(dataDict, mapList[:-1])[mapList[-1]] = value
+
+
+def notify_teachers(context, text):
+  try:
+    sql = "SELECT telegram_id FROM TEACHERS"
+    teachers = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+    for teacher in teachers:
+      context.bot.sendMessage(chat_id=teacher, parse_mode="HTML", text=text)
+
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+    return False
+
+
+def get_resources():
+  try:
+    num_week = get_week("num")
+    sql = (
+      f"SELECT * FROM activities WHERE week < {cfg.resources['week']} and section <> ''"
+    )
+    resources_data = sqlite.table_DB_to_df("activities", sql=sql, index="_id")
+    for resource in list(resources_data.index):
+      section = resources_data.loc[resource]["section"]
+      if not section in cfg.resources:
+        cfg.resources[section] = {resource}
+      else:
+        cfg.resources[section].add(resource)
+    cfg.resources["week"] = num_week
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+    return False
+

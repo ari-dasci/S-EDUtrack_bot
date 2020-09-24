@@ -25,7 +25,7 @@ logging.basicConfig(
   format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
 )
 
-# Obtener el Token y el Modo de trabajo
+# Get the token and the working mode
 TOKEN = os.getenv("TOKEN")
 mode = os.getenv("MODE")
 
@@ -76,7 +76,7 @@ def main():
 
     # JobQueue creation
     bot_jobs = updater.job_queue
-    jobs_queue.start_job(bot_jobs)
+    jobs_queue.start_jobs(bot_jobs)
 
     # Dispatcher creation
     dp = updater.dispatcher
@@ -85,6 +85,7 @@ def main():
     dp.add_handler(Cmd_Hdl("start", cmd.start))
     dp.add_handler(Cmd_Hdl("change_language", cmd.change_language))
     dp.add_handler(Cmd_Hdl("menu", cmd.menu))
+    dp.add_handler(Cmd_Hdl("help", cmd.help))
 
     ## Handlers Options Menu
     dp.add_handler(CQ_Hdl(b_fun.options_menu))
@@ -100,6 +101,7 @@ def main():
     dp.add_handler(Cmd_Hdl("add_teacher", cmd.add_teacher))
     dp.add_handler(Cmd_Hdl("start_meeting", cmd.set_meeting))
     dp.add_handler(Cmd_Hdl("end_meeting", cmd.set_meeting))
+    dp.add_handler(Cmd_Hdl("modify_student", cmd.modify_student))
 
     ## Handlers Students
     dp.add_handler(Cmd_Hdl("check_email", cmd.check_email))
@@ -110,13 +112,14 @@ def main():
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
+    return False
 
 
 def test():
-  pass
+
+  input("PRESIONA UNA TECLA PARA CONTIUAR")
 
 
 if __name__ == "__main__":
   # test()
-  #  input("")
   main()
