@@ -23,7 +23,7 @@ from text_language import teacher_lang as t_lang
 
 class User:
   def __init__(self, user_data, planet=""):
-    self._id = user_data["id"]
+    self._id = int(user_data["id"])
     self.telegram_name = (
       user_data.full_name if hasattr(user_data, "full_name") else user_data["full_name"]
     )
@@ -46,7 +46,7 @@ class User:
       return True
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def set_selected_language(self):
@@ -59,7 +59,7 @@ class User:
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def reg_messages(self, update):
@@ -88,7 +88,7 @@ class User:
         return message_type
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     try:
@@ -116,7 +116,7 @@ class User:
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
 
@@ -150,7 +150,7 @@ class Student(User):
         return True
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def check_if_change(registered_user):
@@ -180,7 +180,7 @@ class Student(User):
         return True
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     try:
@@ -195,7 +195,7 @@ class Student(User):
       return False
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def received_message(self, update, context):
@@ -221,7 +221,7 @@ class Student(User):
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def main_menu(self, update, context):
@@ -239,7 +239,7 @@ class Student(User):
         context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def my_grade(self, context, query=""):
@@ -261,7 +261,7 @@ class Student(User):
         return df_grades
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def get_student_data():
@@ -284,7 +284,7 @@ class Student(User):
         return student_data
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def get_activities_list(eva_scheme, def_grades, text="", level=1):
@@ -304,7 +304,7 @@ class Student(User):
         return text
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     try:
@@ -352,7 +352,7 @@ class Student(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def opn_tea_practice(self, context, query, selections):
@@ -399,7 +399,7 @@ class Student(User):
         b_fun.show_menu(query, text, keyboard, context, self._id)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def select_value():
@@ -412,7 +412,7 @@ class Student(User):
         b_fun.show_menu(query, text, options)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def set_value():
@@ -426,7 +426,7 @@ class Student(User):
         self.opn_tea_practice(context, query="", selections=selections[:-2])
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     try:
@@ -447,7 +447,7 @@ class Student(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def opn_collaboration(self, context, query, selections):
@@ -478,7 +478,7 @@ class Student(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def select_value():
@@ -494,7 +494,7 @@ class Student(User):
         b_fun.show_menu(query, text, options)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def set_value():
@@ -508,7 +508,7 @@ class Student(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     try:
@@ -527,7 +527,7 @@ class Student(User):
         select_classmate()
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def opn_rsrcs(self, context, query, selections):
@@ -561,7 +561,7 @@ class Student(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def select_resource():
@@ -592,7 +592,7 @@ class Student(User):
         b_fun.show_menu(query, text, keyboard, context, self._id)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def select_value():
@@ -603,7 +603,7 @@ class Student(User):
         b_fun.show_menu(query, text, options)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def set_value():
@@ -616,7 +616,7 @@ class Student(User):
         self.opn_rsrcs(context, query="", selections=selections[:-2])
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     try:
@@ -680,7 +680,7 @@ class Student(User):
           b_fun.show_menu(query, text, keyboard, context, self._id)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def select_value():
@@ -696,7 +696,7 @@ class Student(User):
         ) """
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def set_value():
@@ -710,7 +710,7 @@ class Student(User):
         self.opn_tea_meetings(context, query="", selections=selections[:-2])
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     try:
@@ -751,7 +751,7 @@ class Student(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def check_email(self, update, context):
@@ -806,7 +806,7 @@ class Student(User):
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def __str__(self):
@@ -849,7 +849,7 @@ class Teacher(User):
           return False
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
 
     try:
       chat = update._effective_message
@@ -896,7 +896,7 @@ class Teacher(User):
           b_fun.config_files_set(update, context, self)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
 
   def main_menu(self, update, context):
     try:
@@ -906,7 +906,7 @@ class Teacher(User):
       update.message.reply_text(parse_mode="HTML", text=text, reply_markup=reply_markup)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def activities_view(self, update, context, option, query=""):
@@ -938,7 +938,7 @@ class Teacher(User):
       context.bot.sendDocument(chat_id=self._id, document=open(f"{file}.html", "rb"))
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def grade_activity_cmd(self, update, context):
@@ -1003,7 +1003,7 @@ class Teacher(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def students_view(self, update, context, option, query=""):
@@ -1034,7 +1034,7 @@ class Teacher(User):
       context.bot.sendDocument(chat_id=self._id, document=open(f"{file}.html", "rb"))
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def modify_student(self, update, context):
@@ -1082,7 +1082,7 @@ class Teacher(User):
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def modify_name():
@@ -1107,7 +1107,7 @@ class Teacher(User):
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     try:
@@ -1143,7 +1143,7 @@ class Teacher(User):
       cfg.registered_stu = sqlite.table_DB_to_df("registered_students")
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def reports(self, update, context, report_type, query=""):
@@ -1189,7 +1189,7 @@ class Teacher(User):
         query.edit_message_text(parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def activate_eva(self, update, context):
@@ -1205,7 +1205,7 @@ class Teacher(User):
         context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def set_meetings(self, update, context, chat="", change_grades=False):
@@ -1222,7 +1222,7 @@ class Teacher(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     def get_score_meetings():
@@ -1257,7 +1257,7 @@ class Teacher(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
         return False
 
     try:
@@ -1334,7 +1334,7 @@ class Teacher(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
   def __str__(self):

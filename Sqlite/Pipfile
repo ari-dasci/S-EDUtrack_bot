@@ -12,6 +12,10 @@ pandas = "*"
 colorama = "*"
 black = "==18.9b0"
 cblack = "*"
+tqdm = "*"
 
 [requires]
 python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true

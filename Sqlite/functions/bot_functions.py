@@ -1098,87 +1098,6 @@ def thread_grade_activities(update, context, df_grades, user, meeting=False):
         g_fun.print_except(error_path)
         return False
 
-    def get_risk_factor(students):
-      """Obtains the academic risk factor (arf) of each student and its linguistic representation (linguistic_arf).
-
-      Args:
-          students (list): Student list from which the academic risk factor will be obtained.
-
-      Returns:
-          [bool]: True if the process is correct False otherwise.
-      """
-
-      def calculate_risk_factor():
-        """Calculates each student's academic risk factor for the current week and stores it in a DataFrame.
-        """
-        try:
-          # Rounding off to avoid excessive decimals
-          total_earned_score = round(df_grades["SUBJECT"], 10)
-          max_actual_score = round(df_grades["_MAX_ACTUAL_SCORE"], 10)
-
-          max_possible_grade = round(df_grades["_MAX_POSSIBLE_GRADE"], 10)
-          # remaining_score = max_final_score - max_actual_score
-          remaining_score = round(1 - max_actual_score[0], 10)
-
-          academic_risk_factor = (
-            total_earned_score + (max_possible_grade * remaining_score)
-          ) / max_final_score
-          df_risk_factor[actual_week] = round(academic_risk_factor, 10)
-
-        except:
-          error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-          g_fun.print_except(error_path)
-          return False
-
-      def set_linguistic_arf():
-        """Set the linguistic representation of each student's academic risk factor for the current week and store it in a DataFrame.
-        """
-        try:
-          lower_limit = min_grade_to_pass / max_final_score
-          increment = ((ideal_grading - min_grade_to_pass) / max_final_score) / 3
-          for student in students:
-            risk_factor = df_risk_factor.loc[student][actual_week]
-
-            if risk_factor >= lower_limit + (increment * 3):
-              linguistic_arf = "none"
-            elif risk_factor >= lower_limit + (increment * 2):
-              linguistic_arf = "low"
-            elif risk_factor >= lower_limit + increment:
-              linguistic_arf = "moderate"
-            elif risk_factor >= lower_limit:
-              linguistic_arf = "critical"
-            else:
-              linguistic_arf = "very_critical"
-            df_linguistic_arf.loc[student][actual_week] = linguistic_arf
-        except:
-          error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-          g_fun.print_except(error_path)
-          return False
-
-      try:
-        actual_week = g_fun.get_week(action="text")
-        max_final_score = float(cfg.subject_data["max_final_grade"])
-        min_grade_to_pass = float(cfg.subject_data["min_grade_to_pass"])
-        ideal_grading = float(cfg.subject_data["min_ideal_grade"])
-
-        df_grades = sqlite.table_DB_to_df("grades", index=True)
-        df_risk_factor = sqlite.table_DB_to_df("risk_factor", index=True)
-        df_linguistic_arf = sqlite.table_DB_to_df("linguistic_risk_factor", index=True)
-
-        calculate_risk_factor()
-        set_linguistic_arf()
-
-        df_risk_factor.insert(0, column="email", value=df_risk_factor.index)
-        sqlite.save_elements_in_DB(df_risk_factor, "risk_factor")
-        df_linguistic_arf.insert(0, column="email", value=df_linguistic_arf.index)
-        sqlite.save_elements_in_DB(df_linguistic_arf, "linguistic_risk_factor")
-
-        return True
-      except:
-        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
-        return False
-
     try:
       elements = load_grades(df_grades, path_file_name)
       if elements:
@@ -1224,6 +1143,88 @@ def thread_grade_activities(update, context, df_grades, user, meeting=False):
     else:
       text = g_lang.error_upload_file(user.language, file_name)
     context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
+
+
+def get_risk_factor(students):
+  """Obtains the academic risk factor (arf) of each student and its linguistic representation (linguistic_arf).
+
+  Args:
+      students (list): Student list from which the academic risk factor will be obtained.
+
+  Returns:
+      [bool]: True if the process is correct False otherwise.
+  """
+
+  def calculate_risk_factor():
+    """Calculates each student's academic risk factor for the current week and stores it in a DataFrame.
+    """
+    try:
+      # Rounding off to avoid excessive decimals
+      total_earned_score = round(df_grades["SUBJECT"], 10)
+      max_actual_score = round(df_grades["_MAX_ACTUAL_SCORE"], 10)
+
+      max_possible_grade = round(df_grades["_MAX_POSSIBLE_GRADE"], 10)
+      # remaining_score = max_final_score - max_actual_score
+      remaining_score = round(1 - max_actual_score[0], 10)
+
+      academic_risk_factor = (
+        total_earned_score + (max_possible_grade * remaining_score)
+      ) / max_final_score
+      df_risk_factor[actual_week] = round(academic_risk_factor, 10)
+
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
+      return False
+
+  def set_linguistic_arf():
+    """Set the linguistic representation of each student's academic risk factor for the current week and store it in a DataFrame.
+    """
+    try:
+      lower_limit = min_grade_to_pass / max_final_score
+      increment = ((ideal_grading - min_grade_to_pass) / max_final_score) / 3
+      for student in students:
+        risk_factor = df_risk_factor.loc[student][actual_week]
+
+        if risk_factor >= lower_limit + (increment * 3):
+          linguistic_arf = "none"
+        elif risk_factor >= lower_limit + (increment * 2):
+          linguistic_arf = "low"
+        elif risk_factor >= lower_limit + increment:
+          linguistic_arf = "moderate"
+        elif risk_factor >= lower_limit:
+          linguistic_arf = "critical"
+        else:
+          linguistic_arf = "very_critical"
+        df_linguistic_arf.loc[student][actual_week] = linguistic_arf
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
+      return False
+
+  try:
+    actual_week = g_fun.get_week(action="text")
+    max_final_score = float(cfg.subject_data["max_final_grade"])
+    min_grade_to_pass = float(cfg.subject_data["min_grade_to_pass"])
+    ideal_grading = float(cfg.subject_data["min_ideal_grade"])
+
+    df_grades = sqlite.table_DB_to_df("grades", index=True)
+    df_risk_factor = sqlite.table_DB_to_df("risk_factor", index=True)
+    df_linguistic_arf = sqlite.table_DB_to_df("linguistic_risk_factor", index=True)
+
+    calculate_risk_factor()
+    set_linguistic_arf()
+
+    df_risk_factor.insert(0, column="email", value=df_risk_factor.index)
+    sqlite.save_elements_in_DB(df_risk_factor, "risk_factor")
+    df_linguistic_arf.insert(0, column="email", value=df_linguistic_arf.index)
+    sqlite.save_elements_in_DB(df_linguistic_arf, "linguistic_risk_factor")
+
+    return True
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)

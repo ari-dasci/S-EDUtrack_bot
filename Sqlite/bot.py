@@ -116,10 +116,18 @@ def main():
 
 
 def test():
+  from functions.jobs_queue import calculate_weekly_grades as calc
+  from datetime import datetime
+
+  start_date = cfg.subject_data["start_date"]
+  start_date = datetime.strptime(start_date, "%d/%m/%Y")
+  cfg.monday_start_week = g_fun.get_weekday_monday(start_date)
+  cfg.config_files_set = True
+  calc("")
 
   input("PRESIONA UNA TECLA PARA CONTIUAR")
 
 
 if __name__ == "__main__":
-  # test()
+  test()
   main()

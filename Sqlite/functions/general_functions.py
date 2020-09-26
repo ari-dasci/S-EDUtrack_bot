@@ -150,7 +150,6 @@ def get_week(action):
     course_weeks = cfg.subject_data["course_weeks"]
     if num_week > int(course_weeks):
       num_week = int(course_weeks)
-    num_week = 8
     if action == "num":
       return num_week
     elif action == "text":

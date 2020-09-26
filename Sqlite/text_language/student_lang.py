@@ -110,7 +110,7 @@ def my_grade(lang, action, week, stu_data=""):
     elif action == "no_active":
       return f"{Title}Actualmente no existen actividades calificadas.\n\nTu factor de riesgo académico es: <b>Ninguno</b>.\nTu máxima calificación posible es: <b>10</b>"
     elif action == "no_email":
-      return f"{Title}La base de datos aún no tiene registrado tu email."
+      return f"{Title}La base de datos aún no tiene registrado tu email. Ponte en contacto con tu profesor/a."
   else:
     Title = f"<b>MY GRADE WEEK {week}</b>\n\n"
     if action == "grades":
@@ -118,7 +118,9 @@ def my_grade(lang, action, week, stu_data=""):
     elif action == "no_active":
       return f"{Title}There are currently no qualified activities.\n\nYour academic risk factor is: <b>None</b>.\nYour highest possible grade is: <b>10</b>."
     elif action == "no_email":
-      return f"{Title}The database has not yet registered your email."
+      return (
+        f"{Title}The database has not yet registered your email. Contact your teacher."
+      )
 
 
 def menu_opinion(lang):
@@ -258,7 +260,7 @@ def opn_tea_meeting(lang, action, meeting=""):
     elif action == "no_meetings":
       return f"{Title}Aún no se ha realizado ninguna meeting ó ya has evaluado las meetings hasta la fecha. Regresa después."
     elif action == "scale":
-      return f"{Title}¿Como consideras que fue la actuación del docente en la <b>meeting {meeting}</b>?."
+      return f"{Title}¿Como consideras que fue la actuación de tu profesor/a en la <b>meeting {meeting}</b>?."
     elif action == "success":
       return f"Se ha guardado correctamente tu evaluación."
 
