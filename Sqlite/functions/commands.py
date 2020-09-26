@@ -1,21 +1,17 @@
 import inspect
 import logging
-import threading
-
-import pandas as pd
-from telegram import ChatAction
-from telegram import InlineKeyboardButton as IKButton
-from telegram import InlineKeyboardMarkup as IKMarkup
 
 import config.config_file as cfg
 import config.db_sqlite_connection as sqlite
-from functions import bot_functions as b_fun
-from functions import general_functions as g_fun
 from text_language import bot_lang as b_lang
 from text_language import general_lang as g_lang
 from text_language import student_lang as s_lang
 from text_language import teacher_lang as t_lang
-from user_types import Student, Teacher
+
+# from functions.user_types import Student, Teacher
+
+from functions import bot_functions as b_fun
+from functions import general_functions as g_fun
 
 
 def start(update, context):

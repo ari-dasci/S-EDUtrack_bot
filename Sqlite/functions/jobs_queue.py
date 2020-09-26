@@ -1,15 +1,17 @@
 # from datetime import time, datetime
-import inspect
-import telegram.ext
 import datetime
+import inspect
 import sys
-import pandas as pd
-from time import time, localtime, sleep
+from time import localtime, sleep, time
+
 import config.config_file as cfg
 import config.db_sqlite_connection as sqlite
-from user_types import Student
-from functions import general_functions as g_fun, bot_functions as b_fun
-from tqdm import trange
+import pandas as pd
+import telegram.ext
+
+from functions import bot_functions as b_fun
+from functions import general_functions as g_fun
+from functions.user_types import Student
 
 
 def weekly_arf(context):

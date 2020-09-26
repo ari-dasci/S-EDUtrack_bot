@@ -5,14 +5,15 @@ import sys
 from time import time
 
 import telegram
-from telegram.ext import Updater
-from telegram.ext import CallbackContext
+
+# from telegram.ext import CallbackContext
 from telegram.ext import CallbackQueryHandler as CQ_Hdl
 from telegram.ext import CommandHandler as Cmd_Hdl
 from telegram.ext import Filters
 from telegram.ext import MessageHandler as Msg_Hdl
+from telegram.ext import Updater
 
-import config.config_file as cfg
+
 import config.db_sqlite_connection as sqlite
 from functions import bot_functions as b_fun
 from functions import commands as cmd
@@ -116,8 +117,9 @@ def main():
 
 
 def test():
-  from functions.jobs_queue import calculate_weekly_grades as calc
+  import config.config_file as cfg
   from datetime import datetime
+  from functions.jobs_queue import calculate_weekly_grades as calc
 
   start_date = cfg.subject_data["start_date"]
   start_date = datetime.strptime(start_date, "%d/%m/%Y")
@@ -129,5 +131,5 @@ def test():
 
 
 if __name__ == "__main__":
-  test()
+  # test()
   main()

@@ -9,12 +9,12 @@ from functools import reduce
 from unicodedata import normalize
 
 from colorama import Back, Fore, init
-
 from config import config_file as cfg
 from config import db_sqlite_connection as sqlite
 from config.create_files_format import create_files
+from functions.user_types import Student, Teacher
+
 from functions import bot_functions as b_fun
-from user_types import Student, Teacher
 
 
 def config_subject():

@@ -2,12 +2,12 @@ import contextlib
 import inspect
 import os
 import sqlite3
-import sys
+
 
 import pandas as pd
+from functions import general_functions as g_fun
 
 import config.config_file as cfg
-from functions import general_functions as g_fun
 
 db_path = f"./DB/{cfg.subject_data['_id']}.db"
 

@@ -1,24 +1,21 @@
-import bisect
 import inspect
 import operator
 import os
 import threading
 from datetime import datetime, timedelta
-from time import time
 from urllib.request import urlopen
-
-from telegram import InlineKeyboardMarkup as IKMarkup, InlineKeyboardButton as IKButton
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 import config.config_file as cfg
 import config.db_sqlite_connection as sqlite
-import numpy as np
 import pandas as pd
-from functions import bot_functions as b_fun
-from functions import general_functions as g_fun
+from telegram import InlineKeyboardButton as IKButton
+from telegram import InlineKeyboardMarkup as IKMarkup
 from text_language import general_lang as g_lang
 from text_language import student_lang as s_lang
 from text_language import teacher_lang as t_lang
+
+from functions import bot_functions as b_fun
+from functions import general_functions as g_fun
 
 
 class User:
