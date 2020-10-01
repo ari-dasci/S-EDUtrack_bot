@@ -193,13 +193,13 @@ def opn_tea_practice(lang, action, week, criterion=""):
 
 
 ### MENU opn_collaboration
-def opn_collaboration(lang, action, week, data=""):
+def opn_collaboration(lang, action, week, classmate=""):
   if lang == "es":
     Title = f"<b>OPINION SOBRE LA COLABORACION ENTRE COMPAÑEROS\nSEMANA {week}</b>\n"
     if action == "choice":
       return f"{Title}Selecciona una opción."
     elif action == "scale":
-      return f"{Title}¿Cómo consideras que ha sido la colaboración de tu compañero/a <b>{data['name']}</b> con el username <b>{data['username']}</b> en las tareas y actividades de tu planeta durante esta semana?."
+      return f"{Title}¿Cómo consideras que ha sido la colaboración de tu compañero/a <b>{classmate['name']}</b> con el username <b>{classmate['username']}</b> en las tareas y actividades de tu planeta durante esta semana?."
     elif action == "no_classmates":
       return f"No hay compañeros de equipo que evaluar o ya has evaluado a todos en esta semana. Regresa en otro momento o la siguiente semana."
     elif action == "success":
@@ -209,7 +209,7 @@ def opn_collaboration(lang, action, week, data=""):
     if action == "choice":
       return f"{Title}Select an option:"
     elif action == "scale":
-      return f"<b>PEER COLLABORATION OPINION\nWEEK {week}</b>\n\nHow do you consider the collaboration of your teammate <b>{data['name']}</b> with the username <b>{data['username']}</b> in the tasks and activities of your planet during this week?"
+      return f"<b>PEER COLLABORATION OPINION\nWEEK {week}</b>\n\nHow do you consider the collaboration of your teammate <b>{classmate['name']}</b> with the username <b>{classmate['username']}</b> in the tasks and activities of your planet during this week?"
     elif action == "no_classmates":
       return f"There are no teammates to evaluate or you have already evaluated everyone this week. Come back at another time or the next week."
     elif action == "success":
@@ -276,6 +276,8 @@ def opn_tea_meeting(lang, action, meeting=""):
       return f"Your evaluation has been saved correctly."
 
 
+## MENU EVALUATE
+# CAMBIAR POR ACTIVE_EVALUATE
 def evaluate(lang, action):
   if lang == "es":
     if action == "not_available":
@@ -283,6 +285,165 @@ def evaluate(lang, action):
   else:
     if action == "not_available":
       return f"<b>EVALUATE</b>\nAt the moment this function is not available. Ask your teacher for information."
+
+
+def menu_evaluate(lang):
+  if lang == "es":
+    text = "<b>EVALUAR</b>\nSelecciona una opción:"
+    opt = [
+      [IKButton("Autoevaluación", callback_data="s_menu-eva-auto")],
+      [IKButton("Colaboración entre compañeros", callback_data="s_menu-eva-coll")],
+      [IKButton("Docente", callback_data="s_menu-eva-teacher")],
+      [IKButton("Regresar", callback_data="s_menu-back")],
+    ]
+  else:
+    text = "<b>EVALUATE</b>\nSelect an option:"
+    opt = [
+      [IKButton("Self-Evaluation", callback_data="s_menu-eva-auto")],
+      [IKButton("Peer Collaboration", callback_data="s_menu-eva-coll")],
+      [IKButton("Teacher", callback_data="s_menu-eva-teacher")],
+      [IKButton("Back", callback_data="s_menu-back")],
+    ]
+  return (text, opt)
+
+
+def eva_autoevaluation(language, action, question="", next_=""):
+  if language == "es":
+    Title = "<b>AUTOEVALUACION</b>\n\n"
+    if action == "init":
+      text = f"{Title}A continuación se te presentaran 5 preguntas.\n\nDeberás responder SI o NO de forma honesta.\n"
+      opt = [
+        [IKButton("Iniciar Autoevaluación", callback_data="s_menu-eva-auto-init")],
+        [IKButton("Regresar", callback_data="s_menu-eva")],
+      ]
+    elif action == "continue":
+      text = f"{Title}Ya has respondido algunas preguntas, así que continuemos con tu autoevaluación.\n"
+      opt = [
+        [
+          IKButton("Continuar Autoevaluación", callback_data="s_menu-eva-auto-continue")
+        ],
+        [IKButton("Regresar", callback_data="s_menu-eva")],
+      ]
+    elif action == "question":
+      if question == "Q1":
+        text = f"{Title}1.- ¿Tienes un plan de estudio específico a seguir en esta asignatura?"
+      elif question == "Q2":
+        text = (
+          f"{Title}2.- En caso de tener una planificación, ¿la usas con frecuencia?"
+        )
+      elif question == "Q3":
+        text = f"{Title}3.- ¿Esta asignatura te frustra de alguna forma?"
+      elif question == "Q4":
+        text = (
+          f"{Title}4.- ¿Consideras que estudias con responsabilidad en esta asignatura?"
+        )
+      elif question == "Q5":
+        text = f"{Title}5.- En todos los temas se ha proporcionado una bibliografía asociada, ¿la has consultado?"
+      opt = [
+        [IKButton("SI", callback_data=f"s_menu-eva-auto-{question}-1")],
+        [IKButton("NO", callback_data=f"s_menu-eva-auto-{question}-0")],
+      ]
+      return (text, opt)
+    elif action == "response":
+      if question == "RQ1":
+        text = "<b>PLAN DE ESTUDIO</b>\n\nLa manera en que se planifica y organiza el tiempo es una cuestión de hábitos, y determina, en gran medida el aprovechamiento del tiempo y, por tanto, el rendimiento académico."
+      elif question == "RQ2":
+        text = "<b>CREA HABITOS</b>\n\nSigue tu horario hasta que hayas adquirido el hábito de estudio/trabajo. Estudiando seis días a la semana, el mismo número de horas y a la misma hora facilita la aparición y consolidación del hábito."
+      elif question == "RQ3":
+        text = "<b>EVITA LA FRUSTRACIÓN</b>\n\nMantener altos niveles de atención y concentración requiere a veces mucho esfuerzo. Vigila tu tolerancia a la frustración. Si pretendes hacerlo todo de golpe, es probable que no lo logres."
+      elif question == "RQ4":
+        text = "<b>EVITA PROCRASTINAR</b>\n\nRechaza el hábito de la procrastinación: “dejarlo para después”. Todos procrastinamos nuestras responsabilidades de vez en cuando. La clave está en saber qué cosas “dejamos para luego”, cómo y por qué."
+      elif question == "RQ5":
+        text = "<b>LEER LA BIBLIOGRAFIA</b>\n\nLa lectura de la bibliografía asociada, es el paso imprescindible para comprender el contenido y extraer las ideas principales del texto. Lo que supone también aprender y utilizar con propiedad los términos específicos de la materia."
+      opt = [[IKButton("Continuar", callback_data=f"s_menu-eva-auto-{next_}")]]
+      return (text, opt)
+    elif action == "success":
+      return f"{Title}Ya has realizado la autoevaluación."
+    return (text, opt)
+  else:
+    Title = "<b>SELF-EVALUATION</b>\n\n"
+    if action == "init":
+      text = f"{Title}You will then be asked 5 questions.\n\nYou must answer YES or NO honestly.\n"
+      opt = [
+        [IKButton("Start Self-Evaluation", callback_data="s_menu-eva-auto-init")],
+        [IKButton("Back", callback_data="s_menu-eva")],
+      ]
+    elif action == "continue":
+      text = f"{Title}You've already answered a few questions, so let's get on with your self-evaluation.\n"
+      opt = [
+        [
+          IKButton("Continue Self-Evaluation", callback_data="s_menu-eva-auto-continue")
+        ],
+        [IKButton("Back", callback_data="s_menu-eva")],
+      ]
+    elif action == "question":
+      if question == "Q1":
+        text = (
+          f"{Title}1.- Do you have a specific study plan to follow in this subject?"
+        )
+      elif question == "Q2":
+        text = f"{Title}2.- If you have a plan, do you use it regularly?"
+      elif question == "Q3":
+        text = f"{Title}3.- Does this course frustrate you in any way?"
+      elif question == "Q4":
+        text = f"{Title}4.- Do you think you study responsibly in this course?"
+      elif question == "Q5":
+        text = f"{Title}5.- In all subjects an associated bibliography has been provided, have you consulted it?"
+      opt = [
+        [IKButton("YES", callback_data=f"s_menu-eva-auto-{question}-1")],
+        [IKButton("NO", callback_data=f"s_menu-eva-auto-{question}-0")],
+      ]
+    elif action == "response":
+      if question == "RQ1":
+        text = "<b>STUDY PLAN</b>\n\nThe way time is planned and organized is a matter of habits, and determines to a large extent the use of time and, therefore, academic performance."
+      elif question == "RQ2":
+        text = "<b>CREATE HABITS</b>\n\nFollow your schedule until you have acquired the habit of study/work. By studying six days a week, the same number of hours at the same time facilitates the emergence and consolidation of the habit."
+      elif question == "RQ3":
+        text = "<b>AVOID FRUSTRATION</b>\n\nMaintaining high levels of attention and concentration sometimes requires a lot of effort. Watch your tolerance for frustration. If you intend to do it all at once, you probably won't make it."
+      elif question == "RQ4":
+        text = "<b>AVOID PROCRASTINATING</b>\n\nReject the habit of procrastination: 'Leave it for later'. We all postpone our responsibilities from time to time. The key is to know what we 'leave for later', how and why."
+      elif question == "RQ5":
+        text = "<b>READ THE BIBLIOGRAPHY</b>\n\nThe reading of the associated bibliography is the essential step to understand the content and extract the main ideas of the text. This also implies learning and using the specific terms of the subject."
+      opt = [[IKButton("NEXT", callback_data=f"s_menu-eva-auto-{next_}")]]
+      return (text, opt)
+    elif action == "success":
+      return f"{Title}You've already done the self-evaluation."
+
+    return (text, opt)
+
+
+def eva_collaboration(language, action, classmate=""):
+  if language == "es":
+    if action == "choice":
+      return f"<b>EVALUACION SOBRE LA COLABORACION ENTRE COMPAÑEROS</b>\n\nSelecciona una opción:"
+    if action == "no_planet":
+      return f"<b>EVALUACION SOBRE LA COLABORACION ENTRE COMPAÑEROS</b>\nAún no estás registrado en ningún planeta."
+    elif action == "scale":
+      return f"<b>EVALUACION SOBRE LA COLABORACION ENTRE COMPAÑEROS</b>\n\n¿Cómo consideras que ha sido la colaboración de tu compañero/a <b>{classmate['name']}</b> con el username <b>{classmate['username']}</b> en las tareas de tu planeta en general?."
+    elif action == "no_classmates":
+      return f"<b>EVALUACION SOBRE LA COLABORACION ENTRE COMPAÑEROS:</b>\n\nNo hay compañeros de equipo que evaluar o ya has evaluado a todos."
+    elif action == "success":
+      return f"<b>EVALUACION SOBRE LA COLABORACION ENTRE COMPAÑEROS:</b>\n\nSe ha guardado correctamente tu evaluación.\n\nSelecciona una opción."
+
+  else:
+    if action == "choice":
+      return f"<b>PEER COLLABORATION EVALUATION</b>\n\nSelect an option:"
+    if action == "no_planet":
+      return f"<b>PEER COLLABORATION EVALUATION</b>\nYou're not registered in any planet yet."
+    elif action == "scale":
+      return f"<b>PEER COLLABORATION EVALUATION</b>\n\nHow do you think your team-mate <b>{classmate['name']}</b> with the username <b>{classmate['username']}</b>, has collaborated in the tasks of your planet in general?."
+    elif action == "no_classmates":
+      return f"<b>PEER COLLABORATION EVALUATION</b>\n\nThere are no team-mates to evaluate or you have already evaluated everyone this week. Come back at another time or the next week."
+    elif action == "success":
+      return f"<b>PEER COLLABORATION EVALUATION</b>\n\nYour evaluation has been saved correctly.\n\nSelect an option:"
+
+
+def eva_teacher(language, action):
+  if language == "es":
+    if action == "sucess":
+      return "<b>EVALUACION DOCENTE</b>\n\nYa has evaluado al docente."
+    if action == "scale":
+      return "<b>EVALUACION DOCENTE</b>\n\n¿Cómo consideras que fue la comunicación con tu <b>profesor/a</b> durante los meetings."
 
 
 def suggestion(lang, action):

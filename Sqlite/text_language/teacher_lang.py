@@ -496,7 +496,7 @@ def menu_stu_modify(lang, action, headers="", data=""):
   if lang == "es":
     Title = "<b>MODIFICAR ESTUDIANTE:</b>\n"
     if action == "cmd":
-      return f"{Title}Para modificar el nombre de un estudiante escribe el comando:\n<code>/modify_student {lt}email{gt} {lt}campo a modificar{gt} {lt}nuevo contenido{gt}</code>\n\nLos campos que puedes modificar son:\n{headers}\n<b>Ejemplo:</b>\n<code>/modify_student ejemplo@correo.ugr.es first_name David</code>\n(Modifica el nombre del estudiante por David).\n\nPara agregar o modificar el correo de un estudiante, escribe el comando:\n<code>/modify_student {lt}username{gt} {lt}nuevo_email{gt}</code>\n<b>Ejemplo:</b>\n<code>/modify_student David_2020 nuevo@correo.ugr.es</code>\n (Modifica o agrega el nuevo email al estudiante con el username <b>David_2020</b>)."
+      return f"{Title}Los campos que puedes modificar son:\n{headers}\n\nPara modificar el nombre de un estudiante escribe el comando:\n<code>/modify_student {lt}email{gt} {lt}campo a modificar{gt} {lt}nuevo contenido{gt}</code>\n\n<b>Ejemplo:</b>\n<code>/modify_student ejemplo@correo.ugr.es first_name David</code>\n(Modifica el nombre del estudiante por David).\n\nPara agregar o modificar el correo de un estudiante, escribe el comando:\n<code>/modify_student {lt}username{gt} {lt}nuevo_email{gt}</code>\n<b>Ejemplo:</b>\n<code>/modify_student David_2020 nuevo@correo.ugr.es</code>\n (Modifica o agrega el nuevo email al estudiante con el username <b>David_2020</b>)."
     elif action == "unregistered_email":
       return f"{Title}El email {data} no se encuentra registrado."
     elif action == "unregistered_user":
@@ -508,7 +508,7 @@ def menu_stu_modify(lang, action, headers="", data=""):
   else:
     Title = "<b>MODIFY STUDENT:</b>\n"
     if action == "cmd":
-      return f"{Title}To change a student's name type the command:\n<code>/modify_student {lt}email{gt} {lt}field to modify{gt} {lt}new content{gt}</code>\n\nThe fields you can modify are:\n{headers}\n\n<b>Example:</b>\n<code>/modify_student example@correo.ugr.es first_name David</code>\n(modify the student's first name to David).\n\nTo add or modify a student's email, type the command:\n<code>/modify_student {lt}username{gt} {lt}new_email{gt}\n</code><b>Example:</b>\n<code>/modify_student David_2020 new_email@correo.ugr.es</code>\n(Modify or add the new email to the student with the username <b>David_2020</b>)."
+      return f"{Title}The fields you can modify are:\n{headers}\n\nTo change a student's name type the command:\n<code>/modify_student {lt}email{gt} {lt}field to modify{gt} {lt}new content{gt}</code>\n\n<b>Example:</b>\n<code>/modify_student example@correo.ugr.es first_name David</code>\n(modify the student's first name to David).\n\nTo add or modify a student's email, type the command:\n<code>/modify_student {lt}username{gt} {lt}new_email{gt}\n</code><b>Example:</b>\n<code>/modify_student David_2020 new_email@correo.ugr.es</code>\n(Modify or add the new email to the student with the username <b>David_2020</b>)."
     elif action == "unregistered_email":
       return f"{Title}The email {data} is not registered."
     elif action == "unregistered_user":
@@ -586,6 +586,15 @@ def menu_activate_eva(lang, state):
       return f"The evaluations have been activated."
     elif state == 0:
       return f"The evaluations have been deactivated."
+
+      ### Menu: Messages ###
+
+
+def send_msg_planet(lang):
+  if lang == "es":
+    return f"<b>ENVIAR MENSAJE A LOS PLANETAS</b>\n\nEscribe el comando <code>/send_message {lt}Mensaje a enviar{gt}</code>\n\n<b>Ejemplo</b>:\n<code>/send_message Se les recuerda que deben realizar la autoevaluación desde el menu Evaluar --> Autoevaluación</code>"
+  else:
+    return f"<b>SEND MESSAGE TO THE PLANETS</b>\n\nType the command <code>/send_message {lt}Message to send{gt}\n\n<b>Example</b>:\n<code>/send_message You are reminded to realize the autoevaluation from the menu Evaluate --> Autoevaluation</code>"
 
 
 def meeting(lang, action, meeting_num="", planet=""):

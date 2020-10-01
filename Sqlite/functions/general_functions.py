@@ -127,11 +127,11 @@ def get_user_data(user_data, planet=""):
 def get_weekday_monday(date):
   try:
     day = date.strftime("%A")
-    if day != "Monday":
+    if day != "Saturday":
       for i in range(1, 8):
         monday_date = date - timedelta(days=i)
         day = monday_date.strftime("%A")
-        if day == "Monday":
+        if day == "Saturday":
           return monday_date
     else:
       return date

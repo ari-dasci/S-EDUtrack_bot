@@ -8,10 +8,11 @@ from text_language import general_lang as g_lang
 from text_language import student_lang as s_lang
 from text_language import teacher_lang as t_lang
 
-# from functions.user_types import Student, Teacher
-
 from functions import bot_functions as b_fun
 from functions import general_functions as g_fun
+
+##################
+# GENERAL COMMANDS
 
 
 def start(update, context):
@@ -109,67 +110,6 @@ def help(update, context):
     return False
 
 
-def check_email(update, context):
-  try:
-    chat = update._effective_message
-    user_data = update._effective_user
-    if chat.chat_id > 0:
-      if cfg.config_files_set:
-        user = g_fun.get_user_data(user_data)
-        if user:
-          user.check_email(update, context)
-        else:
-          text = b_lang.no_username(user_data.language_code)
-          update.message.reply_text(text)
-          return False
-      else:
-        text = s_lang.not_config_files_set(user.language, context)
-        context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
-  except:
-    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-    g_fun.print_except(error_path)
-    return False
-
-
-def add_teacher(update, context):
-  try:
-    chat = update._effective_message
-    user = g_fun.get_user_data(update._effective_user)
-    if chat.chat_id > 0:
-      if len(context.args) == 2:
-        username_teacher = context.args[0].upper()
-        email_teacher = context.args[1].lower()
-        sql = f"SELECT COUNT(*) FROM teachers WHERE username = '{username_teacher}'"
-        if not sqlite.execute_sql(sql, fetch="fetchone")[0]:
-          sql = f"SELECT * FROM telegram_users WHERE username='{username_teacher}'"
-          teacher_data = sqlite.execute_sql(sql, "fetchone", as_dict=True)
-
-          if teacher_data:
-            teacher_data = dict(teacher_data)
-            values = f"""
-            '{email_teacher}', '{teacher_data["telegram_name"]}', '{username_teacher}',{teacher_data["_id"]}
-            """
-            sql = f"INSERT INTO teachers VALUES({values})"
-            sqlite.execute_sql(sql)
-            text = t_lang.add_teacher(user.language, "sucess", username_teacher)
-          else:
-            text = t_lang.add_teacher(
-              user.language, "not_found", user.username, context.bot.username
-            )
-
-        else:
-          text = t_lang.add_teacher(user.language, "already")
-      else:
-        text = g_lang.wrong_num_arguments(user.language) + t_lang.add_teacher(
-          user.language, "text", bot_username=context.bot.username, title=False
-        )
-      context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
-  except:
-    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-    g_fun.print_except(error_path)
-    return False
-
-
 def menu(update, context):
   """[summary]
 
@@ -205,6 +145,10 @@ def menu(update, context):
     return False
 
 
+##################
+# TEACHER COMMANDS
+
+
 def grade_activity(update, context):
   try:
     chat = update._effective_message
@@ -214,7 +158,10 @@ def grade_activity(update, context):
       if user:
         if user.is_teacher:
           user.grade_activity_cmd(update, context)
-
+      else:
+        text = b_lang.no_username(update._effective_user.language_code)
+        update.message.reply_text(text)
+        return False
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
@@ -228,9 +175,13 @@ def set_meeting(update, context):
     if chat.chat_id < 0:
       planet = g_fun.strip_accents(chat.chat.title)
       user = g_fun.get_user_data(user_data, planet)
-      if user.is_teacher:
-        user.set_meetings(update, context, chat)
-
+      if user:
+        if user.is_teacher:
+          user.set_meetings(update, context, chat)
+      else:
+        text = b_lang.no_username(update._effective_user.language_code)
+        update.message.reply_text(text)
+        return False
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
@@ -245,14 +196,102 @@ def modify_student(update, context):
       if user:
         if user.is_teacher:
           user.modify_student(update, context)
-
+    else:
+      text = b_lang.no_username(update._effective_user.language_code)
+      update.message.reply_text(text)
+      return False
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
     return False
 
 
-# STUDENTS COMMAND
+def add_teacher(update, context):
+  try:
+    chat = update._effective_message
+    user = g_fun.get_user_data(update._effective_user)
+    if user:
+      if chat.chat_id > 0:
+        if len(context.args) == 2:
+          username_teacher = context.args[0].upper()
+          email_teacher = context.args[1].lower()
+          sql = f"SELECT COUNT(*) FROM teachers WHERE username = '{username_teacher}'"
+          if not sqlite.execute_sql(sql, fetch="fetchone")[0]:
+            sql = f"SELECT * FROM telegram_users WHERE username='{username_teacher}'"
+            teacher_data = sqlite.execute_sql(sql, "fetchone", as_dict=True)
+
+            if teacher_data:
+              teacher_data = dict(teacher_data)
+              values = f"""
+              '{email_teacher}', '{teacher_data["telegram_name"]}', '{username_teacher}',{teacher_data["_id"]}
+              """
+              sql = f"INSERT INTO teachers VALUES({values})"
+              sqlite.execute_sql(sql)
+              text = t_lang.add_teacher(user.language, "sucess", username_teacher)
+            else:
+              text = t_lang.add_teacher(
+                user.language, "not_found", user.username, context.bot.username
+              )
+
+          else:
+            text = t_lang.add_teacher(user.language, "already")
+        else:
+          text = g_lang.wrong_num_arguments(user.language) + t_lang.add_teacher(
+            user.language, "text", bot_username=context.bot.username, title=False
+          )
+        context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+    else:
+      text = b_lang.no_username(update._effective_user.language_code)
+      update.message.reply_text(text)
+      return False
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
+
+
+def send_msg_planets(update, context):
+  try:
+    chat = update._effective_message
+    if chat.chat_id > 0:
+      user = g_fun.get_user_data(update._effective_user)
+      if user:
+        if user.is_teacher:
+          user.send_msg_planets(update, context)
+      else:
+        text = b_lang.no_username(update._effective_user.language_code)
+        update.message.reply_text(text)
+        return False
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
+
+
+###################
+# STUDENTS COMMANDS
+
+
+def check_email(update, context):
+  try:
+    chat = update._effective_message
+    user_data = update._effective_user
+    if chat.chat_id > 0:
+      if cfg.config_files_set:
+        user = g_fun.get_user_data(user_data)
+        if user:
+          user.check_email(update, context)
+        else:
+          text = b_lang.no_username(user_data.language_code)
+          update.message.reply_text(text)
+          return False
+      else:
+        text = s_lang.not_config_files_set(user.language, context)
+        context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    g_fun.print_except(error_path)
+    return False
 
 
 def suggestion(update, context):

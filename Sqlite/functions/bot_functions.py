@@ -41,7 +41,7 @@ def send_action(action):
   return decorator
 
 
-def received_message(update, context):
+def user_send_message(update, context):
   """Receives a message from the user that is not a command. Identifies whether the user is a student or a teacher and redirects to the corresponding function.
 
   Args:
@@ -55,7 +55,7 @@ def received_message(update, context):
     user = g_fun.get_user_data(user_data, planet)
     # get_user_data returns False if the user does not have the username set up
     if user:
-      user.received_message(update, context)
+      user.user_send_message(update, context)
     else:
       text = b_lang.no_username(user_data.language_code)
       update.message.reply_text(text)
@@ -265,12 +265,17 @@ def config_files_upload(update, context, user):
       all_elements = g_fun.dataframes_comparison(data_DB, df_file).drop(
         ["_merge"], axis=1
       )
-      duplicate_elements = list(
-        g_fun.dataframes_comparison(data_DB, df_file, which="both")["email"]
-      )
+      duplicate_elements = list(set(df_file["email"]) & (set(data_DB["email"])))
+
       new_elements = g_fun.dataframes_comparison(
         data_DB, df_file, which="right_only"
       ).drop(["_merge"], axis=1)
+
+      for element in duplicate_elements:
+        new_elements.drop(
+          new_elements[new_elements["email"] == element].index, inplace=True
+        )
+
       return (all_elements, duplicate_elements, new_elements)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -382,9 +387,9 @@ def config_files_upload(update, context, user):
   def calculate_grades_new_students(students):
     try:
       sql = f'SELECT category_score FROM evaluation_scheme WHERE _id="SUBJECT"'
-      max_actual_score = sqlite.execute_sql(sql, fetch="fetchone")
+      max_actual_score = sqlite.execute_sql(sql, fetch="fetchone")[0]
       if max_actual_score:
-        sql = f"""UPDATE grades SET _MAX_ACTUAL_SCORE = {max_actual_score[0]}
+        sql = f"""UPDATE grades SET _MAX_ACTUAL_SCORE = {max_actual_score}
                   WHERE _MAX_ACTUAL_SCORE = 0"""
         sqlite.execute_sql(sql, fetch="fetchall")
         df_students = pd.DataFrame(columns=["email", "SUBJECT"])
@@ -411,7 +416,9 @@ def config_files_upload(update, context, user):
     df_file = pd.read_csv(urlopen(f_path), encoding="UTF-8-sig")
 
     file_headers = temp.readline().decode("UTF-8-sig")
-    file_headers = set(file_headers[:-2].split(","))
+    file_headers = file_headers.replace("\n", "")
+    file_headers = file_headers.replace("\r", "")
+    file_headers = set(file_headers.split(","))
 
     # Revisa que los archivos y nombres de columnas sean correctos
     if "students" in doc.file_name:
@@ -442,6 +449,7 @@ def config_files_upload(update, context, user):
       df_file.to_csv(f_save_name, index=False)
       if elements == "activities" and upload_data:
         create_evaluation_scheme(df_file[["_id", "weight", "category"]].copy())
+        cfg.active_activities = False
 
     if upload_data:
       if g_fun.are_config_files_set():
@@ -486,7 +494,7 @@ def config_files_upload(update, context, user):
         text = t_lang.config_files(user.language, "ready_one", missing_file)
         context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
     else:
-      text = g_lang.config_files(user.language, "error_upload_file", doc.file_name)
+      text = g_lang.error_upload_file(user.language, doc.file_name)
       context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
       return False
   except:
@@ -589,11 +597,11 @@ def options_menu(update, context):
                 text, options = s_lang.menu_evaluate(user.language)
                 show_menu(query, text, options)
               elif selections[2] == "auto":
-                user.eva_autoevaluation(context, query, user, selections)
+                user.eva_autoevaluation(context, query, selections)
               elif selections[2] == "coll":
-                user.eva_collaboration(context, query, user, selections)
+                user.eva_collaboration(context, query, selections)
               elif selections[2] == "teacher":
-                user.eva_teacher(context, query, user, selections)
+                user.eva_teacher(context, query, selections)
             else:
               text = s_lang.evaluate(user.language, "not_available")
               query.edit_message_text(parse_mode="HTML", text=text)
@@ -669,7 +677,7 @@ def options_menu(update, context):
               query.edit_message_text(parse_mode="HTML", text=text)
               config_files_send_document(context, user, "students")
             elif selections[2] == "modify":
-              headers = "first_name\nlast_name"
+              headers = "First_name\nLast_name\nEmail"
               text = t_lang.menu_stu_modify(user.language, headers)
               query.edit_message_text(parse_mode="HTML", text=text)
             elif selections[2] == "delete":
@@ -684,8 +692,10 @@ def options_menu(update, context):
             else:
               user.reports(update, context, selections[2], query)
           elif selections[1] == "activate_eva":
-            user.activate_eva(update, context)
-
+            user.activate_eva(update, context, query)
+          elif selections[1] == "msg":
+            text = t_lang.send_msg_planet(user.language)
+            context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
     else:
       text = b_lang.no_username(update._effective_user.language_code)
       update.message.reply_text(text)
@@ -1043,9 +1053,9 @@ def thread_grade_activities(update, context, df_grades, user, meeting=False):
                 parent_weight = weights[parent] if parent != "SUBJECT" else 1
                 actual_grade = grade * weight * parent_weight / max_actual_score
                 df_actual_grades[category] = round(actual_grade, 10)
-              else:
-                df_actual_grades[parent] = df_grades[category] / 10 / max_actual_score
 
+              else:
+                df_actual_grades["SUBJECT"] = df_grades[category] / max_actual_score
           sqlite.save_elements_in_DB(df_actual_grades, "actual_grades")
         except:
           error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"

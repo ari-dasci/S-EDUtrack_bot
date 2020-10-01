@@ -195,7 +195,7 @@ class Student(User):
       g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
-  def received_message(self, update, context):
+  def user_send_message(self, update, context):
     try:
       chat = update._effective_message
       from_planet = False
@@ -276,7 +276,7 @@ class Student(User):
         student_data = {}
         if data:
           student_data["linguistic"] = linguistic_arf
-          student_data["actual_grade"] = round(data[1] * max_activity_grade, 3)
+          student_data["actual_grade"] = round(data[1], 3)
           student_data["max_possible_grade"] = round(data[2], 3)
         return student_data
       except:
@@ -451,7 +451,8 @@ class Student(User):
     def select_classmate():
       try:
         sql_evaluated = f"""SELECT classmate_id FROM opn_collaboration
-                        WHERE _id = {self._id} and planet = '{self.planet}'"""
+                        WHERE _id = {self._id} and planet = '{self.planet}'
+                        and week = {num_week}"""
         sql = f"""SELECT _id, username FROM registered_students
                 WHERE _id <>{self._id} and
                 _id not in ({sql_evaluated})"""
@@ -480,7 +481,6 @@ class Student(User):
 
     def select_value():
       try:
-
         df_stu_reg = cfg.registered_stu.copy()
         df_stu_reg.set_index("_id", inplace=True)
         data = {}
@@ -731,6 +731,201 @@ class Student(User):
     except:
       g_fun.print_except(inspect.stack()[0][3], user, selections)
 
+  def eva_autoevaluation(self, context, query, selections):
+    def check_status():
+      """Check if some questions have already been answered, start or finish the self-assessment.
+      """
+      try:
+        sql = f"SELECT COUNT(*) FROM eva_autoevaluation WHERE _id = {self._id}"
+        num_questions = sqlite.execute_sql(sql, fetch="fetchone")[0]
+        if not num_questions:
+          text, options = s_lang.eva_autoevaluation(self.language, "init")
+          b_fun.show_menu(query, text, options)
+        elif num_questions < 5:
+          text, options = s_lang.eva_autoevaluation(self.language, "continue")
+          b_fun.show_menu(query, text, options)
+        else:
+          text = s_lang.eva_autoevaluation(self.language, "success")
+          query.edit_message_text(parse_mode="HTML", text=text)
+
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        return False
+
+    def show_questions():
+      """Displays the corresponding question or feedback.
+      """
+      try:
+        question = ""
+        if selections[3] == "init":
+          question = "Q1"
+        elif selections[3] == "continue":
+          sql = f"""SELECT MAX(question) FROM eva_autoevaluation
+                  WHERE _id = {self._id}"""
+          question = sqlite.execute_sql(sql, fetch="fetchone")[0]
+          question = f"Q{str(question+1)}"
+        elif selections[3] == "end":
+          text = s_lang.eva_autoevaluation(self.language, "success")
+          query.edit_message_text(parse_mode="HTML", text=text)
+        else:
+          question = selections[3]
+
+        if question:
+          text, options = s_lang.eva_autoevaluation(
+            self.language, "question", question=question
+          )
+          b_fun.show_menu(query, text, options)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        return False
+
+    def set_value():
+      """Saves in the database the value corresponding to each question.
+      """
+      try:
+        question = selections[3]
+        num_question = int(question[1:])
+        value = int(selections[4])
+
+        if question == "Q3":
+          value = 1 if value == 0 else 0
+
+        sql = f"""SELECT COUNT(*) FROM eva_autoevaluation
+                  WHERE _id = {self._id} and question = {num_question}"""
+        if not sqlite.execute_sql(sql, fetch="fetchone")[0]:
+          sql = f"""INSERT OR IGNORE INTO eva_autoevaluation
+                  VALUES({self._id}, {num_question}, {value})"""
+          sqlite.execute_sql(sql)
+
+        next_question = "end" if num_question == 5 else "Q" + str(num_question + 1)
+
+        text, options = s_lang.eva_autoevaluation(
+          self.language, "response", question=f"R{question}", next_=next_question
+        )
+        b_fun.show_menu(query, text, options)
+
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        return False
+
+    try:
+      if len(selections) == 3:
+        check_status()
+      elif len(selections) == 4:
+        show_questions()
+
+      elif len(selections) == 5:
+        set_value()
+
+      return True
+
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      return False
+
+  def eva_collaboration(self, context, query, selections):
+    def select_classmate():
+      try:
+        sql_evaluated = f"""SELECT classmate_id FROM eva_collaboration
+                        WHERE _id = {self._id} and planet = '{self.planet}'"""
+        sql = f"""SELECT _id, username FROM registered_students
+                WHERE _id <>{self._id} and
+                _id not in ({sql_evaluated})"""
+        classmates = sqlite.execute_sql(sql, fetch="fetchall", as_dict=True)
+        if classmates:
+          classmates = dict(classmates)
+          classmates = sorted(classmates.items(), key=operator.itemgetter(1))
+        keyboard = []
+        for classmate in classmates:
+          keyboard.append(
+            [IKButton(classmate[1], callback_data=f"s_menu-eva-coll-{classmate[0]}")]
+          )
+        back = "-".join(selections[:-1])
+        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+        if len(keyboard) == 1:
+          text = s_lang.eva_collaboration(self.language, "no_classmates")
+        else:
+          text = s_lang.eva_collaboration(self.language, "choice")
+        b_fun.show_menu(query, text, keyboard, context, self._id)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        return False
+
+    def select_value():
+      try:
+        df_stu_reg = cfg.registered_stu.copy()
+        print(df_stu_reg.head(5))
+        df_stu_reg.set_index("_id", inplace=True)
+        data = {}
+        print(df_stu_reg.loc[classmate])
+        data["name"] = df_stu_reg.loc[classmate]["full_name"]
+        data["username"] = df_stu_reg.loc[classmate]["username"]
+        options = g_lang.scale_7(self.language, query.data)
+        text = s_lang.eva_collaboration(self.language, "scale", data)
+        b_fun.show_menu(query, text, options)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        return False
+
+    def set_value():
+      try:
+        sql = f"""INSERT OR IGNORE INTO eva_collaboration
+              VALUES({self._id}, '{self.planet}',{classmate},'{value}')"""
+        sqlite.execute_sql(sql)
+        text = s_lang.eva_collaboration(self.language, "success")
+        query.edit_message_text(parse_mode="HTML", text=text)
+        self.eva_collaboration(context, query="", selections=selections[:-2])
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        return False
+
+    try:
+      if len(selections) > 3:
+        classmate = int(selections[3])
+        if len(selections) > 4:
+          value = selections[4]
+          set_value()
+        else:
+          select_value()
+      else:
+        select_classmate()
+
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      return False
+
+  def eva_teacher(self, context, query, selections):
+    try:
+      sql = f"""SELECT COUNT(*) FROM eva_teacher WHERE _id= {self._id}"""
+      if not sqlite.execute_sql(sql, fetch="fetchone")[0]:
+        if len(selections) == 3:
+          text = s_lang.eva_teacher(self.language, "scale")
+          options = g_lang.scale_7(self.language, query.data)
+          b_fun.show_menu(query, text, options)
+
+        elif len(selections) == 4:
+          value = selections[3]
+          sql = f"""INSERT OR IGNORE INTO eva_teacher
+                  VALUES({self._id}, '{self.planet}','{value}')"""
+          sqlite.execute_sql(sql)
+          self.eva_teacher(context, query, selections[:-1])
+      else:
+        text = s_lang.eva_teacher(self.language, "sucess")
+        query.edit_message_text(parse_mode="HTML", text=text)
+
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      return False
+
   def suggestion(self, update, context):
     try:
       if context.args:
@@ -824,7 +1019,7 @@ class Teacher(User):
     self.is_teacher = 1
     super().__init__(user_data, planet)
 
-  def received_message(self, update, context):
+  def user_send_message(self, update, context):
     def is_configuration_file(doc):
       try:
         if doc.file_name == "grades_format.csv":
@@ -850,7 +1045,6 @@ class Teacher(User):
 
     try:
       chat = update._effective_message
-
       if cfg.config_files_set and not chat.document:
         if chat.chat_id < 0:
           b_fun.get_admins_group(context, chat.chat_id, self.planet)
@@ -1189,7 +1383,7 @@ class Teacher(User):
       g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
       return False
 
-  def activate_eva(self, update, context):
+  def activate_eva(self, update, context, query):
     try:
       chat_id = update.callback_query.message.chat_id
       flag = 0
@@ -1197,12 +1391,30 @@ class Teacher(User):
         flag = 1 if cfg.subject_data["activate_evaluations"] == 0 else 0
         sql = f"UPDATE subject_data SET activate_evaluations={flag}"
         sqlite.execute_sql(sql)
-        cfg.subject_data["activate_evaluations"] = 0
+        cfg.subject_data["activate_evaluations"] = flag
         text = t_lang.menu_activate_eva(self.language, flag)
-        context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
+        query.edit_message_text(parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
       g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      return False
+
+  def send_msg_planets(self, update, context):
+    try:
+      chat_id = update._effective_chat.id
+      if chat_id > 0:
+        sql = "SELECT DISTINCT chat_id FROm planets"
+        planets = sqlite.execute_sql(sql, "fecthall", as_list=True)
+        print(context.args)
+        text = " ".join(context.args)
+        text = text.replace("\\n", "\n")
+        text = text.replace("\\t", "\t\t")
+        for planet in planets:
+          context.bot.sendMessage(chat_id=planet, parse_mode="HTML", text=text)
+
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
       return False
 
   def set_meetings(self, update, context, chat="", change_grades=False):
@@ -1246,9 +1458,10 @@ class Teacher(User):
 
         df_grades.insert(0, column="email", value=df_grades.index)
         df_grades.reset_index(drop=True, inplace=True)
+        meeting_data = (meeting, self.planet)
         thread_grade_meeting = threading.Thread(
           target=b_fun.thread_grade_activities,
-          args=(update, context, df_grades, self, meeting),
+          args=(update, context, df_grades, self, meeting_data),
         )
         thread_grade_meeting.start()
 

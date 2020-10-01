@@ -93,7 +93,7 @@ def main():
 
     ## Handler receiving messages
     dp.add_handler(
-      Msg_Hdl((~Filters.command) & (~Filters.status_update), b_fun.received_message)
+      Msg_Hdl((~Filters.command) & (~Filters.status_update), b_fun.user_send_message)
     )
     dp.add_handler(Msg_Hdl(Filters.status_update, b_fun.status_update))
 
@@ -103,6 +103,7 @@ def main():
     dp.add_handler(Cmd_Hdl("start_meeting", cmd.set_meeting))
     dp.add_handler(Cmd_Hdl("end_meeting", cmd.set_meeting))
     dp.add_handler(Cmd_Hdl("modify_student", cmd.modify_student))
+    dp.add_handler(Cmd_Hdl("send_message", cmd.send_msg_planets))
 
     ## Handlers Students
     dp.add_handler(Cmd_Hdl("check_email", cmd.check_email))

@@ -1,3 +1,26 @@
+subject_data = {
+  "_id": "FS1920",
+  "name": "Fundamentos del Software",
+  "start_date": "22/09/2020",
+  "course_weeks": "15",
+  "max_final_grade": "10",
+  "max_activity_grade": "10",
+  "min_grade_to_pass": "5",
+  "min_ideal_grade": "8",
+  "activate_evaluations:": "0",
+  "active_planet_registry": "1",
+}
+
+teacher_data = {
+  "email": "edutrack.ugr@gmail.com",
+  "telegram_name": "Soporte EDUtrack",
+  "username": "Soporte_EDUtrack",
+  "telegram_id": "970331050",
+  "is_teacher": 1,
+  "language": "es",
+}
+
+####################################
 standby_teachers = False
 config_files_set = False
 active_activities = False
@@ -7,29 +30,6 @@ admins_list = {}
 registered_stu = {}
 evaluation_scheme = {}
 resources = {"week": 0}
-
-subject_data = {
-  "_id": "FS1920",
-  "name": "Fundamentos del Software",
-  "start_date": "22/09/2020",
-  "course_weeks": "15",
-  "max_final_grade": "10",
-  "max_activity_grade": "10",
-  "min_grade_to_pass": "5",
-  "min_ideal_grade": "7.5",
-  "activate_evaluations:": "0",
-  "active_planet_registry": "1",
-}
-
-teacher_data = {
-  "email": "edutrack.ugr@gmail.com",
-  "telegram_name": "Profesor Edutrack",
-  "username": "Profesor_Edutrack",
-  "telegram_id": "1349123797",
-  "is_teacher": 1,
-  "language": "es",
-}
-
 
 teacher_criteria = [
   "T_VOCALIZACION",
@@ -92,6 +92,11 @@ tables = {
         value TEXT,
         FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         """,
+  "eva_autoevaluation": f"""
+        _id INTEGER NOT NULL PRIMARY KEY,
+        question INTEGER NOT NULL,
+        value TEXT,
+        FOREIGN KEY(_id) REFERENCES telegram_users(_id)""",
   "evaluation_scheme": f"""
         _id TEXT NOT NULL PRIMARY KEY,
         category_score REAL NOT NULL DEFAULT 0.0,
