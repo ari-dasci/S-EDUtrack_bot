@@ -24,9 +24,9 @@ from functions import general_functions as g_fun
 def send_action(action):
   """Decorator that sends 'action' while processing func command.
 
-  Args:
-      action (str): String with the action displayed by the bot
-  """
+    Args:
+        action (str): String with the action displayed by the bot
+    """
 
   def decorator(func):
     @wraps(func)
@@ -44,10 +44,10 @@ def send_action(action):
 def user_send_message(update, context):
   """Receives a message from the user that is not a command. Identifies whether the user is a student or a teacher and redirects to the corresponding function.
 
-  Args:
-      update (:class:'telegram-Update'): Current request received by the bot
-      context (:class:'telegram.ext-CallbackContext'): Context of the current request
-  """
+    Args:
+        update (:class:'telegram-Update'): Current request received by the bot
+        context (:class:'telegram.ext-CallbackContext'): Context of the current request
+    """
   try:
     chat_id = update.message.chat_id
     planet = g_fun.strip_accents(update.message.chat.title) if chat_id < 0 else ""
@@ -102,11 +102,11 @@ def config_files_set(update, context, user):
 def config_files_send_document(context, user, elements):
   """Sends the 'user' the requested document in 'elements'.
 
-  Args:
-      context (:class:'telegram.ext-CallbackContext'): Context of the current request.
-      user (:class:'user_types.Teacher'): General teacher information.
-      elements (str): Indicator of the document that will be sent to the user 'students' or 'activities'.
-  """
+    Args:
+        context (:class:'telegram.ext-CallbackContext'): Context of the current request.
+        user (:class:'user_types.Teacher'): General teacher information.
+        elements (str): Indicator of the document that will be sent to the user 'students' or 'activities'.
+    """
   try:
     context.bot.sendDocument(
       chat_id=user._id,
@@ -134,11 +134,11 @@ def config_files_upload(update, context, user):
   def check_students_file(df_file):
     """Prepara los datos que se insertaran en la tabla students_file y revisa que los nombres de columnas sean correctos.
 
-    Args:
-        df_file (:class:'pandas-DataFrame'): DataFrame with the student records that will be uploaded to the DB.
-    Returns:
-        bool: Returns True if the check is correct otherwise returns False.
-    """
+        Args:
+            df_file (:class:'pandas-DataFrame'): DataFrame with the student records that will be uploaded to the DB.
+        Returns:
+            bool: Returns True if the check is correct otherwise returns False.
+        """
     try:
       df_file = data_preparation(df_file, "students")
       # Elimina los archivos generados al solicitar el reporte de estudiantes.
@@ -159,10 +159,10 @@ def config_files_upload(update, context, user):
   def check_activities_file(df_file):
     """Check that the activities_format file meets the necessary requirements before it is uploaded to the DB.
 
-      Args:
-        df_file (:class:'pandas-DataFrame'): DataFrame with the activity records that will be uploaded to the DB.
-        elements (str): elements (str): Indicator that you are working with activities.
-    """
+        Args:
+          df_file (:class:'pandas-DataFrame'): DataFrame with the activity records that will be uploaded to the DB.
+          elements (str): elements (str): Indicator that you are working with activities.
+        """
 
     def are_categories_defined(root_category):
       try:
@@ -285,15 +285,15 @@ def config_files_upload(update, context, user):
   def create_grades_table(students, add_elements=False):
     """Creates the table 'element_liste database from the file of students and activities uploaded by the teacher.
 
-    Args:
-        update (:class:'telegram-Update'): Current request received by the bot.
-        context (:class:'telegram.ext-CallbackContext'): Context of the current request.
-        students (list): List of students to be saved in the 'grades' table
-        add_elements (bool, optional): Indicates if new elements will be added or if the table will be created. Defaults to False.
+        Args:
+            update (:class:'telegram-Update'): Current request received by the bot.
+            context (:class:'telegram.ext-CallbackContext'): Context of the current request.
+            students (list): List of students to be saved in the 'grades' table
+            add_elements (bool, optional): Indicates if new elements will be added or if the table will be created. Defaults to False.
 
-    Returns:
-        bool: Returns True if the process is correct otherwise returns False
-    """
+        Returns:
+            bool: Returns True if the process is correct otherwise returns False
+        """
     try:
       sql = "SELECT DISTINCT _id FROM activities WHERE weight > 0"
       activities = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
@@ -384,6 +384,37 @@ def config_files_upload(update, context, user):
       g_fun.print_except(error_path)
       return False
 
+  def check_new_students(new_students):
+    try:
+      for student in new_students["email"]:
+        stu_data = new_students.loc[new_students["email"] == student]
+        username = stu_data["username"].item()
+        if username:
+          sql = f"SELECT _id FROM registered_students WHERE username = '{username}'"
+          student_id = sqlite.execute_sql(sql, fetch="fetchone")[0]
+          if student_id:
+            # Complete the student's information at registered_students
+            first_name = stu_data["first_name"].item()
+            last_name = stu_data["last_name"].item()
+            full_name = f"{last_name}, {first_name}"
+            email = stu_data["email"].item()
+            sql = f"""UPDATE registered_students
+                      SET full_name = '{full_name}', email = '{email}'
+                      WHERE username = '{username}'"""
+            sqlite.execute_sql(sql)
+
+            # Check if the student has participated in meetings
+            sql = f"""SELECT meeting FROM meetings_attendance
+                    WHERE _id = {student_id}"""
+            stu_meetings = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+            for meeting in stu_meetings:
+              sql = f"UPDATE grades SET ML_MEETING_{meeting}=10 WHERE email = '{email}'"
+              sqlite.execute_sql(sql)
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path)
+      return False
+
   def calculate_grades_new_students(students):
     try:
       sql = f'SELECT category_score FROM evaluation_scheme WHERE _id="SUBJECT"'
@@ -396,7 +427,7 @@ def config_files_upload(update, context, user):
         df_students["email"] = students
         df_students.replace({np.nan: 0.0}, inplace=True)
         thread_grades = threading.Thread(
-          target=thread_grade_activities, args=(update, context, df_students, user)
+          target=thread_grade_activities, args=(context, df_students, user)
         )
         thread_grades.start()
     except:
@@ -410,8 +441,8 @@ def config_files_upload(update, context, user):
 
     # Get File from Telegram
     input_file = context.bot.get_file(doc.file_id)
-    f_path = input_file["file_path"]  # Se obtiene la ruta de descarga
-    f_save_name = f"files/config/{doc.file_name}"  # Ruta donde se guardara el archivo
+    f_path = input_file["file_path"]  # Get the download path
+    f_save_name = f"files/config/{doc.file_name}"  # Path where the file will be saved
     temp = urlopen(f_path)
     df_file = pd.read_csv(urlopen(f_path), encoding="UTF-8-sig")
 
@@ -420,7 +451,7 @@ def config_files_upload(update, context, user):
     file_headers = file_headers.replace("\r", "")
     file_headers = set(file_headers.split(","))
 
-    # Revisa que los archivos y nombres de columnas sean correctos
+    # Check that the files and column names are correct
     if "students" in doc.file_name:
       table_name = "students_file"
       elements = "students"
@@ -458,6 +489,7 @@ def config_files_upload(update, context, user):
           students = list(new_elements["email"])
           if create_grades_table(students, add_elements=True):
             create_arf_tables(students, add_elements)
+            check_new_students(new_elements)
             calculate_grades_new_students(students)
             if duplicate_elements:
               elements = "\n".join(duplicate_elements)
@@ -507,12 +539,12 @@ def config_files_upload(update, context, user):
 def data_preparation(data, elements):
   """Clean and prepare the dataframe 'data' to be uploaded to the database.
 
-  Args:
-      data (:class:'pandas.DataFrame'): Records of the file to be uploaded to the DB.
-      elements (str): Indicator of the type of document you want to upload, 'students' or 'activities'.
-  Returns:
-      [pandas-DataFrame]: DataFrame clean.
-  """
+    Args:
+        data (:class:'pandas.DataFrame'): Records of the file to be uploaded to the DB.
+        elements (str): Indicator of the type of document you want to upload, 'students' or 'activities'.
+    Returns:
+        [pandas-DataFrame]: DataFrame clean.
+    """
   try:
     ID = data.columns[0]
     data.columns = data.columns.str.replace(" ", "_")
@@ -755,8 +787,7 @@ def create_evaluation_scheme(df_activities_weights=""):
 
 
 def eva_scheme_tree():
-  """ Crea el esquema de evaluación, que consiste en las categorías y subcategorias, así como su valor en la evaluación.
-  """
+  """Crea el esquema de evaluación, que consiste en las categorías y subcategorias, así como su valor en la evaluación."""
   try:
     cfg.evaluation_scheme = {}
     sql = f"""SELECT _id, weight FROM activities
@@ -787,7 +818,7 @@ def eva_scheme_tree():
     return False
 
 
-def thread_grade_activities(update, context, df_grades, user, meeting=False):
+def thread_grade_activities(context, df_grades, user, meeting=False):
   def grade_activities(df_grades, path_file_name):
     def load_grades(df_grades, path_file_name):
       def separate_elements(df_DB, df_grades):
@@ -1010,15 +1041,15 @@ def thread_grade_activities(update, context, df_grades, user, meeting=False):
       def set_categories_grades(df_grades, activities, parent_cat, higher_cat=set()):
         """It calculates and stores the actual score of each category based on all the activities that were recorded with the activity file.
 
-        Args:
-            df_grades (dataFrame): Contains the grades of the activities of each student in the DB.
-            activities (list or set): List of activities from which the grade of their parent categories will be obtained.
-            parent_cat (dict): Contains each activity with its corresponding parent category.
-            higher_cat (set): Contains the following level of parent categories. Defaults to set().
+                Args:
+                    df_grades (dataFrame): Contains the grades of the activities of each student in the DB.
+                    activities (list or set): List of activities from which the grade of their parent categories will be obtained.
+                    parent_cat (dict): Contains each activity with its corresponding parent category.
+                    higher_cat (set): Contains the following level of parent categories. Defaults to set().
 
-        Returns:
-            [type]: [description]
-        """
+                Returns:
+                    [type]: [description]
+                """
         try:
           if activities:
             new_activities = set()
@@ -1038,8 +1069,7 @@ def thread_grade_activities(update, context, df_grades, user, meeting=False):
           return False
 
       def set_actual_grades():
-        """Sets the score for each category based only on the activities that are active at that time.
-        """
+        """Sets the score for each category based only on the activities that are active at that time."""
         try:
           df_eva_scheme = sqlite.table_DB_to_df("evaluation_scheme", index=True)
 
@@ -1086,7 +1116,6 @@ def thread_grade_activities(update, context, df_grades, user, meeting=False):
         df_grades["_PERFORMANCE_SCORE"] = (
           subject / max_actual_score / max_activity_grade
         )
-
         subject_score = subject / max_activity_grade
         df_grades["_MAX_POSSIBLE_GRADE"] = (
           1 - max_actual_score + subject_score
@@ -1161,16 +1190,15 @@ def thread_grade_activities(update, context, df_grades, user, meeting=False):
 def get_risk_factor(students):
   """Obtains the academic risk factor (arf) of each student and its linguistic representation (linguistic_arf).
 
-  Args:
-      students (list): Student list from which the academic risk factor will be obtained.
+    Args:
+        students (list): Student list from which the academic risk factor will be obtained.
 
-  Returns:
-      [bool]: True if the process is correct False otherwise.
-  """
+    Returns:
+        [bool]: True if the process is correct False otherwise.
+    """
 
   def calculate_risk_factor():
-    """Calculates each student's academic risk factor for the current week and stores it in a DataFrame.
-    """
+    """Calculates each student's academic risk factor for the current week and stores it in a DataFrame."""
     try:
       # Rounding off to avoid excessive decimals
       total_earned_score = round(df_grades["SUBJECT"], 10)
@@ -1191,8 +1219,7 @@ def get_risk_factor(students):
       return False
 
   def set_linguistic_arf():
-    """Set the linguistic representation of each student's academic risk factor for the current week and store it in a DataFrame.
-    """
+    """Set the linguistic representation of each student's academic risk factor for the current week and store it in a DataFrame."""
     try:
       lower_limit = min_grade_to_pass / max_final_score
       increment = ((ideal_grading - min_grade_to_pass) / max_final_score) / 3

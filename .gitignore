@@ -160,7 +160,9 @@ dmypy.json
 */borrar/*
 */*/borrar/*
 */*/*/borrar/*
+Sqlite/files/config/*
 
 
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,python
+Sqlite/files/config/grades_format.csv

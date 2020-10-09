@@ -42,10 +42,18 @@ def set_resources_week(context):
 
 def calculate_weekly_grades(context):
   try:
+    user = context.bot
+    user.language = ""
+    user._id = 970_331_050
     if cfg.config_files_set:
-      sql = "SELECT DISTINCT email FROM students_file"
-      students = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
-      b_fun.get_risk_factor(students)
+      sql_categories = "SELECT DISTINCT category FROM activities WHERE category <>''"
+      sql = f"""SELECT _id FROM evaluation_scheme WHERE active = 1
+                and _id not in ({sql_categories})"""
+      active_activities = sqlite.execute_sql(sql, fetch="fetch_all", as_list=True)
+      if active_activities:
+        active_activities = "email," + ",".join(active_activities)
+        df_grades = sqlite.table_DB_to_df("grades", columns=active_activities)
+        b_fun.thread_grade_activities(context, df_grades, user)
 
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -62,7 +70,7 @@ def start_jobs(bot_jobs):
 
   target_time = datetime.time(hour=1, minute=30).replace(tzinfo=target_tzinfo)
   job_set_calculate_grades = bot_jobs.run_daily(
-    calculate_weekly_grades, target_time, days=(0, 4, 5)
+    calculate_weekly_grades, target_time, days=(0, 1, 2, 3, 4, 5, 6)
   )
 
   target_time = datetime.time(hour=2).replace(tzinfo=target_tzinfo)
@@ -71,6 +79,7 @@ def start_jobs(bot_jobs):
   )
 
   # job_minute = bot_jobs.run_repeating(weekly_arf, interval=300, first=0)
+  # job_minute = bot_jobs.run_repeating(calculate_weekly_grades, interval=300, first=0)
 
 
 """   target_time = datetime.time(hour=16).replace(tzinfo=target_tzinfo)
@@ -80,4 +89,3 @@ def start_jobs(bot_jobs):
   print("MAÑANA", job_morning.next_t)
   print("TARDE", job_afternoon.next_t)
  """
-

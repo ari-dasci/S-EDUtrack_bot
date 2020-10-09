@@ -102,11 +102,11 @@ def main_menu(lang):
   return (text, opt)
 
 
-def my_grade(lang, action, week, stu_data=""):
+def my_grade(lang, action, week, stu_data="", note=""):
   if lang == "es":
     Title = f"<b>MI CALIFICACIÓN - SEMANA {week}:</b>\n\n"
     if action == "grades":
-      return f"{Title}Tu factor de riesgo académico es: <b>{stu_data['linguistic']}</b>.\nTu calificación actual es: <b>{stu_data['actual_grade']}</b>\nTu calificación máxima posible es: <b>{stu_data['max_possible_grade']}</b> \n\nA continuación te muestro cada actividad que se ha evaluado hasta este momento y su calificación:{stu_data['activities']}"
+      return f"{Title}Tu factor de riesgo académico es: <b>{stu_data['linguistic']}</b>.\nTu calificación actual es: <b>{stu_data['actual_grade']}</b>\nTu calificación máxima posible es: <b>{stu_data['max_possible_grade']}</b> \n\nA continuación te muestro cada actividad que se ha evaluado hasta este momento y su calificación:{stu_data['activities']}\n\nRecuerda que la calificación actual es con base a las actividades realizadas y calificadas hasta este momento, conforme realices  más actividades tu nota ira mejorando.\n"
     elif action == "no_active":
       return f"{Title}Actualmente no existen actividades calificadas.\n\nTu factor de riesgo académico es: <b>Ninguno</b>.\nTu máxima calificación posible es: <b>10</b>"
     elif action == "no_email":
@@ -114,7 +114,7 @@ def my_grade(lang, action, week, stu_data=""):
   else:
     Title = f"<b>MY GRADE WEEK {week}</b>\n\n"
     if action == "grades":
-      return f"{Title}Your academic risk factor is <b>{stu_data['linguistic']}</b>.\nYour actual grade is: <b>{stu_data['actual_grade']}</b>\nYour highest possible grade is: <b>{stu_data['max_possible_grade']}</b>\n\nBelow I show you each activity that has been evaluated so far and its grade:{stu_data['activities']}"
+      return f"{Title}Your academic risk factor is <b>{stu_data['linguistic']}</b>.\nYour actual grade is: <b>{stu_data['actual_grade']}</b>\nYour highest possible grade is: <b>{stu_data['max_possible_grade']}</b>\n\nBelow I show you each activity that has been evaluated so far and its grade:{stu_data['activities']}\n\nRemember that the current grade is based on the activities completed and graded up to this point, as you do more activities your grade will improve."
     elif action == "no_active":
       return f"{Title}There are currently no qualified activities.\n\nYour academic risk factor is: <b>None</b>.\nYour highest possible grade is: <b>10</b>."
     elif action == "no_email":

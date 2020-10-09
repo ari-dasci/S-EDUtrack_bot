@@ -95,7 +95,7 @@ tables = {
   "eva_autoevaluation": f"""
         _id INTEGER NOT NULL PRIMARY KEY,
         question INTEGER NOT NULL,
-        value TEXT,
+        value INTEGER NOT NULL,
         FOREIGN KEY(_id) REFERENCES telegram_users(_id)""",
   "evaluation_scheme": f"""
         _id TEXT NOT NULL PRIMARY KEY,

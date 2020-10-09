@@ -65,8 +65,6 @@ class User:
         message_type = ""
         if chat.text:
           message_type = "TEXT"
-        elif chat.photo:
-          message_type = "IMAGE"
         elif chat.video or chat.video_note:
           message_type = "VIDEO"
         elif chat.voice:
@@ -82,6 +80,8 @@ class User:
             message_type = "IMAGE"
           else:
             message_type = "DOCUMENT"
+        elif chat.photo:
+          message_type = "IMAGE"
         return message_type
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -163,13 +163,13 @@ class Student(User):
           sql = f"SELECT last_name, first_name FROM students_file where username='{self.username}'"
           name = sqlite.execute_sql(sql, fetch="fetchone")
           if name:
-            full_name = name[0], name[1]
+            full_name = f"{name[0]}, {name[1]}"
             changes.append(f"full_name = '{full_name}'")
         if not registered_user["email"]:
           sql = f"SELECT email FROM students_file where username = '{self.username}'"
           email = sqlite.execute_sql(sql, fetch="fetchone")
           if email:
-            changes.append(f"email = '{email}'")
+            changes.append(f"email = '{email[0]}'")
         changes = ",".join(changes)
         if changes:
           sql = f"UPDATE registered_students SET {changes} WHERE _id = {self._id}"
@@ -259,7 +259,7 @@ class Student(User):
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
         g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
-        return False
+        raise
 
     def get_student_data():
       try:
@@ -733,8 +733,7 @@ class Student(User):
 
   def eva_autoevaluation(self, context, query, selections):
     def check_status():
-      """Check if some questions have already been answered, start or finish the self-assessment.
-      """
+      """Check if some questions have already been answered, start or finish the self-assessment."""
       try:
         sql = f"SELECT COUNT(*) FROM eva_autoevaluation WHERE _id = {self._id}"
         num_questions = sqlite.execute_sql(sql, fetch="fetchone")[0]
@@ -754,8 +753,7 @@ class Student(User):
         return False
 
     def show_questions():
-      """Displays the corresponding question or feedback.
-      """
+      """Displays the corresponding question or feedback."""
       try:
         question = ""
         if selections[3] == "init":
@@ -782,8 +780,7 @@ class Student(User):
         return False
 
     def set_value():
-      """Saves in the database the value corresponding to each question.
-      """
+      """Saves in the database the value corresponding to each question."""
       try:
         question = selections[3]
         num_question = int(question[1:])
@@ -1066,8 +1063,7 @@ class Teacher(User):
                 df_grades = pd.read_csv(urlopen(f_path), encoding="UTF-8-sig")
                 df_grades = b_fun.data_preparation(df_grades, "grades")
                 thread_grades = threading.Thread(
-                  target=b_fun.thread_grade_activities,
-                  args=(update, context, df_grades, self),
+                  target=b_fun.thread_grade_activities, args=(context, df_grades, self)
                 )
                 thread_grades.start()
               else:
@@ -1147,16 +1143,17 @@ class Teacher(User):
           students = {}
           if students_grades and students_grades != [""]:
             grades_error = ""
-            duplicated_students = ""
+            duplicated_students = []
             for student in students_grades:
+              print(student)
               data = (student.strip(" ")).split(" ")
               email = data[0]
               try:
                 grade = float(" ".join(data[1:]))
-                if email not in students:
+                if email not in students and email not in duplicated_students:
                   students[email] = float(grade)
-                else:
-                  duplicated_students += "\n" + email
+                elif email not in duplicated_students:
+                  duplicated_students.append(email)
                   del students[email]
               except:
                 grades_error += "\n" + " ".join(data)
@@ -1167,6 +1164,7 @@ class Teacher(User):
               text = t_lang.menu_act_grade(self.language, "grades_error", grades_error)
               title = False
             if duplicated_students:
+              duplicated_students = "\n" + "\n".join(duplicated_students)
               if not title:
                 text += "\n\n"
               text += t_lang.menu_act_grade(
@@ -1176,11 +1174,14 @@ class Teacher(User):
             df_grades = pd.DataFrame(
               list(students.items()), columns=["email", activity_id]
             )
-            thread_grades = threading.Thread(
-              target=b_fun.thread_grade_activities,
-              args=(update, context, df_grades, self),
-            )
-            thread_grades.start()
+            if not df_grades.empty:
+              thread_grades = threading.Thread(
+                target=b_fun.thread_grade_activities, args=(context, df_grades, self)
+              )
+              thread_grades.start()
+            else:
+              text = t_lang.menu_act_grade(self.language, "no_students", title=False)
+              context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
 
         else:
           text = t_lang.menu_act_grade(
@@ -1278,7 +1279,6 @@ class Teacher(User):
 
     def modify_name():
       try:
-
         sql = f"SELECT first_name, last_name FROM students_file where email = '{email}'"
         student_data = sqlite.execute_sql(sql, fetch="fetchone", as_dict=True)
         if student_data:
@@ -1437,10 +1437,10 @@ class Teacher(User):
     def get_score_meetings():
       """Guarda la calificación de cada estudiante que ha participado en el meeting especificado.
 
-          Arguments:
-              planet {str} -- Nombre del planeta
-              meeting {[type]} -- ID del meeting
-          """
+            Arguments:
+                planet {str} -- Nombre del planeta
+                meeting {[type]} -- ID del meeting
+            """
       try:
         meeting_id = f"ML_{meeting.upper()}"
         sql = f"""SELECT email FROM registered_students WHERE _id in
@@ -1461,7 +1461,7 @@ class Teacher(User):
         meeting_data = (meeting, self.planet)
         thread_grade_meeting = threading.Thread(
           target=b_fun.thread_grade_activities,
-          args=(update, context, df_grades, self, meeting_data),
+          args=(context, df_grades, self, meeting_data),
         )
         thread_grade_meeting.start()
 
@@ -1482,12 +1482,11 @@ class Teacher(User):
           return False
         else:
           meeting = f"meeting_{meeting_num}"
-          # VER COMO SABER SI EL COMANDO ES START O END
           if chat.text.startswith("/start_meeting"):
             if planet not in cfg.active_meetings:
               cfg.active_meetings.update({planet: {"users": {}, "meeting": meeting}})
-            elif meeting not in cfg.active_meetings[planet]["meeting"]:
-              cfg.active_meetings[planet].update({"meeting": meeting})
+            elif not cfg.active_meetings[planet]["meeting"]:
+              cfg.active_meetings[planet]["meeting"] = meeting
               text = t_lang.meeting(self.language, "start", meeting_num)
               context.bot.sendMessage(
                 chat_id=chat.chat_id, parse_mode="HTML", text=text
