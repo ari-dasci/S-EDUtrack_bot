@@ -9,6 +9,12 @@ from functions import general_functions as g_fun
 
 import config.config_file as cfg
 
+
+try:
+  os.stat("./DB")
+except:
+  os.mkdir("./DB")
+
 db_path = f"./DB/{cfg.subject_data['_id']}.db"
 
 
