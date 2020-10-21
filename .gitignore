@@ -1,4 +1,4 @@
-
+Sqlite/files/config/activities_format.csv
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,python
 
@@ -171,4 +171,4 @@ Sqlite/files/download/*
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,python
 
-Sqlite/files/config/activities_format.csv
+
