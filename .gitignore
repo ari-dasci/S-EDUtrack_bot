@@ -154,6 +154,10 @@ dmypy.json
 
 ### TEST FILES ###
 # Ignore all test files
+Sqlite/files/config/*
+Sqlite/DB
+Sqlite/files/download/*
+
 *Borrar.*
 *borrar.*
 */Borrar/*
@@ -162,9 +166,6 @@ dmypy.json
 */borrar/*
 */*/borrar/*
 */*/*/borrar/*
-Sqlite/files/config/*
-Sqlite/DB
-Sqlite/files/download/*
 
 
 
