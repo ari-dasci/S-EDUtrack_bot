@@ -150,6 +150,8 @@ dmypy.json
 # Ignore all local history of files
 .history
 
+
+
 ### TEST FILES ###
 # Ignore all test files
 *Borrar.*
@@ -161,6 +163,8 @@ dmypy.json
 */*/borrar/*
 */*/*/borrar/*
 Sqlite/files/config/*
+Sqlite/DB
+
 
 
 
