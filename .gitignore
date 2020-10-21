@@ -172,4 +172,4 @@ Sqlite/DB
 Sqlite/files/config/grades_format.csv
 Sqlite/files/config/add_students_format.csv
 Sqlite/files/config/grades_format.csv
-
+Sqlite/files/download/*
