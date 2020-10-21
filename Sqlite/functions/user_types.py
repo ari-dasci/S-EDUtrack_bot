@@ -43,7 +43,7 @@ class User:
       return True
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def set_selected_language(self):
@@ -56,7 +56,7 @@ class User:
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def reg_messages(self, update):
@@ -82,38 +82,41 @@ class User:
             message_type = "DOCUMENT"
         elif chat.photo:
           message_type = "IMAGE"
+        elif chat.poll:
+          message_type = "QUIZ"
         return message_type
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
       chat = update.message
       message_type = get_message_type()
-      meeting_data = cfg.active_meetings[self.planet]
-      meeting = meeting_data["meeting"][-1] if meeting_data["meeting"] else -1
+      if message_type and message_type != "QUIZ":
+        meeting_data = cfg.active_meetings[self.planet]
+        meeting = meeting_data["meeting"][-1] if meeting_data["meeting"] else -1
 
-      table = "teacher_messages" if self.is_teacher else "student_messages"
+        table = "teacher_messages" if self.is_teacher else "student_messages"
 
-      sql = f"""SELECT COUNT(*) FROM {table}
-                WHERE _id = {self._id}
-                  and planet = '{self.planet}'
-                  and meeting = {meeting} """
-      if not sqlite.execute_sql(sql, fetch="fetchone")[0]:
-        sql = f"""INSERT OR IGNORE INTO {table} (_id, planet, meeting)
-                    VALUES({self._id}, '{self.planet}', {meeting})"""
+        sql = f"""SELECT COUNT(*) FROM {table}
+                  WHERE _id = {self._id}
+                    and planet = '{self.planet}'
+                    and meeting = {meeting} """
+        if not sqlite.execute_sql(sql, fetch="fetchone")[0]:
+          sql = f"""INSERT OR IGNORE INTO {table} (_id, planet, meeting)
+                      VALUES({self._id}, '{self.planet}', {meeting})"""
+          sqlite.execute_sql(sql)
+
+        sql = f"""UPDATE {table} SET {message_type} = {message_type} + 1
+                  WHERE _id = {self._id}
+                    and planet = '{self.planet}'
+                    and meeting = {meeting} """
         sqlite.execute_sql(sql)
-
-      sql = f"""UPDATE {table} SET {message_type} = {message_type} + 1
-                WHERE _id = {self._id}
-                  and planet = '{self.planet}'
-                  and meeting = {meeting} """
-      sqlite.execute_sql(sql)
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
 
@@ -147,7 +150,7 @@ class Student(User):
         return True
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def check_if_change(registered_user):
@@ -177,7 +180,7 @@ class Student(User):
         return True
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
@@ -192,7 +195,7 @@ class Student(User):
       return False
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def user_send_message(self, update, context):
@@ -218,7 +221,7 @@ class Student(User):
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def main_menu(self, update, context):
@@ -236,7 +239,7 @@ class Student(User):
         context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def my_grade(self, context, query=""):
@@ -258,7 +261,7 @@ class Student(User):
         return df_grades
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         raise
 
     def get_student_data():
@@ -281,7 +284,7 @@ class Student(User):
         return student_data
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def get_activities_list(eva_scheme, def_grades, text="", level=1):
@@ -301,7 +304,7 @@ class Student(User):
         return text
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
@@ -349,7 +352,7 @@ class Student(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def opn_tea_practice(self, context, query, selections):
@@ -396,7 +399,7 @@ class Student(User):
         b_fun.show_menu(query, text, keyboard, context, self._id)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def select_value():
@@ -409,7 +412,7 @@ class Student(User):
         b_fun.show_menu(query, text, options)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def set_value():
@@ -423,7 +426,7 @@ class Student(User):
         self.opn_tea_practice(context, query="", selections=selections[:-2])
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
@@ -444,7 +447,7 @@ class Student(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def opn_collaboration(self, context, query, selections):
@@ -476,7 +479,7 @@ class Student(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def select_value():
@@ -491,7 +494,7 @@ class Student(User):
         b_fun.show_menu(query, text, options)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def set_value():
@@ -505,7 +508,7 @@ class Student(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
@@ -524,7 +527,7 @@ class Student(User):
         select_classmate()
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def opn_rsrcs(self, context, query, selections):
@@ -558,7 +561,7 @@ class Student(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def select_resource():
@@ -589,7 +592,7 @@ class Student(User):
         b_fun.show_menu(query, text, keyboard, context, self._id)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def select_value():
@@ -600,7 +603,7 @@ class Student(User):
         b_fun.show_menu(query, text, options)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def set_value():
@@ -613,7 +616,7 @@ class Student(User):
         self.opn_rsrcs(context, query="", selections=selections[:-2])
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
@@ -644,7 +647,7 @@ class Student(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def opn_tea_meetings(self, context, query, selections):
@@ -662,7 +665,7 @@ class Student(User):
           keyboard.append(
             [
               IKButton(
-                f"Meeting {meeting}", callback_data=f"s_menu-opn-tp-vc-{meeting}"
+                f"Meeting {meeting}", callback_data=f"s_menu-opn-tp-meet-{meeting}"
               )
             ]
           )
@@ -677,7 +680,7 @@ class Student(User):
           b_fun.show_menu(query, text, keyboard, context, self._id)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def select_value():
@@ -693,7 +696,7 @@ class Student(User):
         ) """
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def set_value():
@@ -707,7 +710,7 @@ class Student(User):
         self.opn_tea_meetings(context, query="", selections=selections[:-2])
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
@@ -729,7 +732,54 @@ class Student(User):
         meeting = value = "" """
 
     except:
-      g_fun.print_except(inspect.stack()[0][3], user, selections)
+      g_fun.print_except(inspect.stack()[0][3], self.__str__(), selections)
+
+  def opn_planet(self, context, query, selections):
+    def select_value():
+      try:
+        options = g_lang.scale_7(self.language, query.data)
+        text = s_lang.opn_planet(self.language, "scale", self.planet)
+        b_fun.show_menu(query, text, options)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path, self.__str__())
+        return False
+
+    def set_value():
+      try:
+        sql = f"""INSERT OR IGNORE INTO opn_planet
+        VALUES ({self._id}, '{self.planet}', {num_week}, '{value}')"""
+        sqlite.execute_sql(sql)
+
+        self.opn_planet(context, query="", selections=selections[:-1])
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path, self.__str__())
+        return False
+
+    try:
+      num_week = g_fun.get_week("num")
+      sql = f"""SELECT COUNT(*) FROM opn_planet
+                WHERE _id={self._id} and planet = '{self.planet}'"""
+      if self.planet and not sqlite.execute_sql(sql, fetch="fetchone")[0]:
+        if len(selections) > 3:
+          value = selections[3]
+          set_value()
+        else:
+          select_value()
+      else:
+        back = "-".join(selections[:-1])
+        keyboard = [[IKButton(g_lang.back_text[self.language], callback_data=back)]]
+        if self.planet:
+          text = s_lang.opn_planet(self.language, "already")
+        else:
+          text = s_lang.opn_planet(self.language, "no_planet")
+        b_fun.show_menu(query, text, keyboard, context, self._id)
+
+    except:
+      error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+      g_fun.print_except(error_path, self.__str__())
+      return False
 
   def eva_autoevaluation(self, context, query, selections):
     def check_status():
@@ -749,7 +799,7 @@ class Student(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def show_questions():
@@ -776,7 +826,7 @@ class Student(User):
           b_fun.show_menu(query, text, options)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def set_value():
@@ -805,7 +855,7 @@ class Student(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
@@ -821,7 +871,7 @@ class Student(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def eva_collaboration(self, context, query, selections):
@@ -850,7 +900,7 @@ class Student(User):
         b_fun.show_menu(query, text, keyboard, context, self._id)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def select_value():
@@ -867,7 +917,7 @@ class Student(User):
         b_fun.show_menu(query, text, options)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def set_value():
@@ -880,7 +930,7 @@ class Student(User):
         self.eva_collaboration(context, query="", selections=selections[:-2])
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
@@ -896,7 +946,7 @@ class Student(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def eva_teacher(self, context, query, selections):
@@ -920,7 +970,7 @@ class Student(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def suggestion(self, update, context):
@@ -940,7 +990,7 @@ class Student(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def check_email(self, update, context):
@@ -995,7 +1045,7 @@ class Student(User):
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def __str__(self):
@@ -1008,6 +1058,7 @@ class Student(User):
       Is_teacher : {self.is_teacher}
       Language: {self.language}
       Planet: {self.planet}
+      {datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}
     ==============================="""
 
 
@@ -1038,7 +1089,7 @@ class Teacher(User):
           return False
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
 
     try:
       chat = update._effective_message
@@ -1083,7 +1134,7 @@ class Teacher(User):
           b_fun.config_files_set(update, context, self)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
 
   def main_menu(self, update, context):
     try:
@@ -1093,7 +1144,7 @@ class Teacher(User):
       update.message.reply_text(parse_mode="HTML", text=text, reply_markup=reply_markup)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def activities_view(self, update, context, option, query=""):
@@ -1125,7 +1176,7 @@ class Teacher(User):
       context.bot.sendDocument(chat_id=self._id, document=open(f"{file}.html", "rb"))
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def grade_activity_cmd(self, update, context):
@@ -1195,7 +1246,7 @@ class Teacher(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def students_view(self, update, context, option, query=""):
@@ -1226,7 +1277,7 @@ class Teacher(User):
       context.bot.sendDocument(chat_id=self._id, document=open(f"{file}.html", "rb"))
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def modify_student(self, update, context):
@@ -1274,7 +1325,7 @@ class Teacher(User):
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def modify_name():
@@ -1298,7 +1349,7 @@ class Teacher(User):
           context.bot.sendMessage(chat_id=self._id, parse_mode="HTML", text=text)
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
@@ -1334,7 +1385,7 @@ class Teacher(User):
       cfg.registered_stu = sqlite.table_DB_to_df("registered_students")
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def reports(self, update, context, report_type, query=""):
@@ -1380,7 +1431,7 @@ class Teacher(User):
         query.edit_message_text(parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def activate_eva(self, update, context, query):
@@ -1396,7 +1447,7 @@ class Teacher(User):
         query.edit_message_text(parse_mode="HTML", text=text)
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def send_msg_planets(self, update, context):
@@ -1414,7 +1465,7 @@ class Teacher(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def set_meetings(self, update, context, chat="", change_grades=False):
@@ -1431,7 +1482,7 @@ class Teacher(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     def get_score_meetings():
@@ -1467,7 +1518,7 @@ class Teacher(User):
 
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+        g_fun.print_except(error_path, self.__str__())
         return False
 
     try:
@@ -1543,7 +1594,7 @@ class Teacher(User):
 
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-      g_fun.print_except(error_path, self._id, self.username, self.telegram_name)
+      g_fun.print_except(error_path, self.__str__())
       return False
 
   def __str__(self):
@@ -1556,4 +1607,5 @@ class Teacher(User):
       Is_teacher : {self.is_teacher}
       Language: {self.language}
       Planet: {self.planet}
+      {datetime.now().strftime("%d/%m/%Y, %H:%M:%S")}
     ==============================="""

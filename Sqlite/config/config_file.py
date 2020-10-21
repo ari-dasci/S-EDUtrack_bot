@@ -124,7 +124,14 @@ tables = {
         _id INTEGER NOT NULL,
         planet TEXT NOT NULL,
         classmate_id INTEGER NOT NULL,
-        week TEXT NOT NULL,
+        week INTEGER NOT NULL,
+        value TEXT NOT NULL,
+        FOREIGN KEY(_id) REFERENCES telegram_users(_id)
+        """,
+  "opn_planet": f"""
+        _id_INTEGER NOT NULL,
+        planet TEXT NOT NULL,
+        week INTEGER NOT NULL,
         value TEXT NOT NULL,
         FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         """,
@@ -201,6 +208,7 @@ tables = {
         STICKER INTEGER DEFAULT 0,
         GIF INTEGER DEFAULT 0,
         DOCUMENT INTEGER DEFAULT 0,
+        LOCATION INTEGER DEFAULT 0,
         FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         """,
   "suggestions": f"""
@@ -240,6 +248,7 @@ tables = {
         STICKER INTEGER DEFAULT 0,
         GIF INTEGER DEFAULT 0,
         DOCUMENT INTEGER DEFAULT 0,
+        LOCATION INTEGER DEFAULT 0,
         FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         FOREIGN KEY("planet") REFERENCES "planets"("_id")
         """,

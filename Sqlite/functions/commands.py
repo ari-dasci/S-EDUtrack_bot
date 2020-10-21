@@ -125,6 +125,7 @@ def menu(update, context):
     if chat.chat_id > 0:
       user = g_fun.get_user_data(update._effective_user)
       if user:
+        print(user)
         if cfg.config_files_set:
           user.main_menu(update, context)
         else:

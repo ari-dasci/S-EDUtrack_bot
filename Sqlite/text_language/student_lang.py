@@ -130,6 +130,7 @@ def menu_opinion(lang):
       [IKButton("Práctica Docente", callback_data="s_menu-opn-tp")],
       [IKButton("Colaboración entre compañeros", callback_data="s_menu-opn-coll")],
       [IKButton("Recursos/materiales", callback_data="s_menu-opn-rsrcs")],
+      [IKButton("Tu planeta", callback_data="s_menu-opn-planet")],
       [IKButton("Regresar", callback_data="s_menu-back")],
     ]
   else:
@@ -138,6 +139,7 @@ def menu_opinion(lang):
       [IKButton("Teaching Practice", callback_data="s_menu-opn-tp")],
       [IKButton("Peer Collaboration", callback_data="s_menu-opn-coll")],
       [IKButton("Resources/materials", callback_data="s_menu-opn-rsrcs")],
+      [IKButton("Your planet", callback_data="s_menu-opn-planet")],
       [IKButton("Back", callback_data="s_menu-back")],
     ]
   return (text, opt)
@@ -149,7 +151,7 @@ def menu_opn_tea_practice(lang):
     opt = [
       [IKButton("Docente", callback_data="s_menu-opn-tp-teacher")],
       [IKButton("Contenidos", callback_data="s_menu-opn-tp-content")],
-      [IKButton("Comunicación Virtual", callback_data="s_menu-opn-tp-vc")],
+      [IKButton("Meetings", callback_data="s_menu-opn-tp-meet")],
       [IKButton("Regresar", callback_data="s_menu-opn")],
     ]
   else:
@@ -157,7 +159,7 @@ def menu_opn_tea_practice(lang):
     opt = [
       [IKButton("Teacher", callback_data="s_menu-opn-tp-teacher")],
       [IKButton("Contents", callback_data="s_menu-opn-tp-content")],
-      [IKButton("Virtual Comunication", callback_data="s_menu-opn-tp-vc")],
+      [IKButton("Meetings", callback_data="s_menu-opn-tp-meet")],
       [IKButton("Back", callback_data="s_menu-opn")],
     ]
   return (text, opt)
@@ -274,6 +276,27 @@ def opn_tea_meeting(lang, action, meeting=""):
       return f"{Title}How do you think the teacher's performance was in the <b>meeting {meeting}</b>?"
     elif action == "success":
       return f"Your evaluation has been saved correctly."
+
+
+def opn_planet(lang, action, planet=""):
+  if lang == "es":
+    Title = "<b>Opinión de tu planeta</b>\n\n"
+    if action == "no_planet":
+      return (
+        f"{Title}Aún no te tengo registrado en un planeta. Pregunta a tu profesor/a."
+      )
+    elif action == "already":
+      return f"{Title}Ya has evaluado a tu planeta esta semana. Regresa la siguiente semana para opinar nuevamente."
+    elif action == "scale":
+      return f"{Title}¿Cuál es tu opinión sobre el funcionamiento de tú planeta {planet} esta semana?"
+  else:
+    Title = "<b>Opinion of your planet</b>\n\n"
+    if action == "no_planet":
+      return f"{Title}I haven't registered you on a planet yet. Ask your teacher."
+    elif action == "already":
+      return f"{Title}You have already evaluated your planet this week. Come back next week to give your opinion again."
+    elif action == "scale":
+      return f"{Title}What is your opinion about the functioning of your planet {planet} this week?"
 
 
 ## MENU EVALUATE

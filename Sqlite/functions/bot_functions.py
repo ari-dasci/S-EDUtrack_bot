@@ -391,8 +391,9 @@ def config_files_upload(update, context, user):
         username = stu_data["username"].item()
         if username:
           sql = f"SELECT _id FROM registered_students WHERE username = '{username}'"
-          student_id = sqlite.execute_sql(sql, fetch="fetchone")[0]
+          student_id = sqlite.execute_sql(sql, fetch="fetchone")
           if student_id:
+            student_id = student_id[0]
             # Complete the student's information at registered_students
             first_name = stu_data["first_name"].item()
             last_name = stu_data["last_name"].item()
@@ -613,7 +614,7 @@ def options_menu(update, context):
               if len(selections) == 3:
                 text, options = s_lang.menu_opn_tea_practice(user.language)
                 show_menu(query, text, options)
-              elif selections[3] == "vc":
+              elif selections[3] == "meet":
                 user.opn_tea_meetings(context, query, selections)
               else:
                 user.opn_tea_practice(context, query, selections)
@@ -621,8 +622,8 @@ def options_menu(update, context):
               user.opn_collaboration(context, query, selections)
             elif selections[2] == "rsrcs":
               user.opn_rsrcs(context, query, selections)
-            elif selections[2] == "tea_meet":
-              user.opn_teacher_meetings(context, query, selections)
+            elif selections[2] == "planet":
+              user.opn_planet(context, query, selections)
           elif selections[1] == "eva":
             if cfg.subject_data["activate_evaluations"]:
               if len(selections) == 2:
@@ -645,7 +646,6 @@ def options_menu(update, context):
 
         # TEACHER MENU
         elif selections[0] == "t_menu":
-          print(selections)
           if selections[1] == "back":
             text, options = t_lang.main_menu(user.language)
             show_menu(query, text, options)
@@ -728,6 +728,7 @@ def options_menu(update, context):
           elif selections[1] == "msg":
             text = t_lang.send_msg_planet(user.language)
             context.bot.sendMessage(chat_id=user._id, parse_mode="HTML", text=text)
+
     else:
       text = b_lang.no_username(update._effective_user.language_code)
       update.message.reply_text(text)

@@ -597,6 +597,13 @@ def send_msg_planet(lang):
     return f"<b>SEND MESSAGE TO THE PLANETS</b>\n\nType the command <code>/send_message {lt}Message to send{gt}\n\n<b>Example</b>:\n<code>/send_message You are reminded to realize the autoevaluation from the menu Evaluate --> Autoevaluation</code>"
 
 
+def send_msg_planet(lang):
+  if lang == "es":
+    return f"<b>Encuesta privada</b>\n\nEscribe el comando <code>/quiz {lt}¿Pregunta?{gt} {lt}Opción 1, Opción 2, Opción 3...{gt}</code>\n\n<b>Ejemplo</b>:\n<code>/quiz ¿Crees que tú planeta esta funcionando adecuadamente?</code>"
+  else:
+    return f"<b>SEND MESSAGE TO THE PLANETS</b>\n\nType the command <code>/send_message {lt}Message to send{gt}\n\n<b>Example</b>:\n<code>/send_message You are reminded to realize the autoevaluation from the menu Evaluate --> Autoevaluation</code>"
+
+
 def meeting(lang, action, meeting_num="", planet=""):
   if lang == "es":
     if action == "active":

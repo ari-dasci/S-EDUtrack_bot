@@ -115,7 +115,7 @@ def get_user_data(user_data, planet=""):
           else:
             sql = f"SELECT planet FROM students_file where username = '{user_data.username}'"
             user.planet = sqlite.execute_sql(sql, fetch="fetchone")
-      print(user)
+      # print(user)
       return user
     return False
   except:

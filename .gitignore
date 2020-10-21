@@ -150,6 +150,8 @@ dmypy.json
 # Ignore all local history of files
 .history
 
+
+
 ### TEST FILES ###
 # Ignore all test files
 *Borrar.*
@@ -161,8 +163,13 @@ dmypy.json
 */*/borrar/*
 */*/*/borrar/*
 Sqlite/files/config/*
+Sqlite/DB
+
 
 
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,python
 Sqlite/files/config/grades_format.csv
+Sqlite/files/config/add_students_format.csv
+Sqlite/files/config/grades_format.csv
+
