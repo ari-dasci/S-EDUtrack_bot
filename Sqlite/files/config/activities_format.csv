@@ -1,5 +1,5 @@
 _id,name,section,week,weight,visible,category
-G_TABLON,Tablón de avisos,GENERAL,1.0,0.0,0.0,
+G_TABLON2,Tablón de avisos,GENERAL,1.0,0.0,0.0,
 G_PRESENTACION_CURSO,Presentación de la asignatura,GENERAL,1.0,0.0,0.0,
 G_CONFIRMA_PRACT,Confirma tu grupo de prácticas,GENERAL,1.0,0.0,0.0,
 G_DOCUMENTACION,Documentación para descargar,GENERAL,1.0,0.0,0.0,
