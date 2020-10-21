@@ -162,11 +162,8 @@ dmypy.json
 */borrar/*
 */*/borrar/*
 */*/*/borrar/*
-Sqlite/files/config/*
+Sqlite/files/config/
 Sqlite/DB
-Sqlite/files/config/grades_format.csv
-Sqlite/files/config/add_students_format.csv
-Sqlite/files/config/grades_format.csv
 Sqlite/files/download/
 
 
