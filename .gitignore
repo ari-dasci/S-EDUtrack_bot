@@ -1,5 +1,4 @@
-Sqlite/files/config/activities_format.csv
-.csv
+
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,python
 
@@ -155,8 +154,8 @@ dmypy.json
 
 ### TEST FILES ###
 # Ignore all test files
-Sqlite/files/config/*
 Sqlite/DB
+Sqlite/files/config/*
 Sqlite/files/download/*
 
 *Borrar.*
