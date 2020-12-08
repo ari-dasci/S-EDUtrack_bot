@@ -49,7 +49,7 @@ def create_files(path_files, df, title_table, date=True, mode="w"):
     <link rel="stylesheet"  type="text/css" href="datatables/DataTables-1.10.18/css/dataTables.bootstrap4.min.css">
     <style>
       body{
-       background: #ddd;
+        background: #ddd;
           }
       header{
         background:#512DA8;
@@ -95,7 +95,7 @@ def create_files(path_files, df, title_table, date=True, mode="w"):
         <div class="row">
           <div class="col-lg-12">
             <div class="table-responsive">
-              <table id="example" class="table table-striped table-bordered table-hover" style="width:100%"''',
+              <table id="example" class="table table-striped table-bordered table-hover"''',
     data_in_html,
   )
 
