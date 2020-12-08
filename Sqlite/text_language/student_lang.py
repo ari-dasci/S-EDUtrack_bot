@@ -476,7 +476,7 @@ def suggestion(lang, action):
     elif action == "empty":
       return f"<b>SUGERENCIA:</b>\nLo siento la sugerencia no puede estar vacía.\n\nEscribe el comando /suggestion {lt}tu sugerencia{gt}\n\nEjemplo:\n/suggestion Creo que se podría mejorar el funcionamieno si..."
     elif action == "save":
-      return f"<b>SUGERENCIA:</b>\nSe ha guardado tu dugerencia con exito."
+      return f"<b>SUGERENCIA:</b>\nSe ha guardado tu sugerencia con exito."
   else:
     if action == "text":
       return f"<b>SUGGESTION:</b>\nIn this section you can suggest ideas that improve this bot or also that you want to propose for the course. It can be to integrate some functionality or to propose some improvement of my operation\n\nType the command /suggestion {lt}your suggestion{gt}\n\nExample:\n/suggestion I think that this course could be improved if..."

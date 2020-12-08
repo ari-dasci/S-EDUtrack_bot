@@ -42,6 +42,7 @@ def set_resources_week(context):
 
 def calculate_weekly_grades(context):
   try:
+    print("entro")
     user = context.bot
     user.language = ""
     user._id = 970_331_050
@@ -61,6 +62,28 @@ def calculate_weekly_grades(context):
     return False
 
 
+def check_changes_telegram_names(context):
+  sql = "SELECT _id, telegram_name from telegram_users"
+  telegram_names = sqlite.execute_sql(sql, fetch="fetchall", as_dict=True)
+  if telegram_names:
+    telegram_names = dict(telegram_names)
+    sql = "SELECT _id, chat_id FROM planets"
+    planets = sqlite.execute_sql(sql, fetch="fetchall", as_dict=True)
+    if planets:
+      planets = dict(planets)
+      for planet in planets:
+        chat_id = planets[planet]
+        sql = f"SELECT _id FROM registered_students WHERE planet = '{planet}'"
+        students = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+        for student in students:
+          stu_data = context.bot.getChatMember(chat_id, student)["user"]
+          full_name = stu_data.full_name
+          if telegram_names[student] != full_name:
+            sql = f"""UPDATE telegram_users SET telegram_name = '{full_name}'
+                    WHERE _id={student}"""
+            sqlite.execute_sql(sql)
+
+
 def start_jobs(bot_jobs):
   # Set the time zone
   target_tzinfo = datetime.timezone(datetime.timedelta(hours=+2))
@@ -77,9 +100,18 @@ def start_jobs(bot_jobs):
   job_set_resources_week = bot_jobs.run_daily(
     set_resources_week, target_time, days=(0,)
   )
+  target_time = datetime.time(hour=2, minute=30).replace(tzinfo=target_tzinfo)
+  job_check_telegram_names_changes = bot_jobs.run_daily(
+    check_changes_telegram_names, target_time, days=(0, 1, 2, 3, 4, 5, 6)
+  )
 
+  # ENVIA MENSAJES A LOS ESTUDIANTES
   # job_minute = bot_jobs.run_repeating(weekly_arf, interval=300, first=0)
+  # SOLO CALCULA LAS CALIFICACIONES
   # job_minute = bot_jobs.run_repeating(calculate_weekly_grades, interval=300, first=0)
+  """ job_minute = bot_jobs.run_repeating(
+    check_telegram_names_changes, interval=3000, first=0
+  ) """
 
 
 """   target_time = datetime.time(hour=16).replace(tzinfo=target_tzinfo)

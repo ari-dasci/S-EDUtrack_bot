@@ -35,7 +35,7 @@ def config_subject():
     # Get the date of the Monday of the week in which the course starts
     start_date = cfg.subject_data["start_date"]
     start_date = datetime.strptime(start_date, "%d/%m/%Y")
-    cfg.monday_start_week = get_weekday_monday(start_date)
+    cfg.day_start_week = get_weekday_start(start_date)
 
     #
 
@@ -93,8 +93,8 @@ def print_except(function, *extra_info):
       for element in extra_info:
         error_text += "\n   " + str(element)
     error_text += "\n===================="
-    print(Back.RED)
-    logging.info(error_text + Back.RESET)
+    print(Back.RED + error_text + Back.RESET)
+    logging.info(error_text)
   except:
     error_path = f"{error_text}\n\n{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     print_except(error_path)
@@ -124,7 +124,7 @@ def get_user_data(user_data, planet=""):
     return False
 
 
-def get_weekday_monday(date):
+def get_weekday_start(date):
   try:
     day = date.strftime("%A")
     if day != "Saturday":
@@ -145,7 +145,7 @@ def get_weekday_monday(date):
 def get_week(action):
   try:
     today = datetime.now()
-    difference = today - cfg.monday_start_week
+    difference = today - cfg.day_start_week
     num_week = int(difference.days / 7) + 1
     course_weeks = cfg.subject_data["course_weeks"]
     if num_week > int(course_weeks):
@@ -200,9 +200,7 @@ def are_config_files_set(table_name=""):
 
 
 def remove_file(file):
-  """Recibe el path de un archivo y sí existe lo elimina así como su versión html.
-
-  """
+  """Recibe el path de un archivo y sí existe lo elimina así como su versión html."""
   try:
     if os.path.isfile(file):
       os.remove(file)
@@ -233,19 +231,19 @@ def dataframes_comparison(df1, df2, which="all"):
   return diff_df
 
 
-def db_to_csv_html(df, file, headers=[], title="", date=True):
+def db_to_csv_html(df, file, headers=[], title="", date=True, mode="w+"):
   """Guarda la información del cursor almacenado en 'elements' de la base de datos en un archivo 'csv' y 'html' en el path almacenado en 'file'.
 
-  Arguments:
-      elements {pymongo.cursor.Cursor} -- Resgistros a guardar en los archivos.
-      file {str} -- Path y nombre del archivo sin extensión donde se almacenan los archivos.
-      headers {list} -- Lista con el orden de los encabezados para un archivo
-      title {str} -- Título que llevara el archivo HTML.
-      date {bool} -- Si es True agregara la fecha al final del archivo.
+    Arguments:
+        elements {pymongo.cursor.Cursor} -- Resgistros a guardar en los archivos.
+        file {str} -- Path y nombre del archivo sin extensión donde se almacenan los archivos.
+        headers {list} -- Lista con el orden de los encabezados para un archivo
+        title {str} -- Título que llevara el archivo HTML.
+        date {bool} -- Si es True agregara la fecha al final del archivo.
 
-  Returns:
-      [bool] -- 'True' si se crean correctamente los archivos 'False' si se genera una excepción.
-  """
+    Returns:
+        [bool] -- 'True' si se crean correctamente los archivos 'False' si se genera una excepción.
+    """
   try:
     # df = pd.DataFrame(list(elements))
     # TODO: Verificar si no afecta a textos
@@ -262,7 +260,7 @@ def db_to_csv_html(df, file, headers=[], title="", date=True):
       df2["_id"] = "PROMEDIOS"
       df = df.append(df2, ignore_index=True)
     df = df.round(2)
-    create_files(file, df, title, date, mode="w+")
+    create_files(file, df, title, date, mode=mode)
     return True
     """
     ## Esto estaba antes
@@ -296,7 +294,7 @@ def strip_accents(string):
     print_except(error_path)
 
 
-# REVISAR sI SE UTILIZA EL ESQUEMA
+# REVISAR SI SE UTILIZA EL ESQUEMA
 def get_evaluation_scheme_tree():
   try:
     cfg.evaluation_scheme = {}
@@ -323,6 +321,39 @@ def get_evaluation_scheme_tree():
     new.update(cfg.evaluation_scheme["SUBJECT"])
     # del new["category_score"]
     return cfg.evaluation_scheme
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+    return False
+
+
+def notify_teachers(context, text):
+  try:
+    sql = "SELECT telegram_id FROM TEACHERS"
+    teachers = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+    for teacher in teachers:
+      context.bot.sendMessage(chat_id=teacher, parse_mode="HTML", text=text)
+
+  except:
+    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+    print_except(error_path)
+    return False
+
+
+def get_resources():
+  try:
+    num_week = get_week("num")
+    sql = (
+      f"SELECT * FROM activities WHERE week < {cfg.resources['week']} and section <> ''"
+    )
+    resources_data = sqlite.table_DB_to_df("activities", sql=sql, index="_id")
+    for resource in list(resources_data.index):
+      section = resources_data.loc[resource]["section"]
+      if not section in cfg.resources:
+        cfg.resources[section] = {resource}
+      else:
+        cfg.resources[section].add(resource)
+    cfg.resources["week"] = num_week
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     print_except(error_path)
@@ -366,35 +397,4 @@ def set_in_dict(dataDict, mapList, value):
   get_from_dict(dataDict, mapList[:-1])[mapList[-1]] = value
 
 
-def notify_teachers(context, text):
-  try:
-    sql = "SELECT telegram_id FROM TEACHERS"
-    teachers = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
-    for teacher in teachers:
-      context.bot.sendMessage(chat_id=teacher, parse_mode="HTML", text=text)
-
-  except:
-    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-    print_except(error_path)
-    return False
-
-
-def get_resources():
-  try:
-    num_week = get_week("num")
-    sql = (
-      f"SELECT * FROM activities WHERE week < {cfg.resources['week']} and section <> ''"
-    )
-    resources_data = sqlite.table_DB_to_df("activities", sql=sql, index="_id")
-    for resource in list(resources_data.index):
-      section = resources_data.loc[resource]["section"]
-      if not section in cfg.resources:
-        cfg.resources[section] = {resource}
-      else:
-        cfg.resources[section].add(resource)
-    cfg.resources["week"] = num_week
-  except:
-    error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-    print_except(error_path)
-    return False
-
+## END Dictionary funtions

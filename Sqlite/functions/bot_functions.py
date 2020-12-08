@@ -49,17 +49,20 @@ def user_send_message(update, context):
         context (:class:'telegram.ext-CallbackContext'): Context of the current request
     """
   try:
-    chat_id = update.message.chat_id
-    planet = g_fun.strip_accents(update.message.chat.title) if chat_id < 0 else ""
-    user_data = update._effective_user
-    user = g_fun.get_user_data(user_data, planet)
-    # get_user_data returns False if the user does not have the username set up
-    if user:
-      user.user_send_message(update, context)
+    if update.message:
+      chat_id = update.message.chat_id
+      planet = g_fun.strip_accents(update.message.chat.title) if chat_id < 0 else ""
+      user_data = update._effective_user
+      user = g_fun.get_user_data(user_data, planet)
+      # get_user_data returns False if the user does not have the username set up
+      if user:
+        user.user_send_message(update, context)
+      else:
+        text = b_lang.no_username(user_data.language_code)
+        update.message.reply_text(text)
+        return False
     else:
-      text = b_lang.no_username(user_data.language_code)
-      update.message.reply_text(text)
-      return False
+      print("ENTRO SIN MENSAJE")
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
@@ -69,7 +72,7 @@ def user_send_message(update, context):
 # Functions for configuring the course
 @send_action(ChatAction.TYPING)
 def config_files_set(update, context, user):
-  """Sends the teacher the configuration files of the students and the activities, to configure the subjec.
+  """Sends the teacher the configuration files of the students and the activities, to configure the subject.
 
     Args:
         context (:class:'telegram.ext-CallbackContext'): Context of the current request.
@@ -710,7 +713,7 @@ def options_menu(update, context):
               config_files_send_document(context, user, "students")
             elif selections[2] == "modify":
               headers = "First_name\nLast_name\nEmail"
-              text = t_lang.menu_stu_modify(user.language, headers)
+              text = t_lang.menu_stu_modify(user.language, "cmd", headers)
               query.edit_message_text(parse_mode="HTML", text=text)
             elif selections[2] == "delete":
               text = t_lang.menu_stu_delete(user.language)
@@ -721,8 +724,20 @@ def options_menu(update, context):
               text, options = t_lang.menu_reports(user.language)
               text = "FUNCIONES EN DESARROLLO LO SIENTO.\n\n" + text
               show_menu(query, text, options)
+            elif selections[2] == "ARF":
+              if len(selections) == 3:
+                text, options = t_lang.menu_report_arf(user.language)
+                show_menu(query, text, options)
+              else:
+                user.reports(update, context, selections, query)
+            elif selections[2] == "meetings":
+              if len(selections) == 3:
+                text, options = t_lang.menu_report_meeting(user.language)
+                show_menu(query, text, options)
+              else:
+                user.reports(update, context, selections, query)
             else:
-              user.reports(update, context, selections[2], query)
+              user.reports(update, context, selections, query)
           elif selections[1] == "activate_eva":
             user.activate_eva(update, context, query)
           elif selections[1] == "msg":

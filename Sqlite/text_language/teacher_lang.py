@@ -14,7 +14,7 @@ def welcome_text(lang, context, action):
       )
     if action == "long":
       text = "Hemos terminado de configurar la asignatura.\n\n"
-    return f"{text}Bienvenido a EDUtrack <b>{bot_username}</b>. Te ayudaré en esta asignatura manteniendote informado de los estudiantes que están en riesgo de fracaso academic de forma semanal.\n\nAdemás de llevar un control de la comunicación en Telegram de los estudiantes, te proporcionaré informes sobre la opinión colectiva sobre la asignatura recogida mediante EDUtrack.\nMis comandos son:\n\n/menu\n Te mostraré las opciones con las que podemos trabajar juntos.\n\n/change_language\nTe ayudaré a cambiar el idioma en que te muestro los contenidos. Las opciones actuales son Inglés y Español.\n\n/help\nTe informaré sobre el menú de opciones. También podrás acceder al manual de usuario."
+    return f"{text}Bienvenido a EDUtrack <b>{bot_username}</b>. Te ayudaré en esta asignatura manteniendote informado de los estudiantes que están en riesgo de fracaso academico de forma semanal.\n\nAdemás de llevar un control de la comunicación en Telegram de los estudiantes, te proporcionaré informes sobre la opinión colectiva sobre la asignatura recogida mediante EDUtrack.\nMis comandos son:\n\n/menu\n Te mostraré las opciones con las que podemos trabajar juntos.\n\n/change_language\nTe ayudaré a cambiar el idioma en que te muestro los contenidos. Las opciones actuales son Inglés y Español.\n\n/help\nTe informaré sobre el menú de opciones. También podrás acceder al manual de usuario."
   else:
     if action == "short":
       return "Type command /menu to see the options with which we can work together."
@@ -203,18 +203,24 @@ def title_file(lang, title):
       return "RECURSOS"
     elif title == "GRADE REPORT":
       return "REPORTE DE CALIFICACIONES"
-    elif title == "ACADEMIC RISK FACTOR REPORT":
-      return "REPORTE DEL FACATOR DE RIESGO ACADEMICO"
+    elif title == "LIGUISTIC REPORT ACADEMIC RISK FACTOR":
+      return "REPORTE LINGÜISTICO DEL FACTOR DE RIESGO ACADEMICO"
+    elif title == "STUDENTS AT ACADEMIC RISK REPORT":
+      return "REPORTE DE ESTUDIANTES EN RIESGO ACADÉMICO"
     elif title == "MEETINGS PARTICIPATION REPORT":
       return "REPORTE DE LA PARTICIPACION EN LOS MEETINGS"
+    elif title == "OUT OF MEETINGS PARTICIPATION REPORT":
+      return "REPORTE DE PARTICIPACION FUERA DE LOS MEETINGS"
+    elif title == "GENERAL MESSAGE REPORT":
+      return "REPORTE GENERAL DE MENSAJES"
     elif title == "TEACHER EVALUATION REPORT":
       return "REPORTE DE LA EVALUACION DOCENTE"
     elif title == "RESOURCES EVALUATION REPORT":
       return "REPORTE DE LA EVALUACION DE RECURSOS"
-    elif title == "CLASSMATES EVALUATION\nREPORT IN MEETINGS":
-      return "REPORTE DE LA EVALUACION\nENTRE COMPAÑEROS EN LOS MEETINGS"
-    elif title == "CLASSMATES EVALUATION\nREPORT OUT MEETINGS":
-      return "REPORTE DE LA EVALUACION\nENTRE COMPAÑEROS FUERA DE LOS MEETINGS"
+    elif title == "CLASSMATES EVALUATION REPORT IN MEETINGS":
+      return "REPORTE DE LA EVALUACION ENTRE COMPAÑEROS EN LOS MEETINGS"
+    elif title == "AUTOEVALUATION REPORT":
+      return "REPORTE DE AUTOEVALUACION"
 
   else:
     return title
@@ -533,21 +539,11 @@ def menu_reports(lang):
     opt = [
       [IKBtn("Calificaciones", callback_data="t_menu-reports-grades")],
       [IKBtn("Factor de Riesgo Académico", callback_data="t_menu-reports-ARF")],
-      [IKBtn("Participación en meetings", callback_data="t_menu-reports-meetings")],
+      [IKBtn("Meetings", callback_data="t_menu-reports-meetings")],
       [IKBtn("Evaluación docente", callback_data="t_menu-reports-eva_teacher")],
       [IKBtn("Evaluación de recursos", callback_data="t_menu-reports-eva_resources")],
-      [
-        IKBtn(
-          "Eva. de compañeros en los meetings",
-          callback_data="t_menu-reports-eva_p2p_in_meet",
-        )
-      ],
-      [
-        IKBtn(
-          "Eva. de compañeros fuera de meetings",
-          callback_data="t_menu-reports-eva_p2p_out_meet",
-        )
-      ],
+      [IKBtn("Eva. de compañeros", callback_data="t_menu-reports-eva_p2p")],
+      [IKBtn("Autoevaluación", callback_data="t_menu-reports-autoeva")],
       [IKBtn("Atrás", callback_data="t_menu-back")],
     ]
   else:
@@ -555,24 +551,102 @@ def menu_reports(lang):
     opt = [
       [IKBtn("Grades", callback_data="t_menu-reports-grades")],
       [IKBtn("Academic Risk Factor", callback_data="t_menu-reports-ARF")],
-      [IKBtn("Participation in meetings", callback_data="t_menu-reports-meetings")],
+      [IKBtn("Meetings", callback_data="t_menu-reports-meetings")],
       [IKBtn("Teacher Evaluation", callback_data="t_menu-reports-eva_teacher")],
       [IKBtn("Resource Evaluation", callback_data="t_menu-reports-eva_resources")],
-      [
-        IKBtn(
-          "Meeting peer evaluation",
-          callback_data="t_menu-reports-eva_p2p_in_meet",
-        )
-      ],
-      [
-        IKBtn(
-          "Peer review outside of meetings",
-          callback_data="t_menu-reports-eva_p2p_out_meet",
-        )
-      ],
-      [IKBtn("Atrás", callback_data="t_menu-back")],
+      [IKBtn("Peer evaluation", callback_data="t_menu-reports-eva_p2p")],
+      [IKBtn("Autoevaluation", callback_data="t_menu-reports-autoeva")],
+      [IKBtn("Back", callback_data="t_menu-back")],
     ]
   return (text, opt)
+
+
+def menu_report_arf(lang):
+  if lang == "es":
+    text = "<b>REPORTE FACTOR DE RIESGO ACADEMICO:</b>\nSelecciona una opción:"
+    opt = [
+      [IKBtn("Factor lingüístico", callback_data="t_menu-reports-ARF-ling")],
+      [IKBtn("Estudiantes en riesgo", callback_data="t_menu-reports-ARF-risk")],
+      [IKBtn("Atrás", callback_data="t_menu-reports")],
+    ]
+  else:
+    text = "<b>ACADEMIC RISK FACTOR REPORT:</b>\nSelect an option:"
+    opt = [
+      [IKBtn("Linguistic factor", callback_data="t_menu-reports-ARF-ling")],
+      [IKBtn("Students at risk", callback_data="t_menu-reports-ARF-risk")],
+      [IKBtn("Back", callback_data="t_menu-reports")],
+    ]
+  return (text, opt)
+
+
+def menu_report_meeting(lang):
+  if lang == "es":
+    text = "<b>REPORTE DE MEETINGS:</b>\nSelecciona una opción:"
+    opt = [
+      [IKBtn("Asistencia", callback_data="t_menu-reports-meetings-att")],
+      [IKBtn("Mensajes por meeting", callback_data="t_menu-reports-meetings-meet")],
+      [
+        IKBtn("Mensajes fuera de meetings", callback_data="t_menu-reports-meetings-out")
+      ],
+      [IKBtn("General de mensajes", callback_data="t_menu-reports-meetings-general")],
+      [IKBtn("Atrás", callback_data="t_menu-reports")],
+    ]
+  else:
+    text = "<b>MEETINGS REPORT:</b>\nSelect an option:"
+    opt = [
+      [IKBtn("Attendance", callback_data="t_menu-reports-meetings-att")],
+      [IKBtn("Messages per meeting", callback_data="t_menu-reports-meetings-meet")],
+      [IKBtn("Messages out of meetings", callback_data="t_menu-reports-meetings-out")],
+      [IKBtn("General messages", callback_data="t_menu-reports-meetings-general")],
+      [IKBtn("Back", callback_data="t_menu-reports")],
+    ]
+  return (text, opt)
+
+
+def menu_report_meeting_msgs(lang):
+  if lang == "es":
+    return "<b>REPORTE DE MENSAJES POR MEETING:</b>\nSelecciona una opción:"
+  else:
+    return "<b>MESSAGE REPORT PER MEETING:</b>\nSelect an option:"
+
+
+def report_peer_eva(lang, action, data=False):
+  if lang == "es":
+    Title = "<b>Reporte de evaluación de compañeros</b>\n\n"
+  else:
+    Title = "<b>Peer evaluation report</b>"
+  if action == "all_students":
+    if lang == "es":
+      return f"{Title}Estudiantes registrados {data['num_reg_students']}. El {data['pct_evaluators']}% ({data['num_evaluators']}) ha evaluado a sus compañeros."
+    else:
+      return f"{Title}Registered students {num_reg_students}. The {pct_evaluators}% ({num_evaluators}) have evaluated their peers."
+  elif action == "missing":
+    if lang == "es":
+      return f"{Title}Estudiantes registrados {data['num_reg_students']}. El {data['pct_evaluators']}% ({data['num_evaluators']}) ha evaluado a sus compañeros. A continuación la lista de estudiantes que no han evaluado a sus compañeros.\n\n{data['no_evaluators_names']}"
+    else:
+      return f"{Title}Registered students {num_reg_students}. The {pct_evaluators}% ({num_evaluators}) have evaluated their peers. Below is the list of students who have not evaluated their peers.\n\n{data['no_evaluators_names']}"
+  elif action == "no_evaluation":
+    if lang == "es":
+      return f"{Title}La evaluación se encuentra cerrada, pero aún no se ha realizado ninguna evaluación."
+    else:
+      return f"{Title}The evaluation is closed but no evaluation has been done yet."
+
+
+def report_autoeva(lang, action):
+  if lang == "es":
+    Title = "<b>Reporte de autoevaluación</b>\n\n"
+  else:
+    Title = "<b>Autoevaluation report</b>\n\n"
+  if action == "no_evalaution":
+    if lang == "es":
+      return f"{Title}Las evalauciones se encuentran cerradas pero no se ha realizado ninguna autoevalaución."
+    else:
+      return f"{Title}The evaluations are closed but no autoevaluation has been done."
+    if action == "eva_open":
+      if lang == "es":
+        return f"{Title}Las evaluaciones aún se encuentran abiertas."
+      else:
+        return f"{Title}Evaluations are still open."
 
 
 def menu_activate_eva(lang, state):

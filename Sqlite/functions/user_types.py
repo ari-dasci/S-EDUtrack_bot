@@ -226,6 +226,9 @@ class Student(User):
 
   def main_menu(self, update, context):
     try:
+      print(
+        f"\n{'='*50}\n{self._id} - {self.username} - {datetime.now().strftime('%d/%m/%Y, %H:%M:%S')}\n{'='*50}"
+      )
       sql = f"SELECT COUNT(*) FROM registered_students WHERE _id = {self._id}"
       if sqlite.execute_sql(sql, fetch="fetchone")[0]:
         text, options = s_lang.main_menu(self.language)
@@ -877,11 +880,13 @@ class Student(User):
   def eva_collaboration(self, context, query, selections):
     def select_classmate():
       try:
+        sql_classmates = f"""SELECT _id FROM planet_users
+                        WHERE planet = '{self.planet}' and _id <> {self._id}"""
         sql_evaluated = f"""SELECT classmate_id FROM eva_collaboration
                         WHERE _id = {self._id} and planet = '{self.planet}'"""
-        sql = f"""SELECT _id, username FROM registered_students
+        sql = f"""SELECT _id, full_name FROM registered_students
                 WHERE _id <>{self._id} and
-                _id not in ({sql_evaluated})"""
+                _id in ({sql_classmates}) and _id not in ({sql_evaluated})"""
         classmates = sqlite.execute_sql(sql, fetch="fetchall", as_dict=True)
         if classmates:
           classmates = dict(classmates)
@@ -961,7 +966,7 @@ class Student(User):
         elif len(selections) == 4:
           value = selections[3]
           sql = f"""INSERT OR IGNORE INTO eva_teacher
-                  VALUES({self._id}, '{self.planet}','{value}')"""
+                  VALUES({self._id},'{value}')"""
           sqlite.execute_sql(sql)
           self.eva_teacher(context, query, selections[:-1])
       else:
@@ -976,9 +981,10 @@ class Student(User):
   def suggestion(self, update, context):
     try:
       if context.args:
-
+        emails = cfg.registered_stu.copy()
+        emails = emails.set_index("_id")
         message = " ".join(context.args)
-        email = cfg.registered_stu[self._id]
+        email = emails.loc[self._id]["email"]
         today = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
         sql = f"INSERT INTO suggestions VALUES({self._id}, '{email}', '{today}', '{message}')"
         sqlite.execute_sql(sql)
@@ -1138,6 +1144,9 @@ class Teacher(User):
 
   def main_menu(self, update, context):
     try:
+      print(
+        f"\n{'='*50}\n{self._id} - {self.username} - {datetime.now().strftime('%d/%m/%Y, %H:%M:%S')}\n{'='*50}"
+      )
       text, options = t_lang.main_menu(self.language)
       keyboard = options
       reply_markup = IKMarkup(keyboard)
@@ -1388,47 +1397,333 @@ class Teacher(User):
       g_fun.print_except(error_path, self.__str__())
       return False
 
-  def reports(self, update, context, report_type, query=""):
+  def reports(self, update, context, selections, query=""):
+    def create_report(elements=False, mode="w+"):
+      try:
+        if type(elements) == bool:
+          elements = sqlite.execute_sql(sql, df=True)
+        if type(elements) != bool:
+          first_column = elements.columns[0]
+          elements.sort_values(by=[first_column], inplace=True)
+          if g_fun.db_to_csv_html(elements, file, title=title, date=False, mode=mode):
+            context.bot.sendDocument(
+              chat_id=self._id, document=open(f"{file}.csv", "rb")
+            )
+            context.bot.sendDocument(
+              chat_id=self._id, document=open(f"{file}.html", "rb")
+            )
+            text = g_lang.file_ready_for_download(self.language)
+            query.edit_message_text(parse_mode="HTML", text=text)
+        else:
+          text = "FUNCION EN DESARROLLO\n\n" + g_lang.file_not_created(self.language)
+          query.edit_message_text(parse_mode="HTML", text=text)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
+
+    def add_total_row(df, pos_sum_col, pos_sum_row):
+      print(df)
+      first_column = df.columns[0]
+      # df.insert(-1, "TOTAL", 0)
+      df["TOTAL"] = 0
+      df["TOTAL"] = df.iloc[:, pos_sum_col:-1].sum(axis=1)
+      df.loc["TOTAL"] = df.iloc[:, pos_sum_row:].sum(axis=0)
+      df.loc["TOTAL", first_column] = "_TOTAL"
+      return df
+
     try:
+      report_type = selections[2]
       folder_path = "files/download/reports"
       if not os.path.exists(folder_path):
         os.makedirs(folder_path)
-      file = f"{folder_path}/{report_type}"
 
       if report_type == "grades":
+        file = f"{folder_path}/Grades"
         sql = f"SELECT * FROM grades"
         title = t_lang.title_file(self.language, "GRADE REPORT")
+
       elif report_type == "ARF":
-        sql = f"SELECT * FROM academic_risk_factor"
-        title = t_lang.title_file(self.language, "ACADEMIC RISK FACTOR REPORT")
+        file = f"{folder_path}/ARF"
+        action = selections[3]
+        if action == "ling":
+          sql = f"SELECT * FROM linguistic_risk_factor"
+          title = t_lang.title_file(
+            self.language, "LIGUISTIC REPORT ACADEMIC RISK FACTOR"
+          )
+        elif action == "risk":
+          week = g_fun.get_week("text")
+          sql = f"SELECT email,{week} FROM linguistic_risk_factor WHERE {week} in ('moderate','critical', 'very critical')"
+          title = t_lang.title_file(self.language, "STUDENTS AT ACADEMIC RISK REPORT")
+          file = f"{folder_path}/students_at_risk"
+
       elif report_type == "meetings":
-        sql = f"SELECT * FROM meetings"
-        title = t_lang.title_file(self.language, "MEETINGS PARTICIPATION REPORT")
+        action = selections[3]
+        sql = f"SELECT MAX(meeting) FROM meetings_attendance"
+        last_meeting = sqlite.execute_sql(sql, fetch="fetchone")[0]
+        if last_meeting >= 0:
+          if action == "att":
+            try:
+              file = f"{folder_path}/Meetings_attendance"
+              df_attendance = cfg.registered_stu[["_id", "email"]].copy()
+              df_attendance.set_index("_id", inplace=True)
+              # df_attendance["TOTAL"] = 0
+              for i in range(0, last_meeting + 1):
+                df_attendance[f"Meeting {i}"] = 0
+                sql = f"SELECT _id FROM meetings_attendance WHERE meeting = {i}"
+                df_students = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+                df_attendance.loc[df_students, f"Meeting {i}"] = 1
+              add_total_row(df_attendance, 1, 1)
+
+              title = t_lang.title_file(self.language, "GENERAL MESSAGE REPORT")
+              create_report(df_attendance)
+              return True
+            except:
+              error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+              g_fun.print_except(error_path)
+              return False
+          if action == "meet":
+
+            def select_meeting():
+              keyboard = []
+              for i in range(0, last_meeting + 1):
+                keyboard.append(
+                  [
+                    IKButton(
+                      f"Meeting {i}", callback_data=f"t_menu-reports-meetings-meet-{i}"
+                    )
+                  ]
+                )
+              keyboard.append([IKButton("Atrás", callback_data="t_menu-reports")])
+
+              if len(keyboard) == 1:
+                print("No se ha realizado ningun meeting")
+                self.reports(update, context, selections[:-2], query)
+              else:
+                text = t_lang.menu_report_meeting_msgs(self.language)
+                b_fun.show_menu(query, text, keyboard)
+
+            def prepare_report():
+              df_students = cfg.registered_stu[["_id", "email", "planet"]].copy()
+              sql = f"""SELECT A.email, B.* FROM registered_students A 
+                        LEFT JOIN student_messages B ON a._id = B._id
+                        WHERE B.meeting = {meeting}"""
+              df_meetings_msgs = sqlite.execute_sql(sql, df=True)
+              empty_students = list(
+                set(df_students["_id"]) - set(df_meetings_msgs["_id"])
+              )
+              df_students = df_students[df_students["_id"].isin(empty_students)]
+
+              df_students.set_index("_id", inplace=True)
+              df_meetings_msgs.set_index("_id", inplace=True)
+
+              df_meetings_msgs = pd.concat([df_meetings_msgs, df_students])
+              df_meetings_msgs["meeting"] = meeting
+              df_meetings_msgs.fillna(0.0, inplace=True)
+              return df_meetings_msgs
+
+            try:
+              file = f"{folder_path}/Msgs_x_meeting"
+              if len(selections) == 4:
+                select_meeting()
+                return True
+              elif len(selections) == 5:
+                meeting = selections[4]
+                df_meetings_msgs = prepare_report()
+                add_total_row(df_meetings_msgs, 3, 3)
+                title = t_lang.title_file(
+                  self.language, "OUT OF MEETINGS PARTICIPATION REPORT"
+                )
+                create_report(df_meetings_msgs)
+                return True
+            except:
+              error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+              g_fun.print_except(error_path)
+              return False
+          if action == "out":
+            try:
+              file = f"{folder_path}/Msgs_out_meetings"
+              df_students = cfg.registered_stu[["_id", "email", "planet"]].copy()
+              sql = f"""SELECT A.email, B.* FROM registered_students A 
+                      LEFT JOIN student_messages B ON a._id = B._id
+                      WHERE B.meeting = -1"""
+              df_meetings_msgs = sqlite.execute_sql(sql, df=True)
+              empty_students = list(
+                set(df_students["_id"]) - set(df_meetings_msgs["_id"])
+              )
+              df_students = df_students[df_students["_id"].isin(empty_students)]
+              df_students.set_index("_id", inplace=True)
+              df_meetings_msgs.set_index("_id", inplace=True)
+
+              df_meetings_msgs = pd.concat([df_meetings_msgs, df_students])
+              df_meetings_msgs.drop(["meeting"], axis=1, inplace=True)
+              df_meetings_msgs.fillna(0.0, inplace=True)
+              add_total_row(df_meetings_msgs, 2, 2)
+
+              title = t_lang.title_file(
+                self.language, "OUT OF MEETINGS PARTICIPATION REPORT"
+              )
+              create_report(df_meetings_msgs)
+              return True
+
+            except:
+              error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+              g_fun.print_except(error_path)
+              return False
+          if action == "general":
+            try:
+              file = f"{folder_path}/General_messages"
+              df_emails = cfg.registered_stu[["_id", "email"]].copy()
+              df_emails.set_index("_id", inplace=True)
+              sql = "SELECT * FROM student_messages"
+              df_students = sqlite.execute_sql(sql, df=True)
+              df_students.set_index("_id", inplace=True)
+              df_students.insert(0, "email", "")
+              for student in df_students.index:
+                df_students.loc[student, "email"] = df_emails.loc[student, "email"]
+              add_total_row(df_students, 3, 3)
+
+              title = t_lang.title_file(self.language, "GENERAL MESSAGE REPORT")
+              create_report(df_students)
+              return True
+            except:
+              error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+              g_fun.print_except(error_path)
+              return False
       elif report_type == "eva_teacher":
+        file = f"{folder_path}/Eva_teacher"
         sql = f"SELECT * FROM eva_teacher"
         title = t_lang.title_file(self.language, "TEACHER EVALUATION REPORT")
+
       elif report_type == "eva_resources":
+        file = f"{folder_path}/Eva_resources"
         sql = f"SELECT * FROM eva_resources"
         title = t_lang.title_file(self.language, "RESOURCES EVALUATION REPORT")
-      elif report_type == "eva_p2p_in_meet":
-        sql = f"SELECT * FROM eva_p2p_in_meet"
-        title = t_lang.title_file(
-          self.language, "CLASSMATES EVALUATION\nREPORT IN MEETINGS"
-        )
-      elif report_type == "eva_p2p_out_meet":
-        sql = f"SELECT * FROM eva_p2p_out_meet"
-        title = t_lang.title_file(
-          self.language, "CLASSMATES EVALUATION\nREPORT OUT MEETINGS"
-        )
 
-      elements = sqlite.execute_sql(sql, df=True)
-      if type(elements) != bool:
-        if g_fun.db_to_csv_html(elements, file, title=title, date=False):
-          text = g_lang.file_ready_for_download(self.language)
+      elif report_type == "eva_p2p":
+        file = f"{folder_path}/Eva_peer_colaboration"
+        sql = "SELECT DISTINCT _id FROM eva_collaboration"
+        evaluators = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+        if cfg.subject_data["activate_evaluations"]:
+          data = {}
+          sql = "SELECT _id FROM registered_students"
+          reg_students = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+          data["num_reg_students"] = len(reg_students)
+          data["num_evaluators"] = len(evaluators)
+          data["pct_evaluators"] = round(len(evaluators) * 100 / len(reg_students), 1)
+
+          if data["pct_evaluators"] < 100:
+            no_evaluators = tuple(set(reg_students) - set(evaluators))
+
+            sql = f"""SELECT full_name FROM registered_students WHERE _id in {no_evaluators} """
+            no_evaluators_names = sqlite.execute_sql(
+              sql, fetch="fetchall", as_list=True
+            )
+            no_evaluators_names.sort()
+            data["no_evaluators_names"] = "\n".join(no_evaluators_names)
+            text = t_lang.report_peer_eva(self.language, "missing", data)
+          else:
+            text = t_lang.report_peer_eva(self.language, "all_students", data)
           query.edit_message_text(parse_mode="HTML", text=text)
-      else:
-        text = "FUNCION EN DESARROLLO\n\n" + g_lang.file_not_created(self.language)
-        query.edit_message_text(parse_mode="HTML", text=text)
+          return True
+        else:
+          sql = "SELECT COUNT (*) FROM report_eva_collaboration"
+          if not sqlite.execute_sql(sql, fetch="fetchone")[0]:
+            sql = "SELECT COUNT(*) FROM eva_collaboration"
+            if sqlite.execute_sql(sql, fetch="fetchone")[0]:
+              df_students = cfg.registered_stu[["_id", "email"]].copy()
+              df_students["evaluation_obtained"] = 0.0
+              df_students["label"] = ""
+              df_students["linguistic_term"] = ""
+              df_students["grade"] = 0.0
+              df_students["evaluated_peers"] = 0
+              df_students.set_index("_id", inplace=True)
+              sql = "SELECT DISTINCT classmate_id FROM eva_collaboration"
+              students_evaluated = sqlite.execute_sql(
+                sql, fetch="fetchall", as_list=True
+              )
+              sql = "SELECT * FROM grades"
+              df_grades = sqlite.execute_sql(sql, df=True)
+              df_grades.set_index("email", inplace=True)
+              for student in students_evaluated:
+                sql = f"""SELECT value FROM eva_collaboration 
+                      WHERE classmate_id = {student}"""
+                values = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+                values = [float(value[-1]) for value in values]
+                average = sum(values) / len(values)
+                df_students.loc[student, "evaluation_obtained"] = average
+                if average > 5.5:
+                  label = "s_6"
+                  ling_term = g_lang.scale_7_labels(self.language, "Excellent")
+                elif average > 4.5:
+                  label = "s_5"
+                  ling_term = g_lang.scale_7_labels(self.language, "Very Good")
+                elif average > 3.5:
+                  label = "s_4"
+                  ling_term = g_lang.scale_7_labels(self.language, "Good")
+                elif average > 2.5:
+                  label = "s_3"
+                  ling_term = g_lang.scale_7_labels(self.language, "Normal")
+                elif average > 1.5:
+                  label = "s_2"
+                  ling_term = g_lang.scale_7_labels(self.language, "Bad")
+                elif average > 0.5:
+                  label = "s_1"
+                  ling_term = g_lang.scale_7_labels(self.language, "Very Bad")
+                else:
+                  label = "s_0"
+                  ling_term = g_lang.scale_7_labels(self.language, "Lousy")
+                df_students.loc[student, "label"] = label
+                df_students.loc[student, "linguistic_term"] = ling_term
+                grade = average * 10 / 6
+                df_students.loc[student, "grade"] = round(grade, 3)
+                if student in evaluators:
+                  df_students.loc[student, "evaluated_peers"] = 1
+                email = df_students.loc[student]["email"]
+                df_grades.loc[email]["FC_ML_EVA_COMPAÑERO"] = grade
+              sqlite.save_elements_in_DB(df_students, "report_eva_collaboration")
+              # #TODO:ESTA COMENTADO PARA QUE LA DRA INDIQUE SI QUIERE QUE SE AJUSTE AUTOMATICAMENTE.
+              # sqlite.save_elements_in_DB(df_grades, "grades")
+
+            else:
+              text = t_lang.report_peer_eva(self.language, "no_evaluation")
+              query.edit_message_text(parse_mode="HTML", text=text)
+              return False
+          sql = "SELECT * FROM report_eva_collaboration"
+          title = t_lang.title_file(
+            self.language, "CLASSMATES EVALUATION REPORT IN MEETINGS"
+          )
+
+      elif report_type == "autoeva":
+        file = f"{folder_path}/Autoevaluations"
+        if not cfg.subject_data["activate_evaluations"]:
+          sql = "SELECT COUNT(*) FROM eva_autoevaluation"
+          if sqlite.execute_sql(sql, fetch="fetchone")[0]:
+            sql = "SELECT DISTINCT _id FROM eva_autoevaluation"
+            df_students = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+            df_autoevaluation = cfg.registered_stu[["_id", "email"]].copy()
+            df_autoevaluation["evaluation"] = 0.0
+            df_autoevaluation["grade"] = 0.0
+            df_autoevaluation.set_index("_id", inplace=True)
+            for student in df_students:
+              sql = f"""SELECT SUM(value) FROM eva_autoevaluation 
+                        WHERE _id = {student}"""
+              total = sqlite.execute_sql(sql, fetch="fetchone")[0]
+              df_autoevaluation.loc[student, "evaluation"] = total
+              df_autoevaluation.loc[student, "grade"] = total * 10 / 5
+            title = t_lang.title_file(self.language, "AUTOEVALUATION REPORT")
+            create_report(df_autoevaluation)
+            return True
+          else:
+            text = t_lang.repor_autoeva(self.language, "no_evaluation")
+            query.edit_message_text(parse_mode="HTML", text=text)
+            return False
+        else:
+          text = t_lang.repor_autoeva(self.language, "eva_open")
+          query.edit_message_text(parse_mode="HTML", text=text)
+          return False
+
+      create_report()
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
       g_fun.print_except(error_path, self.__str__())
@@ -1440,6 +1735,9 @@ class Teacher(User):
       flag = 0
       if chat_id > 0:
         flag = 1 if cfg.subject_data["activate_evaluations"] == 0 else 0
+        sql = "SELECT COUNT(*) FROM report_eva_collaboration"
+        if flag == 1 and sqlite.execute_sql(sql, fetch="fetchone")[0]:
+          sqlite.execute_sql("DELETE FROM report_eva_collaboration")
         sql = f"UPDATE subject_data SET activate_evaluations={flag}"
         sqlite.execute_sql(sql)
         cfg.subject_data["activate_evaluations"] = flag

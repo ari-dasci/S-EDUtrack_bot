@@ -25,7 +25,7 @@ standby_teachers = False
 config_files_set = False
 active_activities = False
 active_meetings = {}
-monday_start_week = ""
+day_start_week = ""
 admins_list = {}
 registered_stu = {}
 evaluation_scheme = {}
@@ -183,6 +183,15 @@ tables = {
         FOREIGN KEY(email) REFERENCES students_file(email)
         FOREIGN KEY(username) REFERENCES telegram_users(username)
         FOREIGN KEY("planet") REFERENCES "planets"("_id")
+        """,
+  "report_eva_collaboration": """
+        email TEXT NOT NULL PRIMARY KEY,
+        evaluation_obtained REAL DEFAULT 0,
+        label DEFAULT '',
+        lingustic_term TEXT DEFAULT '',
+        grade REAL DEFAULT 0,
+        evaluated_peers INTEGER DEFAULT 0,
+        FOREIGN KEY(email) REFERENCES students_file(email)
         """,
   "risk_factor": f"""
         email TEXT NOT NULL PRIMARY KEY,

@@ -138,6 +138,26 @@ def teacher_criteria(lang, criterion):
       return f"Contents adapted to the level"
 
 
+def scale_7_labels(lang, label):
+  if lang == 'es':
+    if label == "Lousy":
+      return "Pésimo"
+    if label == "Very Bad":
+      return "Muy malo"
+    if label == "Bad":
+      return "Malo"
+    if label == "Normal":
+      return "Normal"
+    if label == "Good":
+      return "Bueno"
+    if label == "Very Good":
+      return "Muy Bueno"
+    if label == "Excellent":
+      return "Excelente"
+  else:
+    return label
+
+
 def scale_7(lang, callback_data):
   back_menu = "-".join(callback_data.split("-")[:-1])
   if lang == "es":

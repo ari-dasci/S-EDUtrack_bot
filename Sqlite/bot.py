@@ -23,7 +23,9 @@ from text_language import general_lang as g_lang
 
 # Configurar logging
 logging.basicConfig(
-  format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO
+  format="%(asctime)s - %(levelname)s: %(message)s",
+  level=logging.INFO,
+  filename="./logs/logging.log",
 )
 
 # Get the token and the working mode
@@ -124,7 +126,7 @@ def test():
 
   start_date = cfg.subject_data["start_date"]
   start_date = datetime.strptime(start_date, "%d/%m/%Y")
-  cfg.monday_start_week = g_fun.get_weekday_monday(start_date)
+  cfg.monday_start_week = g_fun.get_weekday_start(start_date)
   cfg.config_files_set = True
   calc("")
 
