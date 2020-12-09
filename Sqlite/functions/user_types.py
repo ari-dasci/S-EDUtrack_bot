@@ -1422,6 +1422,31 @@ class Teacher(User):
         g_fun.print_except(error_path)
         return False
 
+    def get_linguistic_term(values):
+      average = sum(values) / len(values)
+      if average > 5.5:
+        label = "s_6"
+        ling_term = g_lang.scale_7_labels(self.language, "Excellent")
+      elif average > 4.5:
+        label = "s_5"
+        ling_term = g_lang.scale_7_labels(self.language, "Very Good")
+      elif average > 3.5:
+        label = "s_4"
+        ling_term = g_lang.scale_7_labels(self.language, "Good")
+      elif average > 2.5:
+        label = "s_3"
+        ling_term = g_lang.scale_7_labels(self.language, "Normal")
+      elif average > 1.5:
+        label = "s_2"
+        ling_term = g_lang.scale_7_labels(self.language, "Bad")
+      elif average > 0.5:
+        label = "s_1"
+        ling_term = g_lang.scale_7_labels(self.language, "Very Bad")
+      else:
+        label = "s_0"
+        ling_term = g_lang.scale_7_labels(self.language, "Lousy")
+      return (average, label, ling_term)
+
     def add_total_row(df, pos_sum_col, pos_sum_row):
       print(df)
       first_column = df.columns[0]
@@ -1590,15 +1615,65 @@ class Teacher(User):
               error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
               g_fun.print_except(error_path)
               return False
+
       elif report_type == "eva_teacher":
         file = f"{folder_path}/Eva_teacher"
-        sql = f"SELECT * FROM eva_teacher"
+        sql = f"SELECT value FROM eva_teacher"
+        values = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+        values = [float(value[-1]) for value in values]
+        average, label, ling_term = get_linguistic_term(values)
+        df_teacher_eva = pd.DataFrame(
+          {"evaluation": [average], "label": [label], "linguistic_term": [ling_term]}
+        )
+
         title = t_lang.title_file(self.language, "TEACHER EVALUATION REPORT")
+        create_report(df_teacher_eva)
+        return True
 
       elif report_type == "eva_resources":
         file = f"{folder_path}/Eva_resources"
-        sql = f"SELECT * FROM eva_resources"
+        resources = cfg.resources
+        df_resources = pd.DataFrame(
+          columns=[
+            "_id",
+            "name",
+            "section",
+            "evaluation",
+            "label",
+            "linguistic_term",
+            "num_values",
+          ]
+        )
+        for section in resources:
+          if section == "week":
+            continue
+          for resource in resources[section]:
+            sql = f"""SELECT value fROM opn_resources 
+                      WHERE resource = '{resource}'"""
+            values = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+            if values:
+              values = [float(value[-1]) for value in values]
+              average, label, ling_term = get_linguistic_term(values)
+            else:
+              average = label = ling_term = "-"
+            sql = f"SELECT name FROM activities WHERE _id='{resource}'"
+            rsrc_name = sqlite.execute_sql(sql, fetch="fetchone")[0]
+            df_resources = df_resources.append(
+              {
+                "_id": resource,
+                "name": rsrc_name,
+                "section": section,
+                "evaluation": average,
+                "label": label,
+                "linguistic_term": ling_term,
+                "num_values": len(values),
+              },
+              ignore_index=True,
+            )
+
         title = t_lang.title_file(self.language, "RESOURCES EVALUATION REPORT")
+        create_report(df_resources)
+        return True
 
       elif report_type == "eva_p2p":
         file = f"{folder_path}/Eva_peer_colaboration"
@@ -1650,29 +1725,8 @@ class Teacher(User):
                       WHERE classmate_id = {student}"""
                 values = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
                 values = [float(value[-1]) for value in values]
-                average = sum(values) / len(values)
+                average, label, ling_term = get_linguistic_term(values)
                 df_students.loc[student, "evaluation_obtained"] = average
-                if average > 5.5:
-                  label = "s_6"
-                  ling_term = g_lang.scale_7_labels(self.language, "Excellent")
-                elif average > 4.5:
-                  label = "s_5"
-                  ling_term = g_lang.scale_7_labels(self.language, "Very Good")
-                elif average > 3.5:
-                  label = "s_4"
-                  ling_term = g_lang.scale_7_labels(self.language, "Good")
-                elif average > 2.5:
-                  label = "s_3"
-                  ling_term = g_lang.scale_7_labels(self.language, "Normal")
-                elif average > 1.5:
-                  label = "s_2"
-                  ling_term = g_lang.scale_7_labels(self.language, "Bad")
-                elif average > 0.5:
-                  label = "s_1"
-                  ling_term = g_lang.scale_7_labels(self.language, "Very Bad")
-                else:
-                  label = "s_0"
-                  ling_term = g_lang.scale_7_labels(self.language, "Lousy")
                 df_students.loc[student, "label"] = label
                 df_students.loc[student, "linguistic_term"] = ling_term
                 grade = average * 10 / 6
