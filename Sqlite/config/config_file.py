@@ -1,6 +1,6 @@
 subject_data = {
-  "_id": "FS1920", # Database name
-  "name": "Fundamentos del Software",
+  "_id": "your subject_id or database_name", # Database name
+  "name": "Subject_name",
   "start_date": "dd/mm/aaaa","start_vacations": "dd/mm/aaaa",
   "end_vacations": "dd/mm/aaaa",  "course_weeks": "15", # Number of weeks of the course
   "max_final_grade": "10",
