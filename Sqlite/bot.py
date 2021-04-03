@@ -21,7 +21,7 @@ from functions import general_functions as g_fun
 from functions import jobs_queue
 from text_language import general_lang as g_lang
 
-# Configurar logging
+# Config logging
 logging.basicConfig(
   format="%(asctime)s - %(levelname)s: %(message)s",
   level=logging.INFO,
@@ -119,20 +119,7 @@ def main():
     return False
 
 
-def test():
-  import config.config_file as cfg
-  from datetime import datetime
-  from functions.jobs_queue import calculate_weekly_grades as calc
-
-  start_date = cfg.subject_data["start_date"]
-  start_date = datetime.strptime(start_date, "%d/%m/%Y")
-  cfg.monday_start_week = g_fun.get_weekday_start(start_date)
-  cfg.config_files_set = True
-  calc("")
-
-  input("PRESIONA UNA TECLA PARA CONTIUAR")
 
 
 if __name__ == "__main__":
-  # test()
   main()

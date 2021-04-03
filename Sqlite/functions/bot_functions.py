@@ -22,10 +22,10 @@ from functions import general_functions as g_fun
 
 # Function Decorator
 def send_action(action):
-  """Decorator that sends 'action' while processing func command.
+  """Decorator that sends 'action' while processing command_func. Displays an indication that the bot is performing an action such as bot is typing
 
     Args:
-        action (str): String with the action displayed by the bot
+        action (str): String with the action displayed by the bot.
     """
 
   def decorator(func):
@@ -168,6 +168,14 @@ def config_files_upload(update, context, user):
         """
 
     def are_categories_defined(root_category):
+      """Check if all categories are defined in the "activities_format.csv" file.
+
+      Args:
+          root_category (dict): Dictionary with the categories that do not have a parent category.
+
+      Returns:
+          bool: Returns True if the only parent category is 'SUBJECT'. False if not.
+      """
       try:
         # Check if all categories are defined
         if root_category != {"SUBJECT"}:
@@ -191,8 +199,15 @@ def config_files_upload(update, context, user):
         return False
 
     def categories_have_parent(category_data):
+      """Check if all categories have parent category in the "activities_format.csv" file.
+
+      Args:
+        category_data (pandas-DataFrame): DataFrame containing the information of the file "activities.format.csv"
+
+      Returns:
+        bool: Return True if all categories have parent category. False if not.
+      """
       try:
-        # Check if all categories have parent category
         no_parent_cat = list(category_data.loc[category_data["category"] == ""]["_id"])
         if no_parent_cat:
           no_parent_cat = "\n".join(no_parent_cat)
@@ -208,8 +223,15 @@ def config_files_upload(update, context, user):
         return False
 
     def categories_have_weight(category_data):
+      """Check if the categories defined in the "activities_format.csv" file have weight.
+
+      Args:
+        category_data (pandas-DataFrame): DataFrame containing the information of the file "activities.format.csv"
+
+      Returns:
+        bool: Return True if all categories have weight. False if not.
+      """
       try:
-        # Check if the defined categories have weight.
         weightless_cat = category_data[category_data["_id"] == ""]
         weightless_cat = list(weightless_cat["_id"])
         if weightless_cat:
@@ -593,6 +615,15 @@ def data_preparation(data, elements):
 
 
 def options_menu(update, context):
+  """It identifies the option selected by the user in the menu and directs the flow to the corresponding function.
+
+  Args:
+    update (:class:'telegram-Update'): Current request received by the bot.
+    context (:class:'telegram.ext-CallbackContext'): Context of the current request.
+
+  Returns:
+      bool:
+  """
   try:
     query = update.callback_query
     selections = (query.data).split("-")
@@ -834,23 +865,48 @@ def eva_scheme_tree():
     return False
 
 
-def thread_grade_activities(context, df_grades, user, meeting=False):
+def thread_grade_activities(context, df_grades, user, meeting=False, weekly_grade=0):
   def grade_activities(df_grades, path_file_name):
     def load_grades(df_grades, path_file_name):
-      def separate_elements(df_DB, df_grades):
+      def separate_elements(df_grades_DB, df_grades):
+        def find_sub_activities(activity, activities_list=set()):
+          sql = f"SELECT _id FROM activities WHERE category='{activity}'"
+          sub_activities = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
+          for sub_activity in sub_activities:
+            if sub_activity in categories:
+              find_sub_activities(sub_activity, activities_list)
+            else:
+              activities_list.update(sub_activities)
+          return activities_list
+
         try:
           ## SEPARATE ELEMENTS
+          sql = "SELECT DISTINCT category FROM activities WHERE category <> ''"
+          categories = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
           elements = {}
-          elements["registered_stu"] = set(df_grades["email"]) & set(df_DB["email"])
-          elements["unregistered_stu"] = set(df_grades["email"]) - set(df_DB["email"])
+          elements["registered_stu"] = set(df_grades["email"]) & set(
+            df_grades_DB["email"]
+          )
+          elements["unregistered_stu"] = set(df_grades["email"]) - set(
+            df_grades_DB["email"]
+          )
           elements["duplicated_stu"] = [
             stu for stu, count in Counter(df_grades["email"]).items() if count > 1
           ]
 
           sql = f"SELECT _id FROM evaluation_scheme  WHERE active=1"
           activities_active = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
-          elements["registered_act"] = set(df_grades.columns) & set(df_DB.columns)
+          elements["registered_act"] = set(df_grades.columns) & set(
+            df_grades_DB.columns
+          )
           elements["registered_act"].remove("email")
+
+          sub_activities = []
+          for activity in elements["registered_act"]:
+            if activity in categories:
+              sub_activities = find_sub_activities(activity)
+          elements["registered_act"].update(sub_activities)
+
           elements["non_active_act"] = elements["registered_act"] - set(
             activities_active
           )
@@ -860,7 +916,7 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
             act[:-2] for act in df_grades.columns if ".1" in act
           ]
 
-          unregistered_act = set(df_grades.columns) - set(df_DB.columns)
+          unregistered_act = set(df_grades.columns) - set(df_grades_DB.columns)
 
           elements["unregistered_act"] = {
             act for act in unregistered_act if ".1" not in act
@@ -883,11 +939,10 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
           g_fun.print_except(error_path)
           return False
 
-      def join_dataframes(df_DB, df_grades, students):
+      def join_dataframes(df_grades_DB, df_grades, students):
         try:
-          column_names = df_DB.columns
-
-          new_df = pd.merge(df_DB, df_grades, on="email", how="left")
+          column_names = df_grades_DB.columns
+          new_df = pd.merge(df_grades_DB, df_grades, on="email", how="left")
           new_df.set_index("email", inplace=True)
           all_columns = list(new_df.columns)
           all_columns.reverse()
@@ -961,14 +1016,13 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
 
       try:
         sucess = True
-        df_DB = sqlite.table_DB_to_df("grades")
-        df_grades, elements = separate_elements(df_DB, df_grades)
-
+        df_grades_DB = sqlite.table_DB_to_df("grades")
+        df_grades, elements = separate_elements(df_grades_DB, df_grades)
         if df_grades.shape[0] == 0 or df_grades.shape[1] == 1:
           sucess = False
         else:
           df_grades_to_upload = join_dataframes(
-            df_DB, df_grades, elements["registered_stu"]
+            df_grades_DB, df_grades, elements["registered_stu"]
           )
           df_grades_to_upload.to_csv(path_file_name, index=False)
           sqlite.save_elements_in_DB(df_grades_to_upload, "grades")
@@ -980,21 +1034,6 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
         g_fun.print_except(error_path)
         return False
-
-    """ def get_parent_categories(activities):
-      try:
-        sql = "SELECT _id, category FROM activities WHERE weight >0"
-        categories = dict(sqlite.execute_sql(sql, fetch="fetchall", as_dict=True))
-        parents = {}
-        for activity in activities:
-          parents.update(g_fun.get_path_elements([activity], True))
-          parents[activity] = parents[activity][1:-1]
-        return parents
-
-      except:
-        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
-        g_fun.print_except(error_path)
-        return False """
 
     def activate_activities(activities):
       try:
@@ -1031,13 +1070,8 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
             sql = f"UPDATE evaluation_scheme SET category_score = category_score + {category_score} WHERE _id = '{actual_element}'"
             sqlite.execute_sql(sql)
 
-            # category_score = activities_weight[category]
-
             actual_element = category
           # UPDATE SUBJECT
-          """ sql = f"UPDATE evaluation_scheme SET real_weight = real_weight + {category_score} WHERE _id = '{actual_element}'"
-          sqlite.execute_sql(sql) """
-
           sql = f"UPDATE evaluation_scheme SET category_score = category_score + {category_score} WHERE _id = '{actual_element}'"
           sqlite.execute_sql(sql)
 
@@ -1054,7 +1088,34 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
         return False
 
     def calculate_grades(students, activities):
-      def set_categories_grades(df_grades, activities, parent_cat, higher_cat=set()):
+      def check_ignore_categories():
+        try:
+          activities_non_cats = {
+            activity for activity in activities if activity not in categories
+          }
+          if not weekly_grade:
+            for activity in activities:
+              activity_parents = g_fun.get_path_elements([activity], parent_cats)
+              for category in activity_parents[activity][1:]:
+                if category in cfg.subject_data["ignore_categories"]:
+                  cfg.subject_data["ignore_categories"].remove(category)
+            activate_cats = ";".join(cfg.subject_data["ignore_categories"])
+            sql = f"UPDATE subject_data SET ignore_categories = '{activate_cats}'"
+            sqlite.execute_sql(sql)
+
+          ignore_cats = {activity for activity in activities if activity in categories}
+
+          cfg.subject_data["ignore_categories"].update(ignore_cats)
+          if ignore_cats:
+            ignore_cats = ";".join(cfg.subject_data["ignore_categories"])
+            sql = f"UPDATE subject_data SET ignore_categories = '{ignore_cats}'"
+            sqlite.execute_sql(sql)
+        except:
+          error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+          g_fun.print_except(error_path)
+          return False
+
+      def set_categories_grades(df_grades, activities, parent_cats, higher_cat=set()):
         """It calculates and stores the actual score of each category based on all the activities that were recorded with the activity file.
 
                 Args:
@@ -1070,14 +1131,19 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
           if activities:
             new_activities = set()
             for activity in activities:
-              parent = parent_cat[activity]
-              category_parent = g_fun.get_path_elements([parent], parent_cat)
+              parent = parent_cats[activity]
+              category_parent = g_fun.get_path_elements([parent], parent_cats)
               higher_cat.update(set(category_parent[parent][1:-1]))
-              df_grades[parent] += round(df_grades[activity] * weights[activity], 7)
+              if parent not in cfg.subject_data["ignore_categories"]:
+                df_grades[parent] += round(df_grades[activity] * weights[activity], 7)
               if parent != "SUBJECT" and parent not in higher_cat:
                 new_activities.add(parent)
+                new_activities = {
+                  activity for activity in new_activities if activity not in higher_cat
+                }
+
             if new_activities:
-              set_categories_grades(df_grades, new_activities, parent_cat, set())
+              set_categories_grades(df_grades, new_activities, parent_cats, set())
           return df_grades
         except:
           error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -1088,7 +1154,6 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
         """Sets the score for each category based only on the activities that are active at that time."""
         try:
           df_eva_scheme = sqlite.table_DB_to_df("evaluation_scheme", index=True)
-
           for category in categories:
             max_actual_score = df_eva_scheme.loc[category]["category_score"]
             if max_actual_score:
@@ -1099,7 +1164,6 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
                 parent_weight = weights[parent] if parent != "SUBJECT" else 1
                 actual_grade = grade * weight * parent_weight / max_actual_score
                 df_actual_grades[category] = round(actual_grade, 10)
-
               else:
                 df_actual_grades["SUBJECT"] = df_grades[category] / max_actual_score
           sqlite.save_elements_in_DB(df_actual_grades, "actual_grades")
@@ -1122,10 +1186,10 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
         non_category_acts = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
 
         df_grades = sqlite.table_DB_to_df("grades")
-        df_grades[categories] = 0.0
+        check_ignore_categories()
+        reset_categories = list(set(categories) - cfg.subject_data["ignore_categories"])
+        df_grades[reset_categories] = 0.0
         df_grades = set_categories_grades(df_grades, non_category_acts, parent_cats)
-
-        # _PERFORMANCE_SCORE MAX_POSSIBLE_GRADE
         max_actual_score = df_grades["_MAX_ACTUAL_SCORE"]
         max_activity_grade = float(cfg.subject_data["max_activity_grade"])
         subject = df_grades["SUBJECT"]
@@ -1145,7 +1209,6 @@ def thread_grade_activities(context, df_grades, user, meeting=False):
         )
         df_actual_grades = df_actual_grades[actual_grades_columns]
         df_actual_grades[df_actual_grades.columns[1:]] = 0.0
-
         set_actual_grades()
       except:
         error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"

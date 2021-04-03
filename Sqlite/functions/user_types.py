@@ -8,7 +8,7 @@ from urllib.request import urlopen
 import config.config_file as cfg
 import config.db_sqlite_connection as sqlite
 import pandas as pd
-from telegram import InlineKeyboardButton as IKButton
+from telegram import InlineKeyboardButton as IKBtn
 from telegram import InlineKeyboardMarkup as IKMarkup
 from text_language import general_lang as g_lang
 from text_language import student_lang as s_lang
@@ -387,13 +387,13 @@ class Student(User):
         for criterion in criteria:
           keyboard.append(
             [
-              IKButton(
+              IKBtn(
                 criterion[0], callback_data=f"s_menu-opn-tp-{category}-{criterion[1]}"
               )
             ]
           )
         back = "-".join(selections[:-1])
-        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+        keyboard.append([IKBtn(g_lang.back_text[self.language], callback_data=back)])
 
         if len(keyboard) == 1:
           text = s_lang.opn_tea_practice(self.language, "no_criteria", week=num_week)
@@ -456,12 +456,14 @@ class Student(User):
   def opn_collaboration(self, context, query, selections):
     def select_classmate():
       try:
+        self.planet = "JUPITER"
+        sql_classmates = f"""SELECT _id FROM planet_users
+                        WHERE planet = '{self.planet}' and _id <> {self._id}"""
         sql_evaluated = f"""SELECT classmate_id FROM opn_collaboration
-                        WHERE _id = {self._id} and planet = '{self.planet}'
-                        and week = {num_week}"""
-        sql = f"""SELECT _id, username FROM registered_students
+                        WHERE _id = {self._id} and planet = '{self.planet}'"""
+        sql = f"""SELECT _id, full_name FROM registered_students
                 WHERE _id <>{self._id} and
-                _id not in ({sql_evaluated})"""
+                _id in ({sql_classmates}) and _id not in ({sql_evaluated})"""
         classmates = sqlite.execute_sql(sql, fetch="fetchall", as_dict=True)
         if classmates:
           classmates = dict(classmates)
@@ -470,10 +472,10 @@ class Student(User):
         keyboard = []
         for classmate in classmates:
           keyboard.append(
-            [IKButton(classmate[1], callback_data=f"s_menu-opn-coll-{classmate[0]}")]
+            [IKBtn(classmate[1], callback_data=f"s_menu-opn-coll-{classmate[0]}")]
           )
         back = "-".join(selections[:-1])
-        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+        keyboard.append([IKBtn(g_lang.back_text[self.language], callback_data=back)])
         if len(keyboard) == 1:
           text = s_lang.opn_collaboration(self.language, "no_classmates", num_week)
         else:
@@ -545,16 +547,16 @@ class Student(User):
           rsrcs_evaluated = sqlite.execute_sql(sql, fetch="fetchone")[0]
           if rsrcs_evaluated < len(cfg.resources[section]):
             keyboard.append(
-              [IKButton(section, callback_data=f"s_menu-opn-rsrcs-{section}")]
+              [IKBtn(section, callback_data=f"s_menu-opn-rsrcs-{section}")]
             )
             """ for resource in cfg.resources[section]:
               if resource not in resources_evaluated:
                 keyboard.append(
-                  [IKButton(section, callback_data=f"s_menu-opn-rsrcs-{section}")]
+                  [IKBtn(section, callback_data=f"s_menu-opn-rsrcs-{section}")]
                 )
                 break """
         back = "-".join(selections[:-1])
-        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+        keyboard.append([IKBtn(g_lang.back_text[self.language], callback_data=back)])
 
         if len(keyboard) == 1:
           text = s_lang.opn_resources(self.language, "no_section")
@@ -581,13 +583,13 @@ class Student(User):
             resource_name = rsrc_name[resource] if rsrc_name[resource] else resource
             keyboard.append(
               [
-                IKButton(
+                IKBtn(
                   resource_name, callback_data=f"s_menu-opn-rsrcs-{section}-{resource}"
                 )
               ]
             )
         back = "-".join(selections[:-1])
-        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+        keyboard.append([IKBtn(g_lang.back_text[self.language], callback_data=back)])
         if len(keyboard) == 1:
           text = s_lang.opn_resources(self.language, "no_resources")
         else:
@@ -666,14 +668,10 @@ class Student(User):
         keyboard = []
         for meeting in meetings:
           keyboard.append(
-            [
-              IKButton(
-                f"Meeting {meeting}", callback_data=f"s_menu-opn-tp-meet-{meeting}"
-              )
-            ]
+            [IKBtn(f"Meeting {meeting}", callback_data=f"s_menu-opn-tp-meet-{meeting}")]
           )
         back = "-".join(selections[:-1])
-        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+        keyboard.append([IKBtn(g_lang.back_text[self.language], callback_data=back)])
         if len(keyboard) == 1:
           text = s_lang.opn_tea_meeting(self.language, "no_meetings")
           b_fun.show_menu(query, text, keyboard, context, self._id)
@@ -772,7 +770,7 @@ class Student(User):
           select_value()
       else:
         back = "-".join(selections[:-1])
-        keyboard = [[IKButton(g_lang.back_text[self.language], callback_data=back)]]
+        keyboard = [[IKBtn(g_lang.back_text[self.language], callback_data=back)]]
         if self.planet:
           text = s_lang.opn_planet(self.language, "already")
         else:
@@ -894,10 +892,10 @@ class Student(User):
         keyboard = []
         for classmate in classmates:
           keyboard.append(
-            [IKButton(classmate[1], callback_data=f"s_menu-eva-coll-{classmate[0]}")]
+            [IKBtn(classmate[1], callback_data=f"s_menu-eva-coll-{classmate[0]}")]
           )
         back = "-".join(selections[:-1])
-        keyboard.append([IKButton(g_lang.back_text[self.language], callback_data=back)])
+        keyboard.append([IKBtn(g_lang.back_text[self.language], callback_data=back)])
         if len(keyboard) == 1:
           text = s_lang.eva_collaboration(self.language, "no_classmates")
         else:
@@ -1400,8 +1398,6 @@ class Teacher(User):
   def reports(self, update, context, selections, query=""):
     def create_report(elements=False, mode="w+"):
       try:
-        if type(elements) == bool:
-          elements = sqlite.execute_sql(sql, df=True)
         if type(elements) != bool:
           first_column = elements.columns[0]
           elements.sort_values(by=[first_column], inplace=True)
@@ -1423,39 +1419,47 @@ class Teacher(User):
         return False
 
     def get_linguistic_term(values):
-      average = sum(values) / len(values)
-      if average > 5.5:
-        label = "s_6"
-        ling_term = g_lang.scale_7_labels(self.language, "Excellent")
-      elif average > 4.5:
-        label = "s_5"
-        ling_term = g_lang.scale_7_labels(self.language, "Very Good")
-      elif average > 3.5:
-        label = "s_4"
-        ling_term = g_lang.scale_7_labels(self.language, "Good")
-      elif average > 2.5:
-        label = "s_3"
-        ling_term = g_lang.scale_7_labels(self.language, "Normal")
-      elif average > 1.5:
-        label = "s_2"
-        ling_term = g_lang.scale_7_labels(self.language, "Bad")
-      elif average > 0.5:
-        label = "s_1"
-        ling_term = g_lang.scale_7_labels(self.language, "Very Bad")
-      else:
-        label = "s_0"
-        ling_term = g_lang.scale_7_labels(self.language, "Lousy")
-      return (average, label, ling_term)
+      try:
+        average = sum(values) / len(values)
+        if average > 5.5:
+          label = "s_6"
+          ling_term = g_lang.scale_7_labels(self.language, "Excellent")
+        elif average > 4.5:
+          label = "s_5"
+          ling_term = g_lang.scale_7_labels(self.language, "Very Good")
+        elif average > 3.5:
+          label = "s_4"
+          ling_term = g_lang.scale_7_labels(self.language, "Good")
+        elif average > 2.5:
+          label = "s_3"
+          ling_term = g_lang.scale_7_labels(self.language, "Normal")
+        elif average > 1.5:
+          label = "s_2"
+          ling_term = g_lang.scale_7_labels(self.language, "Bad")
+        elif average > 0.5:
+          label = "s_1"
+          ling_term = g_lang.scale_7_labels(self.language, "Very Bad")
+        else:
+          label = "s_0"
+          ling_term = g_lang.scale_7_labels(self.language, "Lousy")
+        return (average, label, ling_term)
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
 
     def add_total_row(df, pos_sum_col, pos_sum_row):
-      print(df)
-      first_column = df.columns[0]
-      # df.insert(-1, "TOTAL", 0)
-      df["TOTAL"] = 0
-      df["TOTAL"] = df.iloc[:, pos_sum_col:-1].sum(axis=1)
-      df.loc["TOTAL"] = df.iloc[:, pos_sum_row:].sum(axis=0)
-      df.loc["TOTAL", first_column] = "_TOTAL"
-      return df
+      try:
+        first_column = df.columns[0]
+        df["TOTAL"] = 0
+        df["TOTAL"] = df.iloc[:, pos_sum_col:-1].sum(axis=1)
+        df.loc["TOTAL"] = df.iloc[:, pos_sum_row:].sum(axis=0)
+        df.loc["TOTAL", first_column] = "_TOTAL"
+        return df
+      except:
+        error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
+        g_fun.print_except(error_path)
+        return False
 
     try:
       report_type = selections[2]
@@ -1466,7 +1470,9 @@ class Teacher(User):
       if report_type == "grades":
         file = f"{folder_path}/Grades"
         sql = f"SELECT * FROM grades"
+        df_grades = sqlite.execute_sql(sql, df=True)
         title = t_lang.title_file(self.language, "GRADE REPORT")
+        create_report(df_grades)
 
       elif report_type == "ARF":
         file = f"{folder_path}/ARF"
@@ -1477,10 +1483,12 @@ class Teacher(User):
             self.language, "LIGUISTIC REPORT ACADEMIC RISK FACTOR"
           )
         elif action == "risk":
+          file = f"{folder_path}/students_at_risk"
           week = g_fun.get_week("text")
           sql = f"SELECT email,{week} FROM linguistic_risk_factor WHERE {week} in ('moderate','critical', 'very critical')"
           title = t_lang.title_file(self.language, "STUDENTS AT ACADEMIC RISK REPORT")
-          file = f"{folder_path}/students_at_risk"
+        df_risk = sqlite.execute_sql(sql, df=True)
+        create_report(df_risk)
 
       elif report_type == "meetings":
         action = selections[3]
@@ -1492,7 +1500,6 @@ class Teacher(User):
               file = f"{folder_path}/Meetings_attendance"
               df_attendance = cfg.registered_stu[["_id", "email"]].copy()
               df_attendance.set_index("_id", inplace=True)
-              # df_attendance["TOTAL"] = 0
               for i in range(0, last_meeting + 1):
                 df_attendance[f"Meeting {i}"] = 0
                 sql = f"SELECT _id FROM meetings_attendance WHERE meeting = {i}"
@@ -1502,7 +1509,6 @@ class Teacher(User):
 
               title = t_lang.title_file(self.language, "GENERAL MESSAGE REPORT")
               create_report(df_attendance)
-              return True
             except:
               error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
               g_fun.print_except(error_path)
@@ -1514,12 +1520,12 @@ class Teacher(User):
               for i in range(0, last_meeting + 1):
                 keyboard.append(
                   [
-                    IKButton(
+                    IKBtn(
                       f"Meeting {i}", callback_data=f"t_menu-reports-meetings-meet-{i}"
                     )
                   ]
                 )
-              keyboard.append([IKButton("Atrás", callback_data="t_menu-reports")])
+              keyboard.append([IKBtn("Atrás", callback_data="t_menu-reports")])
 
               if len(keyboard) == 1:
                 print("No se ha realizado ningun meeting")
@@ -1530,7 +1536,7 @@ class Teacher(User):
 
             def prepare_report():
               df_students = cfg.registered_stu[["_id", "email", "planet"]].copy()
-              sql = f"""SELECT A.email, B.* FROM registered_students A 
+              sql = f"""SELECT A.email, B.* FROM registered_students A
                         LEFT JOIN student_messages B ON a._id = B._id
                         WHERE B.meeting = {meeting}"""
               df_meetings_msgs = sqlite.execute_sql(sql, df=True)
@@ -1560,7 +1566,7 @@ class Teacher(User):
                   self.language, "OUT OF MEETINGS PARTICIPATION REPORT"
                 )
                 create_report(df_meetings_msgs)
-                return True
+
             except:
               error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
               g_fun.print_except(error_path)
@@ -1569,7 +1575,7 @@ class Teacher(User):
             try:
               file = f"{folder_path}/Msgs_out_meetings"
               df_students = cfg.registered_stu[["_id", "email", "planet"]].copy()
-              sql = f"""SELECT A.email, B.* FROM registered_students A 
+              sql = f"""SELECT A.email, B.* FROM registered_students A
                       LEFT JOIN student_messages B ON a._id = B._id
                       WHERE B.meeting = -1"""
               df_meetings_msgs = sqlite.execute_sql(sql, df=True)
@@ -1589,7 +1595,6 @@ class Teacher(User):
                 self.language, "OUT OF MEETINGS PARTICIPATION REPORT"
               )
               create_report(df_meetings_msgs)
-              return True
 
             except:
               error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -1610,7 +1615,6 @@ class Teacher(User):
 
               title = t_lang.title_file(self.language, "GENERAL MESSAGE REPORT")
               create_report(df_students)
-              return True
             except:
               error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
               g_fun.print_except(error_path)
@@ -1628,7 +1632,6 @@ class Teacher(User):
 
         title = t_lang.title_file(self.language, "TEACHER EVALUATION REPORT")
         create_report(df_teacher_eva)
-        return True
 
       elif report_type == "eva_resources":
         file = f"{folder_path}/Eva_resources"
@@ -1648,7 +1651,7 @@ class Teacher(User):
           if section == "week":
             continue
           for resource in resources[section]:
-            sql = f"""SELECT value fROM opn_resources 
+            sql = f"""SELECT value fROM opn_resources
                       WHERE resource = '{resource}'"""
             values = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
             if values:
@@ -1673,7 +1676,6 @@ class Teacher(User):
 
         title = t_lang.title_file(self.language, "RESOURCES EVALUATION REPORT")
         create_report(df_resources)
-        return True
 
       elif report_type == "eva_p2p":
         file = f"{folder_path}/Eva_peer_colaboration"
@@ -1700,7 +1702,6 @@ class Teacher(User):
           else:
             text = t_lang.report_peer_eva(self.language, "all_students", data)
           query.edit_message_text(parse_mode="HTML", text=text)
-          return True
         else:
           sql = "SELECT COUNT (*) FROM report_eva_collaboration"
           if not sqlite.execute_sql(sql, fetch="fetchone")[0]:
@@ -1721,7 +1722,7 @@ class Teacher(User):
               df_grades = sqlite.execute_sql(sql, df=True)
               df_grades.set_index("email", inplace=True)
               for student in students_evaluated:
-                sql = f"""SELECT value FROM eva_collaboration 
+                sql = f"""SELECT value FROM eva_collaboration
                       WHERE classmate_id = {student}"""
                 values = sqlite.execute_sql(sql, fetch="fetchall", as_list=True)
                 values = [float(value[-1]) for value in values]
@@ -1747,6 +1748,8 @@ class Teacher(User):
           title = t_lang.title_file(
             self.language, "CLASSMATES EVALUATION REPORT IN MEETINGS"
           )
+          df_eva_collaboration = sqlite.execute_sql(sql, df=True)
+          create_report(df_eva_collaboration)
 
       elif report_type == "autoeva":
         file = f"{folder_path}/Autoevaluations"
@@ -1760,14 +1763,13 @@ class Teacher(User):
             df_autoevaluation["grade"] = 0.0
             df_autoevaluation.set_index("_id", inplace=True)
             for student in df_students:
-              sql = f"""SELECT SUM(value) FROM eva_autoevaluation 
+              sql = f"""SELECT SUM(value) FROM eva_autoevaluation
                         WHERE _id = {student}"""
               total = sqlite.execute_sql(sql, fetch="fetchone")[0]
               df_autoevaluation.loc[student, "evaluation"] = total
               df_autoevaluation.loc[student, "grade"] = total * 10 / 5
             title = t_lang.title_file(self.language, "AUTOEVALUATION REPORT")
             create_report(df_autoevaluation)
-            return True
           else:
             text = t_lang.repor_autoeva(self.language, "no_evaluation")
             query.edit_message_text(parse_mode="HTML", text=text)
@@ -1777,7 +1779,6 @@ class Teacher(User):
           query.edit_message_text(parse_mode="HTML", text=text)
           return False
 
-      create_report()
     except:
       error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
       g_fun.print_except(error_path, self.__str__())

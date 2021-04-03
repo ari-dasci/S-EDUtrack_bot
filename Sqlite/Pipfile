@@ -1,20 +1,40 @@
 [[source]]
-name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
+name = "pypi"
+
+[packages]
+appdirs = "==1.4.4"
+apscheduler = "==3.6.3"
+attrs = "==20.2.0"
+"backports.zoneinfo" = "==0.2.1"
+black = "==18.9b0"
+cblack = "==0.9"
+certifi = "==2020.6.20"
+cffi = "==1.14.3"
+click = "==7.1.2"
+colorama = "==0.4.3"
+cryptography = "==3.1"
+decorator = "==4.4.2"
+mypy-extensions = "==0.4.3"
+numpy = "==1.19.2"
+pandas = "==1.1.2"
+pathspec = "==0.8.0"
+pycparser = "==2.20"
+python-dateutil = "==2.8.1"
+python-telegram-bot = "==13.1"
+pytz = "==2020.1"
+regex = "==2020.7.14"
+six = "==1.15.0"
+telegram = "==0.0.1"
+toml = "==0.10.1"
+tornado = "==6.0.4"
+typed-ast = "==1.4.1"
+typing-extensions = "==3.7.4.3"
+tzlocal = "==2.1"
+ordered-set = "*"
 
 [dev-packages]
 
-[packages]
-telegram = "*"
-python-telegram-bot = "*"
-pandas = "*"
-colorama = "*"
-black = "==18.9b0"
-cblack = "*"
-
 [requires]
 python_version = "3.7"
-
-[pipenv]
-allow_prereleases = true

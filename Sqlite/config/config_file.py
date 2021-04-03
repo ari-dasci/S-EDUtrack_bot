@@ -1,23 +1,23 @@
 subject_data = {
-  "_id": "FS1920",
+  "_id": "FS1920", # Database name
   "name": "Fundamentos del Software",
-  "start_date": "22/09/2020",
-  "course_weeks": "15",
+  "start_date": "dd/mm/aaaa","start_vacations": "dd/mm/aaaa",
+  "end_vacations": "dd/mm/aaaa",  "course_weeks": "15", # Number of weeks of the course
   "max_final_grade": "10",
   "max_activity_grade": "10",
   "min_grade_to_pass": "5",
-  "min_ideal_grade": "8",
-  "activate_evaluations:": "0",
-  "active_planet_registry": "1",
+  "min_ideal_grade": "8", #A student's ideal grade should be a value between min_grade_to_pass+1 and max_final_grade
+  "activate_evaluations:": "0", # Permite evaluar a los compañeros, normalmente se realiza despues de las capsulas. Solo se realiza una vez en el curso. La opinion esta abierta todo el curso.
+  "active_planet_registry": "1",Allows to register students on the planets. Disable if you no longer want a student to be able to register.
 }
 
 teacher_data = {
-  "email": "edutrack.ugr@gmail.com",
-  "telegram_name": "Soporte EDUtrack",
-  "username": "Soporte_EDUtrack",
-  "telegram_id": "970331050",
+  "email": "your_email",
+  "telegram_name": "Your telegram_name",
+  "username": "your_username",
+  "telegram_id": "your_telegram_id",
   "is_teacher": 1,
-  "language": "es",
+  "language": "es", # es for Spanish, en for english
 }
 
 ####################################

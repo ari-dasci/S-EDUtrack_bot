@@ -55,12 +55,6 @@ def config_subject():
     # Get the name and email associated with the Telegram ID of each registered student.
     cfg.registered_stu = sqlite.table_DB_to_df("registered_students")
 
-    ''' sql = f"""SELECT _id, full_name, email FROM registered_students"""
-    data = sqlite.execute_sql(sql, fetch="fetchall")
-    if data:
-      for student in data:
-        cfg.registered_stu[student[0]] = {"full_name":student[1],"email":student[2]} '''
-
     # Gets the tree of the evaluation scheme
     b_fun.eva_scheme_tree()
 
@@ -73,6 +67,12 @@ def config_subject():
     # Get the resources up to the current week
     cfg.resources["week"] = get_week("num")
     get_resources()
+
+    # GET ignore_categories
+    sql = f"SELECT ignore_categories FROM subject_data"
+    categories = sqlite.execute_sql(sql, fetch="fetchone")[0]
+    if categories:
+      cfg.subject_data["ignore_categories"] = set(categories.split(";"))
 
   except:
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
@@ -127,11 +127,11 @@ def get_user_data(user_data, planet=""):
 def get_weekday_start(date):
   try:
     day = date.strftime("%A")
-    if day != "Saturday":
+    if day != "Monday":
       for i in range(1, 8):
         monday_date = date - timedelta(days=i)
         day = monday_date.strftime("%A")
-        if day == "Saturday":
+        if day == "Monday":
           return monday_date
     else:
       return date
@@ -146,6 +146,18 @@ def get_week(action):
   try:
     today = datetime.now()
     difference = today - cfg.day_start_week
+    if cfg.subject_data["start_vacations"]:
+      start_vacations = datetime.strptime(
+        cfg.subject_data["start_vacations"], "%d/%m/%Y"
+      )
+      if today >= start_vacations:
+        end_vacations = datetime.strptime(cfg.subject_data["end_vacations"], "%d/%m/%Y")
+        if today > end_vacations:
+          vacations_days = end_vacations - start_vacations
+        else:
+          vacations_days = today - start_vacations
+        difference -= vacations_days + timedelta(days=1)
+
     num_week = int(difference.days / 7) + 1
     course_weeks = cfg.subject_data["course_weeks"]
     if num_week > int(course_weeks):
@@ -262,16 +274,6 @@ def db_to_csv_html(df, file, headers=[], title="", date=True, mode="w+"):
     df = df.round(2)
     create_files(file, df, title, date, mode=mode)
     return True
-    """
-    ## Esto estaba antes
-    df = pd.DataFrame(list(elements))
-    print(df)
-    df.to_csv(file, index=False)
-    file = file[:-4]
-    df.index = range(1, df.shape[0] + 1)
-    with open(file + ".html", "w") as html_file:
-      html_file.write(df.to_html(justify="center"))
-    return True """
   except:
     print_except(inspect.stack()[0][3])
     return False
