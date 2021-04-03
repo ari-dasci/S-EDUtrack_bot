@@ -1,3 +1,7 @@
+#===========================================
+# Data to modify
+#=========================================
+
 subject_data = {
   "_id": "your subject_id or database_name", # Database name
   "name": "Subject_name",
@@ -19,6 +23,10 @@ teacher_data = {
   "is_teacher": 1,
   "language": "es", # es for Spanish, en for english
 }
+
+#===================================================
+# Don't modify
+#===================================================
 
 ####################################
 standby_teachers = False
