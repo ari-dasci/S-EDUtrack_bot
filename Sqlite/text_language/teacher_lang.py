@@ -253,9 +253,10 @@ def menu_act(lang):
       ],
       [
         # IKBtn("Add", callback_data="t_menu-act-add"),
-        IKBtn("Delete", callback_data="t_menu-act-delete"),
+        IKBtn("Replace", callback_data="t_menu-act-replace"),
         IKBtn("Modify", callback_data="t_menu-act-modify"),
       ],
+      [IKBtn("Activate Activity", callback_data="t_menu-act-active")],
       [IKBtn("Back", callback_data="t_menu-back")],
     ]
   return (text, opt)
