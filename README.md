@@ -5,17 +5,17 @@ Herramienta de comunicación simple que ayuda a la evaluación de la calidad de 
 ## Tabla de contenidos:
 ---
 
-- [Comenzando](#Comenzando)
-- [Pre-requisitos](##pre-requisitos)
-- [Ejecutando las pruebas ⚙️](#ejecutando-las-pruebas-⚙️)
-- [Despliegue 📦](#despliegue)
-- [Construido con 🛠️](#cómo-contribuir)
-- [Contribuyendo 🖇️](#código-de-conducta)
-- [Wiki 📖](#autores)
-- [Versionado 📌](#información-adicional)
-- [Autores ✒️](#licencia)
-- [Licencia 📄](#limitación-de-responsabilidades)
-- [Expresiones de Gratitud 🎁](#limitación-de-responsabilidades)
+- [Comenzando](#comenzando-)
+- [Pre-requisitos](##pre-requisitos-)
+- [Ejecutando las pruebas ⚙️](#ejecutando-las-pruebas-)
+- [Despliegue 📦](#despliegue-)
+- [Construido con 🛠️](#construido-con-)
+- [Contribuyendo 🖇️](#contribuyendo-)
+- [Wiki 📖](#wiki_)
+- [Versionado 📌](#versionado-)
+- [Autores ✒️](#autores-)
+- [Licencia 📄](#licencia-)
+- [Expresiones de Gratitud 🎁](#expresiones-de-gratitud-)
 
 ## Comenzando 🚀
 
