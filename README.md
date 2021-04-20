@@ -6,9 +6,9 @@ Herramienta de comunicación simple que ayuda a la evaluación de la calidad de 
 ---
 
 - [Comenzando](#Comenzando)
-- [Pre-requisitos](##Pre-requisitos)
-- [Ejecutando las pruebas ⚙️](#Ejecutando-las-pruebas-⚙️)
-- [Despliegue 📦](#guía-de-instalación)
+- [Pre-requisitos](##pre-requisitos)
+- [Ejecutando las pruebas ⚙️](#ejecutando-las-pruebas-⚙️)
+- [Despliegue 📦](#despliegue)
 - [Construido con 🛠️](#cómo-contribuir)
 - [Contribuyendo 🖇️](#código-de-conducta)
 - [Wiki 📖](#autores)
