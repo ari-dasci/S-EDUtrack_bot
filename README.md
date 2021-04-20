@@ -2,6 +2,21 @@
 
 Herramienta de comunicación simple que ayuda a la evaluación de la calidad de la educación superior en un entorno de metodologías combinadas, "Flipped Classroom" y  "M-Learning", denominado entorno FC-ML.
 
+## Tabla de contenidos:
+---
+
+- [Comenzando](#Comenzando)
+- [Pre-requisitos](##Pre-requisitos)
+- [Ejecutando las pruebas ⚙️](#Ejecutando-las-pruebas-⚙️)
+- [Despliegue 📦](#guía-de-instalación)
+- [Construido con 🛠️](#cómo-contribuir)
+- [Contribuyendo 🖇️](#código-de-conducta)
+- [Wiki 📖](#autores)
+- [Versionado 📌](#información-adicional)
+- [Autores ✒️](#licencia)
+- [Licencia 📄](#limitación-de-responsabilidades)
+- [Expresiones de Gratitud 🎁](#limitación-de-responsabilidades)
+
 ## Comenzando 🚀
 
 _Estas instrucciones te permitirán obtener una copia del proyecto en funcionamiento en tu máquina local para propósitos de desarrollo y pruebas._
