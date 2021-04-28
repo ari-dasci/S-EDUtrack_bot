@@ -1,6 +1,0 @@
-arrow
-csv
-pymongo
-dnspython
-python-telegram-bot==12.0.0b1
-telegram
