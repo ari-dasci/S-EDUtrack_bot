@@ -3,25 +3,30 @@
 #=========================================
 
 subject_data = {
-  "_id": "your subject_id or database_name", # Database name
-  "name": "Subject_name",
-  "start_date": "dd/mm/aaaa","start_vacations": "dd/mm/aaaa",
-  "end_vacations": "dd/mm/aaaa",  "course_weeks": "15", # Number of weeks of the course
-  "max_final_grade": "10",
-  "max_activity_grade": "10",
-  "min_grade_to_pass": "5",
-  "min_ideal_grade": "8", #A student's ideal grade should be a value between min_grade_to_pass+1 and max_final_grade
-  "activate_evaluations:": "0", # Permite evaluar a los compañeros, normalmente se realiza despues de las capsulas. Solo se realiza una vez en el curso. La opinion esta abierta todo el curso.
-  "active_planet_registry": "1",Allows to register students on the planets. Disable if you no longer want a student to be able to register.
+  "_id": "replace subject_id", # Database name
+  "name": "replace subject_name",
+  "start_date": "replace start_date", # format dd/mm/yyyy
+  "course_weeks": "replace num_weeks", # Number of weeks of the course excluding vacation weeks
+  "start_vacations" : "replace start_vacations", # format dd/mm/yyyy  if there aren't vacations ""
+  "end_vacations": "replace end_vacations", # format dd/mm/yyyy  if there aren't vacations ""
+  "max_final_grade": "replace max_final_grade", # Highest grade a student can get
+  "max_activity_grade": "replace max_activity_grade", # Maximum qualification that an activity can get
+  "min_grade_to_pass": "replace min_grade_to_pass", # Minimum grade a student must get in order not to fail
+  "min_ideal_grade": "replace min_ideal_grade", # A student's ideal grade should be a value between max_final_grade and min_grade_to_pass+1. See the manual for more information on this note.
+  "activate_evaluations:": "0", # Don´t modify
+  "active_planet_registry": "1", # Don´t modify
+  "maintenance": "0", # Don´t modify
+  "ignore_categories": set(), # Don´t modify
 }
 
 teacher_data = {
-  "email": "your_email",
-  "telegram_name": "Your telegram_name",
-  "username": "your_username",
-  "telegram_id": "your_telegram_id",
-  "is_teacher": 1,
-  "language": "es", # es for Spanish, en for english
+  "email": "replace email", # teacher email
+  "name": "replace teacher_name",
+  "telegram_name": "replace telegram_name",
+  "username": "replace username",
+  "telegram_id": "replace _id", # To know the teacher's id visit @userinfobot on Telegram from the teacher's account.
+  "language": "replace language", # es for Spanish, en for english
+  "is_teacher": 1, # Don´t modify
 }
 
 #===================================================
@@ -67,7 +72,6 @@ list_config_files = [
   "add_students_format.csv",
   "replace_students_format.csv",
   "activities_format.csv",
-  # "add_activities.csv",
   "replace_activities_format.csv",
 ]
 
@@ -137,7 +141,7 @@ tables = {
         FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         """,
   "opn_planet": f"""
-        _id_INTEGER NOT NULL,
+        _id INTEGER NOT NULL,
         planet TEXT NOT NULL,
         week INTEGER NOT NULL,
         value TEXT NOT NULL,
@@ -166,7 +170,7 @@ tables = {
   "planets": """
         _id TEXT NOT NULL PRIMARY KEY,
         chat_id INTEGER DEFAULT '',
-        num_members	INTEGER NOT NULL DEFAULT 0,
+        num_members INTEGER NOT NULL DEFAULT 0,
         active INTEGER NOT NULL DEFAULT 0
         """,
   "planet_admins": """
@@ -175,16 +179,16 @@ tables = {
         FOREIGN KEY(_id) REFERENCES planets(_id)
         """,
   "planet_users": """
-        _id	INTEGER NOT NULL PRIMARY KEY,
+        _id INTEGER NOT NULL PRIMARY KEY,
         planet TEXT,
         registered INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY(_id) REFERENCES telegram_users(_id),
         FOREIGN KEY(planet) REFERENCES planets(_id)
         """,
   "registered_students": """
-        _id	INTEGER NOT NULL PRIMARY KEY,
-        full_name	TEXT NOT NULL,
-        email	TEXT NOT NULL,
+        _id INTEGER NOT NULL PRIMARY KEY,
+        full_name TEXT NOT NULL,
+        email TEXT NOT NULL,
         username TEXT NOT NULL,
         planet TEXT,
         FOREIGN KEY(_id) REFERENCES telegram_users(_id),
@@ -195,7 +199,7 @@ tables = {
   "report_eva_collaboration": """
         email TEXT NOT NULL PRIMARY KEY,
         evaluation_obtained REAL DEFAULT 0,
-        label DEFAULT '',
+        label TEXT DEFAULT '',
         lingustic_term TEXT DEFAULT '',
         grade REAL DEFAULT 0,
         evaluated_peers INTEGER DEFAULT 0,
@@ -206,16 +210,16 @@ tables = {
         FOREIGN KEY(email) REFERENCES students_file(email)
         """,
   "students_file": """
-        email	TEXT NOT NULL PRIMARY KEY,
-        first_name	TEXT,
-        last_name	TEXT,
-        username	TEXT,
-        planet	TEXT,
+        email TEXT NOT NULL PRIMARY KEY,
+        first_name TEXT,
+        last_name TEXT,
+        username TEXT,
+        planet TEXT,
         FOREIGN KEY(username) REFERENCES telegram_users(username)
         FOREIGN KEY("planet") REFERENCES "planets"("_id")
         """,
   "student_messages": f"""
-        _id	INTEGER NOT NULL ,
+        _id INTEGER NOT NULL ,
         planet TEXT,
         meeting INTEGER DEFAULT -1,
         TEXT INTEGER DEFAULT 0,
@@ -236,26 +240,31 @@ tables = {
         FOREIGN KEY(_id) REFERENCES telegram_users(_id)
         """,
   "subject_data": f"""
-        _id	TEXT NOT NULL PRIMARY KEY,
+        _id TEXT NOT NULL PRIMARY KEY,
         name TEXT NOT NULL,
         start_date TEXT NOT NULL,
+        start_vacations TEXT NOT NULL,
+        end_vacations TEXT NOT NULL,
         course_weeks INTEGER NOT NULL,
-        max_final_grade	REAL NOT NULL DEFAULT 10,
+        max_final_grade REAL NOT NULL DEFAULT 10,
         max_activity_grade REAL NOT NULL DEFAULT 10,
-        min_grade_to_pass	REAL NOT NULL DEFAULT 5,
-        min_ideal_grade	REAL NOT NULL DEFAULT 10,
-        activate_evaluations INTEGER DEFAULT 0,
-        active_planet_registry INTEGER NOT NULL DEFAULT 1
+        min_grade_to_pass REAL NOT NULL DEFAULT 5,
+        min_ideal_grade REAL NOT NULL DEFAULT 10,
+        activate_evaluations INTEGER NOT NULL DEFAULT 0,
+        active_planet_registry INTEGER NOT NULL DEFAULT 1,
+        maintenance INTEGER NOT NULL DEFAULT 0,
+        ignore_categories TEXT DEFAULT ''
         """,
   "teachers": """
-        email	TEXT NOT NULL PRIMARY KEY,
-        telegram_name	TEXT NOT NULL,
+        email TEXT NOT NULL PRIMARY KEY,
+        name TEXT NOT NULL,
+        telegram_name TEXT NOT NULL,
         username TEXT NOT NULL,
-        telegram_id	INTEGER,
+        telegram_id INTEGER,
         FOREIGN KEY(telegram_id) REFERENCES telegram_users(_id)
         """,
   "teacher_messages": f"""
-        _id	INTEGER NOT NULL,
+        _id INTEGER NOT NULL,
         planet TEXT,
         meeting INTEGER DEFAULT -1,
         TEXT INTEGER DEFAULT 0,
@@ -271,10 +280,10 @@ tables = {
         """,
   "telegram_users": """
         _id INTEGER NOT NULL PRIMARY KEY,
-        telegram_name	TEXT NOT NULL,
-        username	TEXT NOT NULL,
-        is_teacher	INTEGER NOT NULL DEFAULT 0,
-        language	TEXT DEFAULT 'en'
+        telegram_name TEXT NOT NULL,
+        username TEXT NOT NULL,
+        is_teacher INTEGER NOT NULL DEFAULT 0,
+        language TEXT DEFAULT 'en'
         """,
 }
 

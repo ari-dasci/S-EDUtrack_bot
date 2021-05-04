@@ -146,7 +146,7 @@ def get_week(action):
   try:
     today = datetime.now()
     difference = today - cfg.day_start_week
-    if cfg.subject_data["start_vacations"]:
+    if cfg.subject_data["start_vacations"] != "dd/mm/yyyy" and cfg.subject_data["start_vacations"]:
       start_vacations = datetime.strptime(
         cfg.subject_data["start_vacations"], "%d/%m/%Y"
       )

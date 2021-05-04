@@ -1,3 +1,9 @@
+###########################################################
+# EDUtrack_bot  Copyright (C) 2021 Jeovani Morales
+# https://github.com/jeovani-morales/EDUtrack_bot
+# GPL V3 Licence https://www.gnu.org/licenses/gpl-3.0.html
+###########################################################
+
 import inspect
 import logging
 import os
@@ -40,7 +46,10 @@ if mode == "dev":
 
   def run(updater):
     updater.start_polling()
-    logging.info("Bot cargado")
+    logging.info("""
+    EDUtrack_bot  Copyright (C) 2021  Jeovani Morales
+    This program comes with ABSOLUTELY NO WARRANTY.
+    This is free software, and you are welcome to redistribute it under certain conditions see https://github.com/jeovani-morales/EDUtrack_bot/blob/master/License.md\n\Loaded Bot""")
     updater.idle()  # Permite finalizar el bot con Ctrl + C
 
 
@@ -51,7 +60,12 @@ elif mode == "prod":
     HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
     updater.start_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
     updater.bot.set_webhook(f"https://{HEROKU_APP_NAME}.herokuapp.com/{TOKEN}")
-    logging.info("Bot cargado")
+    logging.info("""
+    EDUtrack_bot  Copyright (C) 2021  Jeovani Morales
+    This program comes with ABSOLUTELY NO WARRANTY.
+    This is free software, and you are welcome to redistribute it under certain conditions see https://github.com/jeovani-morales/EDUtrack_bot/blob/master/License.md\n\Loaded Bot""")
+
+
 
 
 def main():
