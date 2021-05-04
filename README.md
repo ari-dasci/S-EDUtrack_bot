@@ -137,12 +137,13 @@ Para finalizar la configuración de EDUtrack bot se deberá:
 * Tras crear los planetas y asignar su bot como adminsitrador iniciar una conversación con el bot creado anteriormente, este le enviara 2 archivos, **`students_format.csv`** y **`activities_format.csv`** que son los formatos que se deberán llenar y subir para terminar de configurar la asignatura. Tras subir los archivos los estudiantespodran acceder a su bot instancia de EDUtrack .
 
 ## Despliegue en Heroku 📦
-Antes de un empezar:
+### Antes del despliegue:
+#### 1.- Instala los prerequisitos
 1. <a href="https://id.heroku.com/login" target="_blank">Ingresa</a>/<a href="https://signup.heroku.com/" target="_blank">crea</a> una cuenta de Heroku desde su sitio web. Heroku ofrece un plan especial si tienes una cuenta de estudiante/profesor en <a href="https://education.github.com/" target="_blank">GitHub Education</a>. Si cuentas con una cuenta educativa ingresa a <a href="https://www.heroku.com/github-students" target="_blank">Heroku for GitHub Students</a>
 2. Instala <a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git" target="_blank">Git</a>
 3. Instala <a href="https://devcenter.heroku.com/articles/getting-started-with-python#set-up" target="_blank">Heroku CLI</a>
 
-> <span style="color:DarkRed"> NOTA IMPORTANTE: El plan gratuito en heroku, pone a dormir su bot después de 30 minutos de inactividad (pero no en el plan educativo). Al recibir una solicitud despertará, pero provoca un breve retraso para esta primera solicitud, despúes respondera casi inmediatamente hasta que vuelva a dormir por inactividad. Tambien es importante considerar que el plan gratuito incluye 450 horas de uso mensuales, que se pueden incrementar a 1000 si se añande una tarjeta de credito a su cuenta (mientras no rebase el límite de uso no se realizara ningún cargo). Al dormir un bot (o una heroku app), no gasta horas. Para mas información visite <a href="https://devcenter.heroku.com/articles/free-dyno-hours" target="_blank">Free Dyno Hours</a>
+> <span style="color:DarkRed"> NOTA IMPORTANTE: El plan gratuito en heroku, pone a dormir su bot después de 30 minutos de inactividad (pero no en el plan educativo). Al recibir una solicitud despertará, pero provoca un breve retraso para esta primera solicitud, despúes respondera casi inmediatamente hasta que vuelva a dormir por inactividad. Tambien es importante considerar que el plan gratuito incluye 450 horas de uso mensuales, que se pueden incrementar a 1000 si se añande una tarjeta de credito a su cuenta (mientras no rebase el límite de uso no se realizara ningún cargo). Al dormir un bot (o una heroku app), no gasta horas. Para mas información visite <a href="https://devcenter.heroku.com/articles/free-dyno-hours" target="_blank">Free Dyno Hours</a> <br><br><a href="https://github.com/romainbutteaud" target="_blank">Romain Butteaud</a> desarrollo una app para evitar que tu aplicación gratuita de Heroku vuelva a quedarse dormida. Sólo tienes que añadir la tuya aquí <a href="https://kaffeine.herokuapp.com/" target="_blank">kaffeine.herokuapp.com</a>
 
 Para realizar el despliegue en Heroku se debe de contar con 2 archivos (los cuales ya se encuentran en el repositorio) **`Procfile`** (asegúrarse de que no tiene ninguna extensión de archivo como .txt, porque no funcionará):
 ```
@@ -158,7 +159,7 @@ python-telegram-bot>=12.7
 ```
 
 
-### Iniciar Sesión en Heroku
+#### 2.- Iniciar Sesión en Heroku
 Inicie sesión una cuenta en Heroku desde tu terminal/simbolo de Sistema.
 
 ```
@@ -171,8 +172,8 @@ heroku: Press any key to open up the browser to login or q to exit:
 
 
 
-### Crear una webapp en Heroku
-**Si ya cuenta con una web app puede omitir estos pasos. Vaya al punto [Establecer las variables de entorno](estableer-las-variables-de-entorno).**
+#### 3.- Crear una webapp en Heroku
+**Si ya cuenta con una web app puede omitir estos pasos. Vaya al punto [4.- Establecer las variables de entorno](#4\--establecer-las-variables-de-entorno).**
 
 Una vez que haya iniciado la sesión, vuelva a la línea de comandos. Para crear una nueva webapp ingrese:
 
@@ -183,8 +184,8 @@ Creating ⬢ <your_app_name>... done
 https://<your_app_name>.herokuapp.com/ | https://git.heroku.com/<your_app_name>.git
 ```
 
-### Establecer las variables de entorno
-- **HEROKU_APP_NAME**
+#### 4.- Establecer las variables de entorno
+1. **HEROKU_APP_NAME**
     ```
     $ heroku config:set HEROKU_APP_NAME=<your_app_name> -a <your_app_name>
     
@@ -193,7 +194,7 @@ https://<your_app_name>.herokuapp.com/ | https://git.heroku.com/<your_app_name>.
     HEROKU_APP_NAME: <your_app_name>
     ```
 
-- **TOKEN**
+2. **TOKEN**
     
     ```
     $ heroku config:set TOKEN=<paste_your_TOKEN_bot> -a <your_app_name>
@@ -201,7 +202,7 @@ https://<your_app_name>.herokuapp.com/ | https://git.heroku.com/<your_app_name>.
     Setting TOKEN and restarting ⬢ <your_app_name>.. done, v3
     TOKEN: <your_TOKEN_bot>
     ```
-- **MODE** (debe ser prod)
+3. **MODE** (debe ser prod)
     ```
     $ heroku config:set MODE=prod -a <your_app_name>
     
@@ -210,9 +211,10 @@ https://<your_app_name>.herokuapp.com/ | https://git.heroku.com/<your_app_name>.
     ```
 
 
+### Despliegue con Heroku CLI
 
 
-### 2. Despliegue con un contenedor Docker y Heroku 
+### Despliegue con un contenedor Docker y Heroku 
 
 
 ## Construido con 🛠️
