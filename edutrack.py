@@ -37,25 +37,36 @@ TOKEN = os.getenv("TOKEN")
 if TOKEN:
   mode = os.getenv("MODE")
   if not mode:
-    sys.exit(logging.info(g_lang.not_env_variable("MODE")))
+    msg_log=g_lang.not_env_variable("MODE")
+    print("INFO",msg_log)
+    sys.exit(logging.info(msg_log))
 else:
   try:
-    if os.path.isfile("TOKEN.py"):
-      from TOKEN.py import TOKEN
-    else:
-      raise
+      from config.config_file import TOKEN
+      if not TOKEN or TOKEN == "replace TOKEN":
+        raise
   except:
-    sys.exit(logging.info(g_lang.not_env_variable("TOKEN")))
+    msg_log = g_lang.not_env_variable("TOKEN")
+    print("INFO:",msg_log)
+    sys.exit(logging.info(msg_log))
   mode = "dev"
 
 if mode == "dev":
 
   def run(updater):
     updater.start_polling()
-    logging.info("""
-    EDUtrack_bot  Copyright (C) 2021  Jeovani Morales
-    This program comes with ABSOLUTELY NO WARRANTY.
-    This is free software, and you are welcome to redistribute it under certain conditions see https://github.com/jeovani-morales/EDUtrack_bot/blob/master/License.md\n\Loaded Bot""")
+    msg_log = """
+    ====================================================
+    | EDUtrack_bot  Copyright (C) 2021  Jeovani Morales
+    | This program comes with ABSOLUTELY NO WARRANTY.
+    | This is free software, and you are welcome
+    | to redistribute it under certain conditions see
+    | https://github.com/jeovani-morales/EDUtrack_bot
+    ====================================================
+
+    Loaded Bot"""
+    logging.info(msg_log)
+    print(msg_log)
     updater.idle()  # Permite finalizar el bot con Ctrl + C
 
 
@@ -66,10 +77,18 @@ elif mode == "prod":
     HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
     updater.start_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
     updater.bot.set_webhook(f"https://{HEROKU_APP_NAME}.herokuapp.com/{TOKEN}")
-    logging.info("""
-    EDUtrack_bot  Copyright (C) 2021  Jeovani Morales
-    This program comes with ABSOLUTELY NO WARRANTY.
-    This is free software, and you are welcome to redistribute it under certain conditions see https://github.com/jeovani-morales/EDUtrack_bot/blob/master/License.md\n\Loaded Bot""")
+    msg_log = """
+    ====================================================
+    | EDUtrack_bot  Copyright (C) 2021  Jeovani Morales
+    | This program comes with ABSOLUTELY NO WARRANTY.
+    | This is free software, and you are welcome
+    | to redistribute it under certain conditions see
+    | https://github.com/jeovani-morales/EDUtrack_bot
+    ====================================================
+
+    Loaded Bot"""
+    logging.info(msg_log)
+    print(msg_log)
 
 
 def main():
