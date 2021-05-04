@@ -3,7 +3,6 @@
 # https://github.com/jeovani-morales/EDUtrack_bot
 # GPL V3 Licence https://www.gnu.org/licenses/gpl-3.0.html
 ###########################################################
-
 import inspect
 import logging
 import os
@@ -12,7 +11,6 @@ from time import time
 
 import telegram
 
-# from telegram.ext import CallbackContext
 from telegram.ext import CallbackQueryHandler as CQ_Hdl
 from telegram.ext import CommandHandler as Cmd_Hdl
 from telegram.ext import Filters
@@ -36,11 +34,19 @@ logging.basicConfig(
 
 # Get the token and the working mode
 TOKEN = os.getenv("TOKEN")
-mode = os.getenv("MODE")
-
-if not TOKEN or not mode:
-  env_var = "TOKEN" if not TOKEN else "MODE"
-  sys.exit(logging.info(g_lang.not_env_variable(env_var)))
+if TOKEN:
+  mode = os.getenv("MODE")
+  if not mode:
+    sys.exit(logging.info(g_lang.not_env_variable("MODE")))
+else:
+  try:
+    if os.path.isfile("TOKEN.py"):
+      from TOKEN.py import TOKEN
+    else:
+      raise
+  except:
+    sys.exit(logging.info(g_lang.not_env_variable("TOKEN")))
+  mode = "dev"
 
 if mode == "dev":
 
@@ -64,8 +70,6 @@ elif mode == "prod":
     EDUtrack_bot  Copyright (C) 2021  Jeovani Morales
     This program comes with ABSOLUTELY NO WARRANTY.
     This is free software, and you are welcome to redistribute it under certain conditions see https://github.com/jeovani-morales/EDUtrack_bot/blob/master/License.md\n\Loaded Bot""")
-
-
 
 
 def main():
@@ -131,8 +135,6 @@ def main():
     error_path = f"{inspect.stack()[0][1]} - {inspect.stack()[0][3]}"
     g_fun.print_except(error_path)
     return False
-
-
 
 
 if __name__ == "__main__":
