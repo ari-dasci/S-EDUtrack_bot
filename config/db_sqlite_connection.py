@@ -66,13 +66,16 @@ def create_db():
       print(f"Se ha agregado la tabla {table} a la base de datos")
 
     # SET SUBJECT DATA
-    sql = f"""INSERT INTO subject_data VALUES {tuple(cfg.subject_data.values())}"""
+    subject_info = cfg.subject_data.copy()
+    subject_info["ignore_categories"] = ""
+    sql = f"""INSERT INTO subject_data VALUES {tuple(subject_info.values())}"""
 
     execute_sql(sql)
 
     # sql = f"""INSERT INTO teachers VALUES(
     sql = f"""INSERT OR IGNORE INTO teachers VALUES(
       "{cfg.teacher_data['email']}",
+      "{cfg.teacher_data['name']}",
       "{cfg.teacher_data['telegram_name']}",
       "{cfg.teacher_data['username']}",
       "{int(cfg.teacher_data['telegram_id'])}"
