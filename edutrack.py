@@ -26,6 +26,11 @@ from functions import jobs_queue
 from text_language import general_lang as g_lang
 
 # Config logging
+try:
+  os.stat("./logs")
+except:
+  os.mkdir("./logs")
+
 logging.basicConfig(
   format="%(asctime)s - %(levelname)s: %(message)s",
   level=logging.INFO,
