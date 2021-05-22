@@ -173,7 +173,7 @@ Para finalizar la configuración de EDUtrack bot se deberá:
 
 * Crear los planetas (grupos de telegram) y asignar el bot creado como administrador en cada uno de ellos, esto es de suma importancia ya que solo como administrador el bot tendra acceso a contabilizar los mensajes de los estudiantes.
 
-> **NOTA IMPORTANTE:** Al crear los planetas se ofrece la opción  **Historial del chat para nuevos miebros** que por default esta como ***`HIDDEN`*** si se cambia por ***`VISIBLE`***, Telegram modifica el estatus de grupo a supergrupo  por lo que los administradores previamente dados de alta se resetearan, es una cuestion de Telegram, por lo que es necesario volver a dar de alta al bot como administrador.
+> <div style="background-color:#FBDBDB"> <b>NOTA IMPORTANTE:</b> Al crear los planetas se ofrece la opción  **Historial del chat para nuevos miebros** que por default esta como ***`HIDDEN`*** si se cambia por ***`VISIBLE`***, Telegram modifica el estatus de grupo a supergrupo  por lo que los administradores previamente dados de alta se resetearan, es una cuestion de Telegram, por lo que es necesario volver a dar de alta al bot como administrador.</div>
 
 * Tras crear los planetas y asignar su bot como adminsitrador iniciar una conversación con el bot creado anteriormente, este le enviara 2 archivos, **`students_format.csv`** y **`activities_format.csv`** que son los formatos que se deberán llenar y subir para terminar de configurar la asignatura. Tras subir los archivos los estudiantespodran acceder a su bot instancia de EDUtrack .
 
@@ -186,7 +186,7 @@ Para finalizar la configuración de EDUtrack bot se deberá:
 2. Instala <a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git" target="_blank">Git</a>
 3. Instala <a href="https://devcenter.heroku.com/articles/getting-started-with-python#set-up" target="_blank">Heroku CLI</a>
 
->**NOTA IMPORTANTE:** El plan gratuito en heroku, pone a dormir su bot después de 30 minutos de inactividad (pero no en el plan educativo). Al recibir una solicitud despertará, pero provoca un breve retraso para esta primera solicitud, despúes respondera casi inmediatamente hasta que vuelva a dormir por inactividad. Tambien es importante considerar que el plan gratuito incluye 450 horas de uso mensuales, que se pueden incrementar a 1000 si se añande una tarjeta de credito a su cuenta (mientras no rebase el límite de uso no se realizara ningún cargo). Al dormir un bot (o una heroku app), no gasta horas. Para mas información visite <a href="https://devcenter.heroku.com/articles/free-dyno-hours" target="_blank">Free Dyno Hours</a> <br><br><a href="https://github.com/romainbutteaud" target="_blank">Romain Butteaud</a> desarrollo una app para evitar que tu aplicación gratuita de Heroku vuelva a quedarse dormida. Sólo tienes que añadir la tuya aquí <a href="https://kaffeine.herokuapp.com/" target="_blank">kaffeine.herokuapp.com</a>
+><div style="background-color:#FBDBDB"> <b>NOTA IMPORTANTE:</b> El plan gratuito en heroku, pone a dormir su bot después de 30 minutos de inactividad (pero no en el plan educativo). Al recibir una solicitud despertará, pero provoca un breve retraso para esta primera solicitud, despúes respondera casi inmediatamente hasta que vuelva a dormir por inactividad. Tambien es importante considerar que el plan gratuito incluye 450 horas de uso mensuales, que se pueden incrementar a 1000 si se añande una tarjeta de credito a su cuenta (mientras no rebase el límite de uso no se realizara ningún cargo). Al dormir un bot (o una heroku app), no gasta horas. Para mas información visite <a href="https://devcenter.heroku.com/articles/free-dyno-hours" target="_blank">Free Dyno Hours</a>.<br><a href="https://github.com/romainbutteaud" target="_blank">Romain Butteaud</a> desarrollo una app para evitar que tu aplicación gratuita de Heroku vuelva a quedarse dormida. Sólo tienes que añadir la tuya aquí <a href="https://kaffeine.herokuapp.com/" target="_blank">kaffeine.herokuapp.com</a>.</div>
 
 Para realizar el despliegue en Heroku se debe de contar con 2 archivos (los cuales ya se encuentran en el repositorio) **`Procfile`** (asegúrarse de que no tiene ninguna extensión de archivo como .txt, porque no funcionará):
 
@@ -307,3 +307,4 @@ Este proyecto está bajo la Licencia (Tu Licencia) - mira el archivo [LICENSE.md
 
 ---
 ⌨️ con ❤️ por [Villanuevand](https://github.com/Villanuevand) 😊
+
