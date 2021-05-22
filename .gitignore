@@ -172,3 +172,7 @@ Sqlite/files/download/*
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,python
 
 
+Pipfile.lock
+Pipfile.lock
+*.lock
+Pipfile

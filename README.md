@@ -57,7 +57,7 @@ Para configurar los archivos de EDUtrack se puede realizar de 2 formas:
 2. Clonar el repositorio o descargar el zip desde GitHub
 
 ```
-$ git clone https://github.com/jeovani-morales/EDUtrack_bot
+$ git clone https://github.com/jeovani-morales/EDUtrack_bot.git
 
 ```
 Presiona **`Enter`** para crear tu clon local.
