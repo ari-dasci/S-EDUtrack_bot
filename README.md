@@ -39,7 +39,7 @@ La configuración de EDUtrack se puede desarrollar en 3 pasos
 #### 1.- Crea un bot para instanciar EDUtrack
 Primero se debe crear un bot desde <a href="https://t.me/Botfather" target="_blank">@BotFather</a>. Al finalizar te proporcionara un enlace que podras compartir a otros usuarios para que interactuen con el bot. Y por otra parte te proporcionara el _**TOKEN**_ de tu bot, que es la clave con la cual se realizara la conexión entre el bot que acabas de crear y EDUtrack.
 
-![](https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/images/Token.png)
+![](https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/ESP/images/Token.png)
 
    
 ```
@@ -51,7 +51,9 @@ TOKEN: 1401345537:AAGPGnsIeRROS6500fm2bGPOGqz8kkD9O28
 #### 2.- Configurar la instancia de EDUtrack
 Para configurar los archivos de EDUtrack se puede realizar de 2 formas:
 1. A través de <a href="https://t.me/EDUtrack_setup_bot" target="_blank">@EDUtrack_setup</a>, que es un bot que solicita la información general para EDUtrack, por ejemplo nombre del docente y de la asignatura, duración del curso o el Token del bot que nos proporciono BotFather en el paso anterior. Al finalizar EDUtrack_setup_bot nos proporcionara 2 archivos iguales, `edutrack_bot.zip` y `edutrack_bot.tar`, para descargar el que se adecue para nuestras necesidades.
-    
+
+![](https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/ESP/images/edutrack_setup.png)
+
 2. Clonar el repositorio o descargar el zip desde GitHub
 
 ```
@@ -69,7 +71,20 @@ Presiona **`Enter`** para crear tu clon local.
 > Resolving deltas: 100% (501/501), done.
 ```
 
-Ahora deberás editar manualmente el archivo de configuración `config_file.py` que se encuntra en el direcotorio EDUrack_bot/config. 
+Antes de editar el archivo de configuración deberá contar con:
+ - El TOKEN que le proporciono BotFather
+ - El nombre que tiene registrado en la aplicación de Telegram
+ - Su usuario de Telegram
+ - El ID de Telegram
+
+El nombre y el usuario, se pueden obtener desde el menu Settings de la aplicación de Telegram.
+
+El id se puede obtener utilizando el bot <a href="https://t.me/userinfobot" target="_blank">@UserInfoBot</a>
+
+![](https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/ESP/images/userinfobot.png)
+
+
+Ahora deberás editar manualmente el archivo de configuración `config_file.py` que se encuntra en el direcotorio **`EDUrack_bot/config`**. 
 ```
 # Ubuntu 
 nano EDUtrack_bot/config/config_file.py
@@ -77,7 +92,7 @@ nano EDUtrack_bot/config/config_file.py
 # Windows CMD o Power Shell
 notepad EDUtrack_bot/config/config_file.py
 ```
-La información que se debe reemplazar esta indicada con el texto "replace element". Por ejemplo 
+La información que se debe reemplazar esta indicada con el texto "replace element", es importante dejar las comillas (""). Por ejemplo 
 - "replace subject_id" -> "FS_2021"
 - "replace subject_name" -> "Fundamentos del Software 2021"
 ```
@@ -132,9 +147,11 @@ python3 edutrack.py
 Para finalizar la configuración de EDUtrack bot se deberá:
 * Crear los planetas (grupos de telegram) y asignar el bot creado como administrador en cada uno de ellos, esto es de suma importancia ya que solo como administrador el bot tendra acceso a contabilizar los mensajes de los estudiantes.
 
-><span style="color:DarkRed"> **NOTA IMPORTANTE:** Al crear los planetas se ofrece la opción  **Historial del chat para nuevos miebros** que por default esta como `**HIDDEN**` si se cambia por `**VISIBLE**`, Telegram modifica el estatus de grupo a supergrupo  por lo que los administradores previamente dados de alta se resetearan, es una cuestion de Telegram, por lo que es necesario volver a dar de alta al bot como administrador.</span>
+><span style="color:DarkRed"> **NOTA IMPORTANTE:** Al crear los planetas se ofrece la opción  **Historial del chat para nuevos miebros** que por default esta como **`HIDDEN`** si se cambia a **`VISIBLE`**, Telegram modifica el estatus de grupo a supergrupo  por lo que los administradores previamente dados de alta se resetearan, es una cuestion de Telegram, por lo que es necesario volver a dar de alta al bot como administrador.</span>
 
 * Tras crear los planetas y asignar su bot como adminsitrador iniciar una conversación con el bot creado anteriormente, este le enviara 2 archivos, **`students_format.csv`** y **`activities_format.csv`** que son los formatos que se deberán llenar y subir para terminar de configurar la asignatura. Tras subir los archivos los estudiantespodran acceder a su bot instancia de EDUtrack .
+
+![](https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/ESP/images/config_files.png)
 
 ## Despliegue en Heroku 📦
 ### Antes del despliegue:
@@ -143,7 +160,7 @@ Para finalizar la configuración de EDUtrack bot se deberá:
 2. Instala <a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git" target="_blank">Git</a>
 3. Instala <a href="https://devcenter.heroku.com/articles/getting-started-with-python#set-up" target="_blank">Heroku CLI</a>
 
-> <span style="color:DarkRed"> NOTA IMPORTANTE: El plan gratuito en heroku, pone a dormir su bot después de 30 minutos de inactividad (pero no en el plan educativo). Al recibir una solicitud despertará, pero provoca un breve retraso para esta primera solicitud, despúes respondera casi inmediatamente hasta que vuelva a dormir por inactividad. Tambien es importante considerar que el plan gratuito incluye 450 horas de uso mensuales, que se pueden incrementar a 1000 si se añande una tarjeta de credito a su cuenta (mientras no rebase el límite de uso no se realizara ningún cargo). Al dormir un bot (o una heroku app), no gasta horas. Para mas información visite <a href="https://devcenter.heroku.com/articles/free-dyno-hours" target="_blank">Free Dyno Hours</a> <br><br><a href="https://github.com/romainbutteaud" target="_blank">Romain Butteaud</a> desarrollo una app para evitar que tu aplicación gratuita de Heroku vuelva a quedarse dormida. Sólo tienes que añadir la tuya aquí <a href="https://kaffeine.herokuapp.com/" target="_blank">kaffeine.herokuapp.com</a>
+><span style="color:DarkRed"> **NOTA IMPORTANTE:** El plan gratuito en heroku, pone a dormir su bot después de 30 minutos de inactividad (pero no en el plan educativo). Al recibir una solicitud despertará, pero provoca un breve retraso para esta primera solicitud, despúes respondera casi inmediatamente hasta que vuelva a dormir por inactividad. Tambien es importante considerar que el plan gratuito incluye 450 horas de uso mensuales, que se pueden incrementar a 1000 si se añande una tarjeta de credito a su cuenta (mientras no rebase el límite de uso no se realizara ningún cargo). Al dormir un bot (o una heroku app), no gasta horas. Para mas información visite <a href="https://devcenter.heroku.com/articles/free-dyno-hours" target="_blank">Free Dyno Hours</a> <br><br><a href="https://github.com/romainbutteaud" target="_blank">Romain Butteaud</a> desarrollo una app para evitar que tu aplicación gratuita de Heroku vuelva a quedarse dormida. Sólo tienes que añadir la tuya aquí <a href="https://kaffeine.herokuapp.com/" target="_blank">kaffeine.herokuapp.com</a> </span>
 
 Para realizar el despliegue en Heroku se debe de contar con 2 archivos (los cuales ya se encuentran en el repositorio) **`Procfile`** (asegúrarse de que no tiene ninguna extensión de archivo como .txt, porque no funcionará):
 ```
@@ -171,7 +188,6 @@ heroku: Press any key to open up the browser to login or q to exit:
 ![](https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/images/heroku.png)
 
 
-
 #### 3.- Crear una webapp en Heroku
 **Si ya cuenta con una web app puede omitir estos pasos. Vaya al punto [4.- Establecer las variables de entorno](#4\--establecer-las-variables-de-entorno).**
 
@@ -179,6 +195,7 @@ Una vez que haya iniciado la sesión, vuelva a la línea de comandos. Para crear
 
 ```
 # Si no se indica <your_app_name> heroku proporcionara un nombre aleatorio
+
 $ heroku create <your_app_name>
 Creating ⬢ <your_app_name>... done
 https://<your_app_name>.herokuapp.com/ | https://git.heroku.com/<your_app_name>.git
@@ -195,13 +212,13 @@ https://<your_app_name>.herokuapp.com/ | https://git.heroku.com/<your_app_name>.
     ```
 
 2. **TOKEN**
-    
     ```
     $ heroku config:set TOKEN=<paste_your_TOKEN_bot> -a <your_app_name>
     
     Setting TOKEN and restarting ⬢ <your_app_name>.. done, v3
     TOKEN: <your_TOKEN_bot>
     ```
+    
 3. **MODE** (debe ser prod)
     ```
     $ heroku config:set MODE=prod -a <your_app_name>
@@ -225,9 +242,9 @@ https://<your_app_name>.herokuapp.com/ | https://git.heroku.com/<your_app_name>.
 
 ## Autores ✒️
 
-* [<img src="https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/images/ORCID_logo.png" alt="ORCID" width="20"/>](https://orcid.org/0000-0003-4507-3150) [**Jeovani M. Morales Nieto**](https://github.com/jeovani-morales/) - *Doctorando Desarrollador*
-* [<img src="https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/images/ORCID_logo.png" alt="ORCID" width="20"/>](https://orcid.org/0000-0002-0183-044X) [**Rosana Montes Soldado**](https://dasci.es/personal/perfil/rosana-montes-soldado/) - *Directora de Tesis y Asesora*  
-* [<img src="https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/images/ORCID_logo.png" alt="ORCID" width="20"/>](https://orcid.org/0000-0002-7283-312X) [Francisco Herrera Triguero](https://dasci.es/personal/perfil/francisco-herrera-triguero/) - *Director de Tesis*
+* [<img src="https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/ESP/images/ORCID_logo.png" alt="ORCID" width="20"/>](https://orcid.org/0000-0003-4507-3150) [**Jeovani M. Morales Nieto**](https://github.com/jeovani-morales/) - *Doctorando Desarrollador*
+* [<img src="https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/ESP/images/ORCID_logo.png" alt="ORCID" width="20"/>](https://orcid.org/0000-0002-0183-044X) [**Rosana Montes Soldado**](https://dasci.es/personal/perfil/rosana-montes-soldado/) - *Directora de Tesis y Asesora*  
+* [<img src="https://raw.githubusercontent.com/jeovani-morales/EDUtrack_bot/EDUtrack_files/ESP/images/ORCID_logo.png" alt="ORCID" width="20"/>](https://orcid.org/0000-0002-7283-312X) [Francisco Herrera Triguero](https://dasci.es/personal/perfil/francisco-herrera-triguero/) - *Director de Tesis*
 
 También puedes mirar la lista de todos los [contribuyentes](https://github.com/your/project/contributors) quíenes han participado en este proyecto.
 
