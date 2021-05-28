@@ -1,8 +1,6 @@
 #===========================================
 # Data to modify
-#=========================================
-TOKEN = "replace TOKEN" # Paste the TOKEN provided by Botfather
-
+#===========================================
 subject_data = {
   "_id": "replace subject_id", # Database name
   "name": "replace subject_name",
@@ -34,7 +32,6 @@ teacher_data = {
 # Don't modify
 #===================================================
 
-####################################
 standby_teachers = False
 config_files_set = False
 active_activities = False
