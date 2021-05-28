@@ -1,17 +1,20 @@
 #===========================================
 # Data to modify
-#===========================================
+#=========================================
+TOKEN = "replace TOKEN" # Paste the TOKEN provided by Botfather
+
 subject_data = {
   "_id": "replace subject_id", # Database name
   "name": "replace subject_name",
   "start_date": "replace start_date", # format dd/mm/yyyy
-  "course_weeks": "replace num_weeks", # Number of weeks of the course excluding vacation weeks
+  "course_weeks": "replace num_weeks", # Number of weeks of the course excluding vacation weeks e.g. "15"
   "start_vacations" : "replace start_vacations", # format dd/mm/yyyy  if there aren't vacations ""
   "end_vacations": "replace end_vacations", # format dd/mm/yyyy  if there aren't vacations ""
   "max_final_grade": "replace max_final_grade", # Highest grade a student can get
-  "max_activity_grade": "replace max_activity_grade", # Maximum qualification that an activity can get
+  "max_activity_grade": "replace max_activity_grade", # Highest qualification that an activity can get
   "min_grade_to_pass": "replace min_grade_to_pass", # Minimum grade a student must get in order not to fail
   "min_ideal_grade": "replace min_ideal_grade", # A student's ideal grade should be a value between max_final_grade and min_grade_to_pass+1. See the manual for more information on this note.
+
   "activate_evaluations:": "0", # Don´t modify
   "active_planet_registry": "1", # Don´t modify
   "maintenance": "0", # Don´t modify
@@ -22,9 +25,10 @@ teacher_data = {
   "email": "replace email", # teacher email
   "name": "replace teacher_name",
   "telegram_name": "replace telegram_name",
-  "username": "replace username",
+  "username": "replace username", # Telegram_username
   "telegram_id": "replace _id", # To know the teacher's id visit @userinfobot on Telegram from the teacher's account.
   "language": "replace language", # es for Spanish, en for english
+
   "is_teacher": 1, # Don´t modify
 }
 

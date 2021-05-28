@@ -787,6 +787,18 @@ def options_menu(update, context):
 
 
 def show_menu(query, menu_text, menu_opt, context="", chat_id=""):
+  """[summary]
+
+  Args:
+      query ([type]): [description]
+      menu_text ([type]): [description]
+      menu_opt ([type]): [description]
+      context (str, optional): [description]. Defaults to "".
+      chat_id (str, optional): [description]. Defaults to "".
+
+  Returns:
+      [type]: [description]
+  """
   try:
     keyboard = menu_opt
     reply_markup = IKMarkup(keyboard)

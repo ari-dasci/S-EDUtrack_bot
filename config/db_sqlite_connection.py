@@ -25,8 +25,7 @@ def connection(open_connection="False"):
 
 
 def execute_sql(
-  sql_query, fetch=False, df=False, as_dict=False, as_list=False, test=False
-):  ### BORRAR TEST
+  sql_query, fetch=False, df=False, as_dict=False, as_list=False):
   try:
     # auto - closes
     with contextlib.closing(sqlite3.connect(db_path)) as conn:
@@ -36,15 +35,6 @@ def execute_sql(
         if as_list:
           conn.row_factory = lambda cursor, row: row[0]
         with contextlib.closing(conn.cursor()) as cursor:  # auto - closes
-          ######### COMPROBACION CURSOR
-          if test:
-            if fetch:
-              cursor.execute(sql_query)
-              print(
-                "PRUEBA CURSOR: ",
-                cursor.fetchone() if fetch == "fetchone" else cursor.fetchall(),
-              )
-          ###############################
           cursor.execute(sql_query)
           if fetch:
             return cursor.fetchone() if fetch == "fetchone" else cursor.fetchall()
@@ -63,7 +53,7 @@ def create_db():
     for table in cfg.tables:
       sql = f"""CREATE TABLE if not exists {table} ({cfg.tables[table]})"""
       execute_sql(sql)
-      print(f"Se ha agregado la tabla {table} a la base de datos")
+      print(f"{table} table OK")
 
     # SET SUBJECT DATA
     subject_info = cfg.subject_data.copy()
@@ -72,7 +62,6 @@ def create_db():
 
     execute_sql(sql)
 
-    # sql = f"""INSERT INTO teachers VALUES(
     sql = f"""INSERT OR IGNORE INTO teachers VALUES(
       "{cfg.teacher_data['email']}",
       "{cfg.teacher_data['name']}",
@@ -81,7 +70,7 @@ def create_db():
       "{int(cfg.teacher_data['telegram_id'])}"
       )"""
     execute_sql(sql)
-    print(f"Se agrego correctamente al docente {cfg.teacher_data['telegram_name']}.")
+    print(f"Teacher {cfg.teacher_data['telegram_name']} OK")
 
     sql = f"SELECT COUNT(name) FROM sqlite_master WHERE type='table' AND name='teachers_temp'"
     if execute_sql(sql, "fetchone")[0]:

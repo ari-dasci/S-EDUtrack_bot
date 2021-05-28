@@ -37,24 +37,18 @@ logging.basicConfig(
   filename="./logs/logging.log",
 )
 
-# Get the token and the working mode
+# Get the TOKEN Bot and the working mode
 TOKEN = os.getenv("TOKEN")
-if TOKEN:
-  mode = os.getenv("MODE")
-  if not mode:
+mode = os.getenv("MODE")
+
+if not TOKEN:
+    msg_log=g_lang.not_env_variable("TOKEN")
+    print("INFO",msg_log)
+    sys.exit(logging.info(msg_log))
+if not mode:
     msg_log=g_lang.not_env_variable("MODE")
     print("INFO",msg_log)
     sys.exit(logging.info(msg_log))
-else:
-  try:
-      from config.config_file import TOKEN
-      if not TOKEN or TOKEN == "replace TOKEN":
-        raise
-  except:
-    msg_log = g_lang.not_env_variable("TOKEN")
-    print("INFO:",msg_log)
-    sys.exit(logging.info(msg_log))
-  mode = "dev"
 
 def main():
   try:
