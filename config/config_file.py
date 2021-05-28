@@ -1,7 +1,6 @@
 #===========================================
 # Data to modify
-#=========================================
-TOKEN = "replace TOKEN" # Paste the TOKEN provided by Botfather
+#===========================================
 
 subject_data = {
   "_id": "replace subject_id", # Database name

@@ -1,6 +1,6 @@
 [Spanish Version](#bot-edutrack)
 
-# EDUtrack Bot
+# EDUtrack Bot2
 
 EDUtrack es parte de un proyecto de Tesis para evaluar la calidad de la educación superior en un entorno FC-ML de la Escuela Técnica Superior de Ingenierías Informática y de Telecomunicación (ETSIIT) de la Universidad de Granada.
 
