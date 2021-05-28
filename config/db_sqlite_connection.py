@@ -20,7 +20,6 @@ db_path = f"./DB/{cfg.subject_data['_id']}.db"
 
 def connection(open_connection="False"):
   conn = sqlite3.connect(db_path)
-  print("Conexión exitosa")
   return conn if open_connection else conn.close()
 
 
@@ -68,6 +67,14 @@ def create_db():
       "{cfg.teacher_data['telegram_name']}",
       "{cfg.teacher_data['username']}",
       "{int(cfg.teacher_data['telegram_id'])}"
+      )"""
+    execute_sql(sql)
+    sql = f"""INSERT OR IGNORE INTO telegram_users VALUES(
+      "{int(cfg.teacher_data['telegram_id'])}",
+      "{cfg.teacher_data['telegram_name']}",
+      "{cfg.teacher_data['username']}",
+      "{cfg.teacher_data['is_teacher']}",
+      "{cfg.teacher_data['language']}"
       )"""
     execute_sql(sql)
     print(f"Teacher {cfg.teacher_data['telegram_name']} OK")

@@ -176,3 +176,4 @@ Pipfile.lock
 Pipfile.lock
 *.lock
 Pipfile
+*.db
