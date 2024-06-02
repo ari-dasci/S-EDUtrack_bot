@@ -177,3 +177,6 @@ Pipfile.lock
 *.lock
 Pipfile
 *.db
+
+## desktop.ini ##
+*desktop.ini
