@@ -219,8 +219,8 @@ export TOKEN="<TOKEN_proporcionado_por_BotFather>"
 export MODE="dev"
 
 # Windows Powershell
-$env TOKEN="<TOKEN_proporcionado_por_BotFather>"
-$env MODE="dev"
+$env:TOKEN="<TOKEN_proporcionado_por_BotFather>"
+$env:MODE="dev"
 
 # Windows CMD
 set TOKEN="<TOKEN_proporcionado_por_BotFather>"
